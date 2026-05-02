@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
+import { LogoFull } from "@/components/logo";
 
 const navItems = [
   { title: "KDS Display", href: "/", icon: MonitorSpeaker },
@@ -29,7 +30,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen w-full bg-background font-mono text-foreground">
         <Sidebar className="border-r border-border">
           <SidebarHeader className="h-16 flex items-center px-4 border-b border-border">
-            <h1 className="text-xl font-bold tracking-tight text-primary">LineOps KDS</h1>
+            <LogoFull />
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>

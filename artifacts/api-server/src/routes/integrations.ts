@@ -9,6 +9,7 @@ import { squareAdapter }     from "../lib/pos/square";
 import { toastAdapter }      from "../lib/pos/toast";
 import { cloverAdapter }     from "../lib/pos/clover";
 import { lightspeedAdapter } from "../lib/pos/lightspeed";
+import { volanteAdapter }    from "../lib/pos/volante";
 import { genericAdapter }    from "../lib/pos/generic";
 import type { NormalisedOrder } from "../lib/pos/types";
 import { z } from "zod";
@@ -167,6 +168,15 @@ router.post("/integrations/lightspeed/webhook", async (req, res): Promise<void> 
   await handlePosWebhook(null as never, "lightspeed", storeId, lightspeedAdapter as Adapter, secret, rawBody, req.headers as Record<string, string | string[] | undefined>, res);
 });
 
+// Volante Systems VE POS
+router.post("/integrations/volante/webhook", async (req, res): Promise<void> => {
+  const storeId = req.query.storeId as string;
+  const store = await getStoreOrFail(storeId, res); if (!store) return;
+  const rawBody = JSON.stringify(req.body);
+  const secret = process.env.VOLANTE_WEBHOOK_SECRET ?? "";
+  await handlePosWebhook(null as never, "volante", storeId, volanteAdapter as Adapter, secret, rawBody, req.headers as Record<string, string | string[] | undefined>, res);
+});
+
 // Generic / Custom — authenticated with API key
 router.post("/integrations/orders", requireApiKey, async (req: AuthedRequest, res): Promise<void> => {
   const storeId = req.apiKey!.storeId;
@@ -249,6 +259,17 @@ router.get("/integrations", (_req, res): Promise<void> => {
         events:   ["order.created", "order.updated"],
         authType: "hmac_sha256",
         envVar:   "LIGHTSPEED_WEBHOOK_SECRET",
+      },
+      {
+        id:       "volante",
+        name:     "Volante Systems VE POS",
+        status:   "available",
+        webhook:  "/api/integrations/volante/webhook",
+        docs:     "https://www.volantesystems.com/partners/",
+        events:   ["kitchen.order.fired", "kitchen.course.fired"],
+        authType: "hmac_sha256",
+        envVar:   "VOLANTE_WEBHOOK_SECRET",
+        setupNote: "In VE Back Office → Kitchen Displays → External KDS, set the Endpoint URL and Auth Secret. Select Format: JSON and Fire Mode: On Course Fire.",
       },
       {
         id:        "generic",
