@@ -11,6 +11,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-05-02
+
+### Added
+
+#### Station Config Management
+- **Station Configs page** (`/station-configs`) — new backend admin page with a card-per-station grid; assign any saved config template to a station, push it live to every display at that station, or copy a config from one station to another
+- **`kds_station_configs` database table** — stores per-station config JSON with `stationId`, `config`, and `updatedAt`; unique index on `stationId`
+- **`PUT /api/stations/:id/config`** — save a config object for a station; upserts on conflict
+- **`POST /api/stations/:id/push-config`** — broadcast saved config to all devices assigned to the station; returns `{ devicesFound, devicesReached }` for UI feedback
+- **`POST /api/stations/copy-config`** — body `{ fromStationId, toStationId }` — copies one station's saved config to another without re-selecting a template
+- **`GET /api/stations/:id/config`** — now returns the full config row `{ stationId, config, updatedAt }` (previously returned only the `config` field); allows the frontend to display last-updated timestamps
+
+#### Per-Device Config Push
+- **`POST /api/devices/:id/push-config`** — push a specific template by ID to a single display by device ID; WebSocket delivery if device is online, `reached: false` in response if offline
+- **Devices page — Push Config dropdown** — each device card now has a dropdown listing all saved templates; selecting one pushes config immediately; green/amber toast confirms online vs offline delivery
+- **`kds devices push <deviceId> <templateId>`** CLI command — available in both `bin/kds` (Bash) and `bin/kds.ps1` (PowerShell)
+
+#### WebSocket Device Registry
+- KDS displays now send `{ type: "register", deviceId }` on WebSocket connect; the server maintains a live `Map<deviceId, WebSocket>` for targeted delivery
+- **`GET /api/devices/online`** — returns an array of device IDs that have an active WebSocket connection right now
+- Device registry automatically removes entries on socket close/error
+- Machine-local settings (zoom, bump bar, keys) are always preserved when pushing a config — server strips them before broadcasting and displays re-apply their local overrides on receipt
+
+### Changed
+- `GET /api/stations/:id/config` response shape changed from bare config JSON to `{ stationId, config, updatedAt }` object (or `null` if no config saved)
+
+---
+
 ## [1.1.0] - 2026-05-02
 
 ### Added

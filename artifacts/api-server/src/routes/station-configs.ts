@@ -10,7 +10,7 @@ router.get("/stations/:id/config", async (req, res): Promise<void> => {
     .select()
     .from(kdsStationConfigsTable)
     .where(eq(kdsStationConfigsTable.stationId, req.params.id));
-  res.json(row?.config ?? null);
+  res.json(row ?? null);
 });
 
 router.put("/stations/:id/config", async (req, res): Promise<void> => {

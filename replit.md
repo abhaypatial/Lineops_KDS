@@ -34,7 +34,7 @@ pnpm workspace monorepo with TypeScript throughout. Contract-first API via OpenA
 
 ## Database Schema
 
-Tables: `enterprises`, `stores`, `stations`, `devices`, `orders`, `order_items`
+Tables: `enterprises`, `stores`, `stations`, `devices`, `orders`, `order_items`, `kds_config_templates`, `kds_station_configs`
 
 Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (linked to stations)
 
@@ -43,10 +43,13 @@ Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (li
 - **KDS Display** (`/`): Live order grid, station filtering tabs, keyboard bump bar (←→ navigate, SPACE/Enter bump), configurable recall key (default Backspace), physical bump bar presets (Logic Controls / POS-X / MMF / Custom), virtual bump bar (◄ BUMP ↩Recall ▶), elapsed-time color coding (yellow >10m, red >15m), rush/VIP order highlighting, resolution-aware auto-zoom, long-order font scaling + 2-col layout + overflow badge
 - **Now Serving strip** + **Recent/recall tray**: independent `showNowServing` and `showRecentBumped` toggles; recall any bumped order via keyboard, virtual bar, or Quick Actions panel
 - **Config Templates**: save/apply/delete named configs per store; push-to-all via WebSocket broadcast; export/import JSON — `kds_config_templates` DB table + REST API
+- **Station Config Management** (`/station-configs`): assign a named template config to each kitchen station; push to all displays at that station over WS; copy configs between stations — `kds_station_configs` DB table + REST endpoints (`PUT/GET /api/stations/:id/config`, `POST /api/stations/:id/push-config`, `POST /api/stations/copy-config`)
+- **Per-device config push** (`POST /api/devices/:id/push-config`): targeted WS push to a single display by device ID; CLI `kds devices push <deviceId> <templateId>`; machine-local settings (zoom, bump bar, keys) always preserved
+- **Live device registry**: displays auto-register via WS on connect (`{ type: "register", deviceId }`); `GET /api/devices/online` returns live device IDs; server maintains `Map<deviceId, WebSocket>`
 - **Quick Actions panel** (⚡ FAB): bump focused order, recall last, recall list (expandable), footer bar toggle
 - **Manager Dashboard** (`/dashboard`): Active orders summary, avg ticket time, rush count, online devices, per-station load bars, real-time activity feed
 - **Orders Page** (`/orders`): Tabular order history with bump/status management
-- **Devices Page** (`/devices`): Device status monitoring (online/idle/offline)
+- **Devices Page** (`/devices`): Device status monitoring (online/idle/offline) with per-device Push Config dropdown
 - **Setup Page** (`/setup`): Hierarchical config — enterprises, stores, stations, devices
 
 ## POS Integration Layer
@@ -110,7 +113,8 @@ kds orders bump 101     # Bump order #101
 kds orders recall 101   # Recall a bumped order
 kds orders add          # Add a test order
 kds stations            # List stations
-kds devices             # List registered KDS displays
+kds devices             # List registered KDS displays (shows online/offline WS status)
+kds devices push <id> <tplId>  # Push config template to a specific display
 kds templates           # List saved display templates
 kds logs [api|web|db]   # Tail logs
 kds ip                  # Show LAN IP and URLs
@@ -133,6 +137,7 @@ kds start / stop / restart / update
 | `docs/integrations/README.md` | How to connect each POS (Square, Toast, Clover, Lightspeed, Generic) |
 | `docs/integrations/VOLANTE.md` | Volante VE deep-dive — printer types, RPC setup, data mapping |
 | `docs/integrations/DEVELOPER.md` | How to add a new POS adapter (step-by-step with template) |
+| `docs/UPDATE-GUIDE.md` | How to push a software update to already-installed machines (Docker, source, CLI) |
 
 ## Important Notes
 

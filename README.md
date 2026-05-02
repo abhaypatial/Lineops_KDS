@@ -14,6 +14,8 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 - **Now Serving strip** — bumped orders flash in a green "Now Serving" strip for pickup callout; independent toggle for the strip and the recent-recall tray below it
 - **Order recall** — recall any recently bumped order from the Quick Actions panel, virtual bump bar, or by pressing the recall key on a physical bump bar
 - **Config Templates** — save the current KDS layout as a named template; one-click push to every connected display; export/import JSON for cross-site backup
+- **Station Config Management** — assign a saved config template to each kitchen station from the backend admin; push it to all displays at that station over WebSocket with one click; copy configs between stations; CLI: `kds devices push <deviceId> <templateId>` for per-display targeting
+- **Live device registry** — every KDS display registers itself via WebSocket on connect; `GET /api/devices/online` returns currently connected device IDs; per-device config push reaches a display in real-time or returns `reached: false` if offline
 - **Resolution-aware auto-zoom** — display automatically scales to fill any screen size without blank edges; manual override with Ctrl +/−/0
 - **Long-order handling** — cards with many items automatically reduce font size, switch to a two-column item layout, and show a "+N more" badge; no card ever requires scrolling
 - **Quick Actions panel** — single-tap: bump focused order, recall last order, open recall list, toggle footer bar; accessible from the ⚡ FAB

@@ -13,6 +13,7 @@ import SetupPage            from "@/pages/setup";
 import LivePage             from "@/pages/live";
 import TemplateBuilderPage  from "@/pages/template-builder";
 import IntegrationHubPage   from "@/pages/integration-hub";
+import StationConfigsPage   from "@/pages/station-configs";
 import LoginPage            from "@/pages/login";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,11 @@ function Router() {
       {/* Integration Hub — POS connections, API keys, webhooks */}
       <Route path="/integration-hub">
         <AppLayout><IntegrationHubPage /></AppLayout>
+      </Route>
+
+      {/* Station Configs — per-station display config management */}
+      <Route path="/station-configs">
+        <AppLayout><StationConfigsPage /></AppLayout>
       </Route>
 
       {/* Admin login */}
