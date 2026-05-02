@@ -5,6 +5,26 @@ import { logger } from "./logger";
 
 let wss: WebSocketServer | null = null;
 
+const deviceRegistry = new Map<string, WebSocket>();
+
+const MACHINE_LOCAL_KEYS = new Set([
+  "zoomOverride",
+  "bumpBarEnabled",
+  "bumpBarPreset",
+  "bumpKey",
+  "prevKey",
+  "nextKey",
+  "recallKey",
+  "showVirtualBumpBar",
+  "showFooter",
+]);
+
+export function stripMachineLocal(cfg: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(cfg).filter(([k]) => !MACHINE_LOCAL_KEYS.has(k)),
+  );
+}
+
 export function setupWebSocketServer(server: Server): void {
   wss = new WebSocketServer({ server, path: "/ws" });
 
@@ -14,13 +34,25 @@ export function setupWebSocketServer(server: Server): void {
     ws.on("message", (data) => {
       try {
         const msg = JSON.parse(data.toString());
-        logger.debug({ msg }, "WS message received");
+        if (msg.type === "register" && msg.payload?.deviceId) {
+          deviceRegistry.set(msg.payload.deviceId, ws);
+          logger.info({ deviceId: msg.payload.deviceId }, "Device registered");
+        } else {
+          logger.debug({ msg }, "WS message received");
+        }
       } catch {
         // ignore malformed messages
       }
     });
 
     ws.on("close", () => {
+      for (const [deviceId, client] of deviceRegistry.entries()) {
+        if (client === ws) {
+          deviceRegistry.delete(deviceId);
+          logger.info({ deviceId }, "Device unregistered on disconnect");
+          break;
+        }
+      }
       logger.info("WebSocket client disconnected");
     });
 
@@ -28,7 +60,6 @@ export function setupWebSocketServer(server: Server): void {
       logger.error({ err }, "WebSocket error");
     });
 
-    // Send welcome ping
     ws.send(JSON.stringify({ type: "connected", payload: { message: "KDS WebSocket ready" } }));
   });
 
@@ -43,4 +74,15 @@ export function broadcast(event: { type: string; payload: unknown }): void {
       client.send(msg);
     }
   });
+}
+
+export function broadcastToDevice(deviceId: string, event: { type: string; payload: unknown }): boolean {
+  const client = deviceRegistry.get(deviceId);
+  if (!client || client.readyState !== WebSocket.OPEN) return false;
+  client.send(JSON.stringify(event));
+  return true;
+}
+
+export function getRegisteredDeviceIds(): string[] {
+  return Array.from(deviceRegistry.keys());
 }

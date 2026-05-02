@@ -83,7 +83,8 @@ cmd_help() {
   echo -e "    ${CYN}kds stations${RST}            List all stations"
   echo ""
   echo -e "  ${WHT}Devices${RST}"
-  echo -e "    ${CYN}kds devices${RST}             List registered KDS displays"
+  echo -e "    ${CYN}kds devices${RST}                      List registered KDS displays"
+  echo -e "    ${CYN}kds devices push${RST} <id> <tplId>   Push a template to one display"
   echo ""
   echo -e "  ${WHT}Config Templates${RST}"
   echo -e "    ${CYN}kds templates${RST}                   List saved display configs"
@@ -322,40 +323,62 @@ cmd_stations() {
 
 cmd_devices() {
   require_jq
-  local devices
-  devices=$(api GET /api/devices)
-  local count
-  count=$(echo "$devices" | jq '.devices | length')
+  local sub="${1:-}"; shift || true
 
-  if [[ "$count" -eq 0 ]]; then
-    info "No devices registered yet."
-    echo "  → Devices auto-register when a KDS display first connects."
-    echo ""
-    return
-  fi
+  case "$sub" in
+    push)
+      local dev_id="${1:-}" tpl_id="${2:-}"
+      [[ -z "$dev_id" || -z "$tpl_id" ]] && die "Usage: kds devices push <deviceId> <templateId>"
+      local result
+      result=$(api POST "/api/devices/${dev_id}/push-config" "{\"templateId\":\"${tpl_id}\"}")
+      local reached dev_name
+      reached=$(echo "$result" | jq -r '.reached // false')
+      dev_name=$(echo "$result" | jq -r '.deviceName // "unknown"')
+      if [[ "$reached" == "true" ]]; then
+        ok "Config pushed to '${dev_name}' (device online)"
+      else
+        warn "Config queued for '${dev_name}' — device is not currently connected"
+      fi
+      echo -e "  ${DIM}Machine-local settings (zoom, bump bar, keys) are preserved.${RST}"
+      ;;
 
-  echo ""
-  hr
-  printf "  ${WHT}%-20s %-16s %-10s %-20s %s${RST}\n" \
-    "DEVICE" "IP" "STATUS" "TEMPLATE" "LAST SEEN"
-  hr
-  echo "$devices" | jq -r '
-    .devices[] |
-    [
-      (.name // "Unnamed"),
-      (.ipAddress // "—"),
-      (if .isOnline then "● online" else "○ offline" end),
-      (.templateName // "—"),
-      (.lastSeenAt // "—")
-    ] | @tsv
-  ' | while IFS=$'\t' read -r name ip status template last; do
-    local status_color="$DIM"
-    [[ "$status" == *"online"* ]] && status_color="$GRN"
-    printf "  %-20s ${CYN}%-16s${RST} ${status_color}%-10s${RST} %-20s ${DIM}%s${RST}\n" \
-      "$name" "$ip" "$status" "$template" "$last"
-  done
-  hr
-  echo ""
+    ""|list)
+      local devices
+      devices=$(api GET /api/devices)
+      local count
+      count=$(echo "$devices" | jq '. | length')
+
+      if [[ "$count" -eq 0 ]]; then
+        info "No devices registered yet."
+        echo "  → Devices auto-register when a KDS display first connects."
+        echo ""
+        return
+      fi
+
+      local online_ids
+      online_ids=$(api GET /api/devices/online 2>/dev/null | jq -r '.deviceIds[]' 2>/dev/null || echo "")
+
+      echo ""
+      hr
+      printf "  ${WHT}%-20s %-12s %-10s %s${RST}\n" "DEVICE" "STATUS" "WS" "ID"
+      hr
+      echo "$devices" | jq -r '.[] | [.name, .status, .id, (.lastSeenAt // "—")] | @tsv' \
+        | while IFS=$'\t' read -r name status id last; do
+          local status_color="$DIM"
+          [[ "$status" == "online" ]] && status_color="$GRN"
+          local ws_label="${DIM}○ idle${RST}"
+          echo "$online_ids" | grep -qx "$id" 2>/dev/null && ws_label="${GRN}● live${RST}"
+          printf "  %-20s ${status_color}%-12s${RST} %-12b ${DIM}%s${RST}\n" \
+            "$name" "$status" "$ws_label" "$id"
+        done
+      hr
+      echo ""
+      echo -e "  ${DIM}kds devices push <deviceId> <templateId>   push config to one display${RST}"
+      echo ""
+      ;;
+
+    *) die "Unknown devices subcommand: $sub  (push)" ;;
+  esac
 }
 
 cmd_templates() {
@@ -479,7 +502,7 @@ main() {
     ip)        cmd_ip ;;
     orders)    cmd_orders "$@" ;;
     stations)  cmd_stations ;;
-    devices)   cmd_devices ;;
+    devices)   cmd_devices "$@" ;;
     templates) cmd_templates "$@" ;;
     logs)      cmd_logs "$@" ;;
     start)     cmd_start ;;

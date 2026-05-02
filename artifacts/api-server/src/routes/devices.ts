@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, devicesTable } from "@workspace/db";
+import { db, devicesTable, kdsConfigTemplatesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
   CreateDeviceBody,
@@ -7,6 +7,7 @@ import {
   ListDevicesQueryParams,
 } from "@workspace/api-zod";
 import { randomUUID } from "crypto";
+import { broadcastToDevice, stripMachineLocal, getRegisteredDeviceIds } from "../lib/ws";
 
 const router = Router();
 
@@ -39,6 +40,11 @@ router.post("/devices", async (req, res): Promise<void> => {
   res.status(201).json(device);
 });
 
+router.get("/devices/online", async (req, res): Promise<void> => {
+  const ids = getRegisteredDeviceIds();
+  res.json({ deviceIds: ids, count: ids.length });
+});
+
 router.get("/devices/:id", async (req, res): Promise<void> => {
   const [device] = await db
     .select()
@@ -63,6 +69,43 @@ router.patch("/devices/:id", async (req, res): Promise<void> => {
     return;
   }
   res.json(device);
+});
+
+router.post("/devices/:id/push-config", async (req, res): Promise<void> => {
+  const { templateId, config } = req.body as { templateId?: string; config?: Record<string, unknown> };
+
+  const [device] = await db
+    .select()
+    .from(devicesTable)
+    .where(eq(devicesTable.id, req.params.id));
+  if (!device) {
+    res.status(404).json({ error: "Device not found" });
+    return;
+  }
+
+  let raw: Record<string, unknown>;
+
+  if (templateId) {
+    const [tpl] = await db
+      .select()
+      .from(kdsConfigTemplatesTable)
+      .where(eq(kdsConfigTemplatesTable.id, templateId));
+    if (!tpl) {
+      res.status(404).json({ error: "Template not found" });
+      return;
+    }
+    raw = tpl.config as Record<string, unknown>;
+  } else if (config) {
+    raw = config;
+  } else {
+    res.status(400).json({ error: "templateId or config required" });
+    return;
+  }
+
+  const safe = stripMachineLocal(raw);
+  const reached = broadcastToDevice(device.id, { type: "kds_config_push", payload: { config: safe } });
+
+  res.json({ ok: true, reached, deviceName: device.name, deviceId: device.id });
 });
 
 export default router;

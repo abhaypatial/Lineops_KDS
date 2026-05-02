@@ -7,3 +7,4 @@ export * from "./api_keys";
 export * from "./integration_events";
 export * from "./outbound_webhooks";
 export * from "./kds_config_templates";
+export * from "./kds_station_configs";

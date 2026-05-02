@@ -31,6 +31,15 @@ export function stripMachineLocal(incoming: Record<string, unknown>): Record<str
   );
 }
 
+export function getKdsDeviceId(): string {
+  let id = localStorage.getItem("kds_device_id");
+  if (!id) {
+    id = "kds-" + Math.random().toString(36).substring(2, 10) + "-" + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem("kds_device_id", id);
+  }
+  return id;
+}
+
 export function useKdsWebSocket(
   storeId: string | undefined,
   queryClient: QueryClient,
@@ -56,6 +65,8 @@ export function useKdsWebSocket(
 
       ws.current.onopen = () => {
         backoff.current = 1000;
+        const deviceId = getKdsDeviceId();
+        ws.current?.send(JSON.stringify({ type: "register", payload: { deviceId } }));
         toast.success("Connected to LineOps KDS", { id: "ws-status", duration: 2000 });
       };
 

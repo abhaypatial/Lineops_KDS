@@ -11,6 +11,7 @@ import webhooksRouter     from "./webhooks";
 import integrationsRouter from "./integrations";
 import testRouter         from "./test";
 import kdsConfigRouter    from "./kds-config";
+import stationConfigsRouter from "./station-configs";
 
 const router: IRouter = Router();
 
@@ -18,6 +19,7 @@ router.use(healthRouter);
 router.use(enterprisesRouter);
 router.use(storesRouter);
 router.use(stationsRouter);
+router.use(stationConfigsRouter);
 router.use(devicesRouter);
 router.use(ordersRouter);
 router.use(dashboardRouter);

@@ -103,8 +103,9 @@ function Cmd-Help {
     Write-Host "    kds.ps1 orders add          " -NoNewline -ForegroundColor Cyan; Write-Host "Inject a test order"
     Write-Host ""
     Write-Host "  Stations / Devices" -ForegroundColor White
-    Write-Host "    kds.ps1 stations            " -NoNewline -ForegroundColor Cyan; Write-Host "List kitchen stations"
-    Write-Host "    kds.ps1 devices             " -NoNewline -ForegroundColor Cyan; Write-Host "List registered KDS displays"
+    Write-Host "    kds.ps1 stations                 " -NoNewline -ForegroundColor Cyan; Write-Host "List kitchen stations"
+    Write-Host "    kds.ps1 devices                  " -NoNewline -ForegroundColor Cyan; Write-Host "List registered KDS displays"
+    Write-Host "    kds.ps1 devices push <id> <tplId>" -NoNewline -ForegroundColor Cyan; Write-Host " Push template to one display"
     Write-Host ""
     Write-Host "  Config Templates" -ForegroundColor White
     Write-Host "    kds.ps1 templates           " -NoNewline -ForegroundColor Cyan; Write-Host "List saved display configs"
@@ -257,27 +258,50 @@ function Cmd-Stations {
 }
 
 function Cmd-Devices {
-    $resp = Api GET /api/devices
-    $list = @($resp.devices)
-    if ($list.Count -eq 0) {
-        Info "No devices registered yet."
-        Write-Host "  -> Devices auto-register when a KDS display first connects." -ForegroundColor DarkGray
-        Write-Host ""
-        return
+    switch ($Sub) {
+        "push" {
+            if (-not $Arg1 -or -not $Arg2) { Die "Usage: kds.ps1 devices push <deviceId> <templateId>" }
+            $result = Api POST "/api/devices/$Arg1/push-config" @{ templateId = $Arg2 }
+            if ($result.reached) {
+                Ok "Config pushed to '$($result.deviceName)' (device online)"
+            } else {
+                Warn "Config queued for '$($result.deviceName)' -- device is not currently connected"
+            }
+            Write-Host "  Machine-local settings (zoom, bump bar, keys) are preserved." -ForegroundColor DarkGray
+        }
+        default {
+            $resp = Api GET /api/devices
+            $list = @($resp)
+            if ($list.Count -eq 0) {
+                Info "No devices registered yet."
+                Write-Host "  -> Devices auto-register when a KDS display first connects." -ForegroundColor DarkGray
+                Write-Host ""
+                return
+            }
+            $onlineResp = $null
+            try { $onlineResp = Api GET /api/devices/online } catch {}
+            $onlineIds = if ($onlineResp) { @($onlineResp.deviceIds) } else { @() }
+
+            Write-Host ""
+            Hr
+            Write-Host ("  " + (Pad 20 "DEVICE") + (Pad 12 "STATUS") + (Pad 10 "WS") + "ID") -ForegroundColor White
+            Hr
+            foreach ($d in $list) {
+                $status = $d.status ?? "offline"
+                $scolor = if ($status -eq "online") { "Green" } else { "DarkGray" }
+                $ws     = if ($onlineIds -contains $d.id) { "● live" } else { "○ idle" }
+                $wcolor = if ($onlineIds -contains $d.id) { "Green" } else { "DarkGray" }
+                Write-Host ("  " + (Pad 20 ($d.name ?? "Unnamed"))) -NoNewline
+                Write-Host (Pad 12 $status) -NoNewline -ForegroundColor $scolor
+                Write-Host (Pad 10 $ws) -NoNewline -ForegroundColor $wcolor
+                Write-Host $d.id -ForegroundColor DarkGray
+            }
+            Hr
+            Write-Host ""
+            Write-Host "  kds.ps1 devices push <deviceId> <templateId>   push config to one display" -ForegroundColor DarkGray
+            Write-Host ""
+        }
     }
-    Write-Host ""
-    Hr
-    Write-Host ("  " + (Pad 20 "DEVICE") + (Pad 18 "IP") + (Pad 12 "STATUS") + (Pad 22 "TEMPLATE") + "LAST SEEN") -ForegroundColor White
-    Hr
-    foreach ($d in $list) {
-        $status = if ($d.isOnline) { "● online" } else { "○ offline" }
-        $color  = if ($d.isOnline) { "Green" } else { "DarkGray" }
-        Write-Host ("  " + (Pad 20 ($d.name ?? "Unnamed")) + (Pad 18 ($d.ipAddress ?? "--"))) -NoNewline
-        Write-Host (Pad 12 $status) -NoNewline -ForegroundColor $color
-        Write-Host ((Pad 22 ($d.templateName ?? "--")) + ($d.lastSeenAt ?? "--")) -ForegroundColor DarkGray
-    }
-    Hr
-    Write-Host ""
 }
 
 function Cmd-Integrations {
