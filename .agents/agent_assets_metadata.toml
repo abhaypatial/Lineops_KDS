@@ -6,3 +6,9 @@ id = "3nvtFIcYZRMcdIkYE0w7G"
 uri = "file://lineops-kds-v1.0.0.zip"
 type = "unspecified"
 title = "LineOps KDS v1.0.0 — Final Release"
+
+[[outputs]]
+id = "_CzZfkTss3p1bPoTjQc2r"
+uri = "file://FEATURES.md"
+type = "text"
+title = "LineOps KDS — Feature Reference"

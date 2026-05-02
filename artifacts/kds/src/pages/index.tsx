@@ -16,6 +16,7 @@ type KdsMode       = "multi" | "single" | "expo";
 type Density       = "compact" | "normal" | "comfortable";
 type FontSize      = "sm" | "md" | "lg";
 type BumpBarPreset = "keyboard" | "logic-controls" | "pos-x" | "mmf" | "custom";
+type StationChime  = ChimeType | "none";
 
 type DisplayItem = {
   id: string; qty: number; name: string;
@@ -36,6 +37,7 @@ type KdsConfig = {
   showNotes: boolean; showAllergens: boolean; showStationColors: boolean;
   showModifierColors: boolean; showItemCompletion: boolean; showUrgencyBar: boolean;
   soundEnabled: boolean; soundVolume: number; soundChime: ChimeType;
+  stationChimes: Record<Station, StationChime>;
   bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
   bumpKey: string; prevKey: string; nextKey: string;
 };
@@ -84,6 +86,7 @@ const DEFAULT_CFG: KdsConfig = {
   showNotes: true, showAllergens: true, showStationColors: true,
   showModifierColors: true, showItemCompletion: true, showUrgencyBar: true,
   soundEnabled: true, soundVolume: 0.7, soundChime: "ding",
+  stationChimes: { grill: "ding", fryer: "blip", cold: "bell", dessert: "bell", other: "ding" },
   bumpBarEnabled: false, bumpBarPreset: "keyboard",
   bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
 };
@@ -622,18 +625,6 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
               </button>
             </div>
             {cfg.soundEnabled && (<>
-              <div className="flex items-center justify-between pl-3 border-l border-white/[0.07]">
-                <span className="text-xs text-white/40">Chime</span>
-                <div className="flex gap-1">
-                  {(["ding", "bell", "blip"] as ChimeType[]).map(t => (
-                    <button key={t} onClick={() => { set("soundChime", t); playChime(t, cfg.soundVolume); }}
-                      className="h-6 px-2 rounded text-[9px] font-bold border capitalize transition-all"
-                      style={{ background: cfg.soundChime === t ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.soundChime === t ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.soundChime === t ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
               <div className="flex items-center gap-2 pl-3 border-l border-white/[0.07]">
                 <span className="text-[10px] text-white/40 shrink-0">Volume</span>
                 <input type="range" min={0} max={1} step={0.05}
@@ -642,6 +633,33 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                   onMouseUp={() => playChime(cfg.soundChime, cfg.soundVolume)}
                   className="flex-1 h-1 cursor-pointer accent-amber-500" />
                 <span className="text-[10px] text-white/30 w-7 text-right">{Math.round(cfg.soundVolume * 100)}%</span>
+              </div>
+              <div className="flex flex-col gap-1 pl-3 border-l border-white/[0.07]">
+                <span className="text-[10px] text-white/30 mb-0.5">Per-station chimes</span>
+                {(Object.entries(STATION_META) as [Station, typeof STATION_META[Station]][]).map(([station, meta]) => (
+                  <div key={station} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
+                      <span className="text-[10px] text-white/45 truncate">{meta.label}</span>
+                    </div>
+                    <div className="flex gap-0.5 shrink-0">
+                      {(["ding", "bell", "blip", "none"] as (ChimeType | "none")[]).map(t => {
+                        const active = cfg.stationChimes[station] === t;
+                        return (
+                          <button key={t}
+                            onClick={() => {
+                              setCfg(c => ({ ...c, stationChimes: { ...c.stationChimes, [station]: t } }));
+                              if (t !== "none") playChime(t as ChimeType, cfg.soundVolume);
+                            }}
+                            className="h-5 px-1.5 rounded text-[8px] font-bold border capitalize transition-all"
+                            style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.04)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.07)", color: active ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+                            {t === "none" ? "off" : t}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </>)}
           </div>
@@ -718,8 +736,10 @@ export default function KdsDisplay() {
   const [injecting, setInjecting] = useState(false);
 
   const { playChime } = useOrderChime();
-  const cfgRef        = useRef(cfg);
-  cfgRef.current      = cfg;
+  const cfgRef           = useRef(cfg);
+  cfgRef.current         = cfg;
+  const prevOrderIdsRef  = useRef<Set<string>>(new Set());
+  const isInitialLoadRef = useRef(true);
 
   // ── Feature flags ─────────────────────────────────────────────────────────
   const { data: kdsConfig } = useQuery<{ testOrdersEnabled: boolean }>({
@@ -747,11 +767,8 @@ export default function KdsDisplay() {
     try { localStorage.setItem("kds_cfg", JSON.stringify(cfg)); } catch {}
   }, [cfg]);
 
-  useKdsWebSocket(storeId, queryClient, () => {
-    if (cfgRef.current.soundEnabled) {
-      playChime(cfgRef.current.soundChime, cfgRef.current.soundVolume);
-    }
-  });
+  // onNewOrder is handled by the allOrders effect below (has station info)
+  useKdsWebSocket(storeId, queryClient);
 
   // Build a stationId → Station slug map from DB stations
   const stationSlugMap = new Map<string, Station>(
@@ -865,6 +882,38 @@ export default function KdsDisplay() {
     rafId = requestAnimationFrame(poll);
     return () => cancelAnimationFrame(rafId);
   }, [cfg.bumpBarEnabled, focusedOrder, focusedId, visibleOrders, bump]);
+
+  // ── Per-station sound alerts ───────────────────────────────────────────────
+  useEffect(() => {
+    const currentIds = new Set(allOrders.map(o => o.id));
+
+    if (isInitialLoadRef.current) {
+      prevOrderIdsRef.current = currentIds;
+      if (allOrders.length > 0) isInitialLoadRef.current = false;
+      return;
+    }
+
+    const newOrders = allOrders.filter(o => !prevOrderIdsRef.current.has(o.id));
+    prevOrderIdsRef.current = currentIds;
+
+    if (newOrders.length === 0 || !cfgRef.current.soundEnabled) return;
+
+    const stations = new Set(newOrders.flatMap(o => o.items.map(it => it.station)));
+
+    const chimesPlayed = new Set<string>();
+    const toPlay: ChimeType[] = [];
+
+    for (const station of STATION_ORDER) {
+      if (!stations.has(station as Station)) continue;
+      const chime = cfgRef.current.stationChimes[station as Station];
+      if (chime === "none") continue;
+      if (!chimesPlayed.has(chime)) { toPlay.push(chime); chimesPlayed.add(chime); }
+    }
+
+    if (toPlay.length === 0) toPlay.push(cfgRef.current.soundChime);
+
+    toPlay.forEach((chime, i) => setTimeout(() => playChime(chime, cfgRef.current.soundVolume), i * 350));
+  }, [allOrders, playChime]);
 
   // ── Test order injection ──────────────────────────────────────────────────
   async function injectTestOrder() {
