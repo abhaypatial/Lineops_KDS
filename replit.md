@@ -164,3 +164,6 @@ kds start / stop / restart / update
 - `vite.config.ts` must not throw when `PORT`/`BASE_PATH` are unset — Docker build stages run without them; use defaults instead
 - CORS: `app.use(cors())` is wide-open by default. For locked-down deployments, set `CORS_ORIGIN` env var to restrict origins
 - Device status (`online`/`offline`) is now kept in sync in the DB automatically on every WS connect/disconnect
+- Rate limiting: `posWebhookLimiter` (500/min) on `/api/integrations`, `apiLimiter` (300/min) on all `/api` — middleware in `artifacts/api-server/src/middleware/rate-limit.ts`
+- Concurrent POS orders: `createOrderFromNormalised` uses `db.transaction()` + `.onConflictDoNothing()` with the `orders_store_pos_order_uniq` partial unique index — handles 20+ simultaneous orders and duplicate webhooks safely
+- Docker build: `Dockerfile.web` builder uses `node:24-slim` (not Alpine) because `pnpm-workspace.yaml` excludes `@rollup/rollup-linux-x64-musl`; Alpine's musl libc cannot load the glibc rollup binary

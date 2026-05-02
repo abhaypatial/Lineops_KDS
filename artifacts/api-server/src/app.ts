@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { adminAuth } from "./middleware/admin-auth";
+import { apiLimiter, posWebhookLimiter } from "./middleware/rate-limit";
 
 const app: Express = express();
 
@@ -44,6 +45,12 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+// POS webhook routes get a generous limit to allow bursts (e.g. 20 simultaneous
+// orders from a POS system). Other API routes use a moderate general limit.
+app.use("/api/integrations", posWebhookLimiter);
+app.use("/api", apiLimiter);
 
 // ── Admin password protection (optional — enabled by ADMIN_PASSWORD env var) ──
 app.use("/api", adminAuth);

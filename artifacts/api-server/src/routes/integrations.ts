@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { db, ordersTable, orderItemsTable, integrationEventsTable, storesTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { broadcast } from "../lib/ws";
 import { fireWebhooks } from "../lib/outboundWebhook";
 import { requireApiKey, type AuthedRequest } from "../lib/apiKey";
@@ -23,45 +23,82 @@ import { z } from "zod";
 const router = Router();
 
 // ── Shared: persist a normalised order into the DB ─────────────────────────
+//
+// Handles concurrent bursts (e.g. 20 simultaneous POS orders) correctly:
+//  1. Wraps order + items in a single DB transaction — partial inserts are
+//     impossible even if the process crashes mid-flight.
+//  2. Uses ON CONFLICT DO NOTHING against the unique partial index
+//     `orders_store_pos_order_uniq` (store_id, pos_order_id WHERE NOT NULL)
+//     to make POS webhook delivery idempotent at the DB level.  Duplicate
+//     webhooks are silently deduplicated without broadcasting again.
 
 async function createOrderFromNormalised(
   normalised: NormalisedOrder,
   storeId: string,
 ): Promise<typeof ordersTable.$inferSelect> {
-  const orderId = randomUUID();
-  const [order] = await db.insert(ordersTable).values({
-    id:           orderId,
-    storeId,
-    orderNumber:  normalised.orderNumber,
-    customerName: normalised.customerName ?? null,
-    notes:        normalised.notes ?? null,
-    priority:     normalised.priority,
-    status:       "pending",
-    posOrderId:   normalised.externalId,
-  }).returning();
+  const { order, isDuplicate } = await db.transaction(async (tx) => {
+    const orderId = randomUUID();
 
-  await db.insert(orderItemsTable).values(
-    normalised.items.map((item, idx) => ({
-      id:        randomUUID(),
-      orderId,
-      stationId: item.stationId,
-      name:      item.name,
-      quantity:  item.quantity,
-      modifiers: item.modifiers ?? [],
-      notes:     item.notes ?? null,
-      status:    "pending" as const,
-      sortOrder: idx,
-    })),
-  );
+    // Atomic insert — ON CONFLICT DO NOTHING handles duplicate posOrderId
+    // under concurrent requests without a race condition.
+    const [inserted] = await tx
+      .insert(ordersTable)
+      .values({
+        id:           orderId,
+        storeId,
+        orderNumber:  normalised.orderNumber,
+        customerName: normalised.customerName ?? null,
+        notes:        normalised.notes ?? null,
+        priority:     normalised.priority,
+        status:       "pending",
+        posOrderId:   normalised.externalId ?? null,
+      })
+      .onConflictDoNothing()
+      .returning();
 
-  broadcast({
-    type:    "order_created",
-    payload: { orderId, storeId, orderNumber: normalised.orderNumber },
+    if (!inserted) {
+      // Duplicate delivery — return the existing order without re-broadcasting.
+      const [existing] = await tx
+        .select()
+        .from(ordersTable)
+        .where(
+          and(
+            eq(ordersTable.storeId, storeId),
+            eq(ordersTable.posOrderId, normalised.externalId!),
+          ),
+        )
+        .limit(1);
+      return { order: existing!, isDuplicate: true };
+    }
+
+    // Insert all items atomically in the same transaction.
+    await tx.insert(orderItemsTable).values(
+      normalised.items.map((item, idx) => ({
+        id:        randomUUID(),
+        orderId:   inserted.id,
+        stationId: item.stationId,
+        name:      item.name,
+        quantity:  item.quantity,
+        modifiers: item.modifiers ?? [],
+        notes:     item.notes ?? null,
+        status:    "pending" as const,
+        sortOrder: idx,
+      })),
+    );
+
+    return { order: inserted, isDuplicate: false };
   });
 
-  await fireWebhooks("order.created", storeId, {
-    orderId, orderNumber: normalised.orderNumber, source: "pos_integration",
-  });
+  if (!isDuplicate) {
+    broadcast({
+      type:    "order_created",
+      payload: { orderId: order.id, storeId, orderNumber: order.orderNumber },
+    });
+
+    await fireWebhooks("order.created", storeId, {
+      orderId: order.id, orderNumber: order.orderNumber, source: "pos_integration",
+    });
+  }
 
   return order;
 }

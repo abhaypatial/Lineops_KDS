@@ -136,6 +136,39 @@ after sending a response to prevent "headers already sent" errors.
 
 ---
 
+## Rate limiting
+
+Three tiers are applied in `artifacts/api-server/src/app.ts` via `express-rate-limit`
+(middleware in `artifacts/api-server/src/middleware/rate-limit.ts`):
+
+| Limiter | Path | Max | Window | Purpose |
+|---|---|---|---|---|
+| `posWebhookLimiter` | `/api/integrations/*` | 500 | 60 s | Allow large bursts from POS systems |
+| `apiLimiter` | `/api/*` | 300 | 60 s | General protection |
+| `strictLimiter` | (imported, not mounted by default) | 60 | 60 s | Available for sensitive write routes |
+
+All limiters are no-ops when `NODE_ENV=test`.
+
+---
+
+## Concurrent POS order handling
+
+`createOrderFromNormalised()` in `artifacts/api-server/src/routes/integrations.ts`
+is safe under 20+ simultaneous requests:
+
+1. **Transaction** — order row + all item rows are inserted inside a single
+   `db.transaction()`. A crash between the two inserts cannot produce a partial order.
+2. **Idempotency** — `ordersTable` has a partial unique index
+   `orders_store_pos_order_uniq ON (store_id, pos_order_id) WHERE pos_order_id IS NOT NULL`.
+   The insert uses `.onConflictDoNothing()` so duplicate webhook deliveries are silently
+   deduplicated at the DB level, with no broadcast or outbound webhook re-fired.
+3. **Connection pooling** — `pg.Pool` (default 10 connections) queues excess requests;
+   all complete without errors, just in batches.
+
+Do NOT remove the `onConflictDoNothing()` or `.transaction()` wrappers.
+
+---
+
 ## CI / Docker
 
 CI runs in `.github/workflows/ci.yml`:
@@ -145,8 +178,12 @@ CI runs in `.github/workflows/ci.yml`:
 4. Docker build for both images
 
 Docker images:
-- `docker/Dockerfile.api` → API server (Node 24 Alpine, port 3000)
-- `docker/Dockerfile.web` → KDS frontend (Nginx, port 80)
+- `docker/Dockerfile.api` → API server (Node 24 **Alpine**, port 3000)
+- `docker/Dockerfile.web` → KDS frontend builder uses **`node:24-slim`** (Debian/glibc),
+  runner uses `nginx:1.27-alpine`.  The builder must NOT use Alpine because
+  `pnpm-workspace.yaml` excludes `@rollup/rollup-linux-x64-musl`, so rollup's native
+  binary is unavailable on musl.  The `node:24-slim` image uses glibc and loads
+  `@rollup/rollup-linux-x64-gnu` which is present in the lockfile.
 
 Both Dockerfiles copy `package.json` stubs for all workspace packages to avoid
 `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`. If you add a new workspace package, add its
@@ -163,3 +200,5 @@ Both Dockerfiles copy `package.json` stubs for all workspace packages to avoid
 - Calling `broadcast()` instead of `broadcastToDevice()` in targeted-push routes.
 - Hardcoding `PORT` in `vite.config.ts` — it breaks Docker build stages where PORT is unset.
 - Forgetting to `return` after `res.status(...).json(...)` in async route handlers.
+- Removing `.onConflictDoNothing()` or `db.transaction()` from `createOrderFromNormalised` — they prevent duplicate orders under concurrent POS bursts.
+- Using `node:24-alpine` as the Dockerfile.web builder — rollup's musl binary is excluded in `pnpm-workspace.yaml`; use `node:24-slim` (Debian/glibc) instead.
