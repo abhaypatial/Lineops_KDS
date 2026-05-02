@@ -30,7 +30,7 @@ export function useKdsWebSocket(storeId: string | undefined, queryClient: QueryC
       ws.current.onopen = () => {
         console.log("KDS WebSocket connected");
         backoff.current = 1000;
-        toast.success("Connected to KDS Real-time Server", { id: "ws-status", duration: 2000 });
+        toast.success("Connected to LineOps KDS", { id: "ws-status", duration: 2000 });
       };
 
       ws.current.onmessage = (event) => {
@@ -58,7 +58,7 @@ export function useKdsWebSocket(storeId: string | undefined, queryClient: QueryC
 
       ws.current.onclose = () => {
         console.log("KDS WebSocket disconnected");
-        toast.error("Disconnected from KDS Server. Reconnecting...", { id: "ws-status", duration: Infinity });
+        toast.error("Disconnected from LineOps KDS. Reconnecting...", { id: "ws-status", duration: Infinity });
         
         // Exponential backoff
         reconnectTimeout.current = setTimeout(() => {

@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 #  KDS Linux Installer
 #
-#  Installs the Kitchen Display System on any Linux machine with Docker.
+#  Installs the LineOps KDS on any Linux machine with Docker.
 #  Run as root or with sudo:
 #
 #    curl -fsSL https://your-domain/install.sh | sudo bash
@@ -30,7 +30,7 @@ section() { echo ""; echo -e "${WHT}── $* ${RST}"; echo ""; }
 
 [[ "$(id -u)" -eq 0 ]] || die "Please run as root: sudo bash install.sh"
 
-section "KDS Installer — Kitchen Display System"
+section "KDS Installer — LineOps KDS"
 
 # ── System check ──────────────────────────────────────────────────────────────
 section "Checking system requirements"

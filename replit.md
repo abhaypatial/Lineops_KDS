@@ -1,8 +1,8 @@
-# Kitchen Display System (KDS)
+# LineOps KDS
 
 ## Overview
 
-Production-ready multi-tenant Kitchen Display System built as a pnpm monorepo. Real-time order management for commercial kitchens with WebSocket push updates, bump bar keyboard navigation, and a manager dashboard.
+Production-ready multi-tenant LineOps KDS built as a pnpm monorepo. Real-time order management for commercial kitchens with WebSocket push updates, bump bar keyboard navigation, and a manager dashboard.
 
 ## Architecture
 

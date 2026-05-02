@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-#  kds — Kitchen Display System CLI
+#  kds — LineOps KDS CLI
 #  Manages the KDS backend and provides quick order/station/device commands.
 #
 #  Usage:  kds <command> [args]
@@ -62,7 +62,7 @@ pad() { printf "%-${1}s" "$2"; }
 
 cmd_help() {
   echo ""
-  echo -e "  ${WHT}kds${RST} — Kitchen Display System CLI"
+  echo -e "  ${WHT}kds${RST} — LineOps KDS CLI"
   echo ""
   echo -e "  ${WHT}System${RST}"
   echo -e "    ${CYN}kds status${RST}              Show live system overview"
