@@ -5,6 +5,16 @@
  * Values are initialised from environment variables on startup and reset to
  * those defaults on every restart.  For permanent changes, edit the .env file.
  */
+
+export interface SoundConfig {
+  /** Default chime type for new orders: "ding" | "beep" | "blip" | "chime" */
+  defaultChime: string;
+  /** Per-station chime overrides keyed by station ID, e.g. { "grill": "ding", "fryer": "blip" } */
+  stationChimes: Record<string, string>;
+  /** Master volume 0–1 */
+  volume: number;
+}
+
 export const runtimeConfig = {
   /** Whether the test-order injection endpoint is enabled. */
   testOrdersEnabled: process.env["ALLOW_TEST_ORDERS"] !== "false",
@@ -17,6 +27,14 @@ export const runtimeConfig = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
+
+  /**
+   * Optional KDS sound config pushed by an external management system via
+   * POST /api/admin/settings.  When set, the KDS frontend reads it from
+   * GET /api/config and merges it over the device-local settings.
+   * null = let each device keep its own localStorage preferences.
+   */
+  soundConfig: null as SoundConfig | null,
 };
 
 export type RuntimeConfig = typeof runtimeConfig;
@@ -27,5 +45,8 @@ export function applySettings(patch: Partial<RuntimeConfig>): void {
   }
   if (Array.isArray(patch.hiddenIntegrations)) {
     runtimeConfig.hiddenIntegrations = patch.hiddenIntegrations.map(String);
+  }
+  if (patch.soundConfig !== undefined) {
+    runtimeConfig.soundConfig = patch.soundConfig;
   }
 }

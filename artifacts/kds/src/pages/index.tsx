@@ -95,7 +95,7 @@ const DEFAULT_CFG: KdsConfig = {
   showNotes: true, showAllergens: true, showStationColors: true,
   showModifierColors: true, showItemCompletion: true, showUrgencyBar: true,
   soundEnabled: true, soundVolume: 0.7, soundChime: "ding",
-  stationChimes: { grill: "ding", fryer: "blip", cold: "bell", dessert: "bell", other: "ding" },
+  stationChimes: { grill: "ding", fryer: "blip", cold: "beep", dessert: "beep", other: "ding" },
   escalationEnabled: true,
   escalationWarnChime: "chime" as ChimeType,
   escalationAlertChime: "chime" as ChimeType,
@@ -579,7 +579,7 @@ function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
         <div className="flex items-center justify-between">
           <span className="text-[9px] text-white/30 uppercase tracking-wider">Columns</span>
           <div className="flex gap-1">
-            {[1, 2, 3, 4].map(n => (
+            {[1, 2, 3, 4, 5, 6].map(n => (
               <button key={n} onClick={() => set("numCols", n)}
                 className="w-6 h-6 rounded text-[10px] font-bold border transition-all"
                 style={{ background: cfg.numCols === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.numCols === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.numCols === n ? "#f59e0b" : "rgba(255,255,255,0.45)" }}>
@@ -755,7 +755,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/55">Grid columns</span>
               <div className="flex gap-1">
-                {[1, 2, 3, 4].map(n => (
+                {[1, 2, 3, 4, 5, 6].map(n => (
                   <button key={n} onClick={() => set("numCols", n)}
                     className="w-7 h-7 rounded text-xs font-bold border transition-all"
                     style={{ background: cfg.numCols === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.numCols === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.numCols === n ? "#f59e0b" : "rgba(255,255,255,0.45)" }}>
@@ -875,7 +875,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-white/40">9 min chime</span>
                   <div className="flex gap-0.5">
-                    {(["chime", "ding", "bell", "blip"] as ChimeType[]).map(t => {
+                    {(["chime", "ding", "beep", "blip"] as ChimeType[]).map(t => {
                       const active = cfg.escalationWarnChime === t;
                       return (
                         <button key={t}
@@ -891,7 +891,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-white/40">15 min chime</span>
                   <div className="flex gap-0.5">
-                    {(["chime", "ding", "bell", "blip"] as ChimeType[]).map(t => {
+                    {(["chime", "ding", "beep", "blip"] as ChimeType[]).map(t => {
                       const active = cfg.escalationAlertChime === t;
                       return (
                         <button key={t}
@@ -904,7 +904,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                     })}
                   </div>
                 </div>
-                <span className="text-[9px] text-white/20 leading-relaxed">Border flash shows throughout · "chime" = soft soothing bell</span>
+                <span className="text-[9px] text-white/20 leading-relaxed">Border flash shows throughout · "chime" = soft soothing tone · "beep" = classic KDS double-beep</span>
               </div>
             )}
             <div className="flex items-center justify-between">
@@ -935,7 +935,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                       <span className="text-[10px] text-white/45 truncate">{meta.label}</span>
                     </div>
                     <div className="flex gap-0.5 shrink-0">
-                      {(["ding", "bell", "blip", "none"] as (ChimeType | "none")[]).map(t => {
+                      {(["ding", "beep", "blip", "none"] as (ChimeType | "none")[]).map(t => {
                         const active = cfg.stationChimes[station] === t;
                         return (
                           <button key={t}
@@ -1015,10 +1015,33 @@ export default function KdsDisplay() {
   const [cfg, setCfg]         = useState<KdsConfig>(() => {
     try {
       const saved = localStorage.getItem("kds_cfg");
-      if (saved) return { ...DEFAULT_CFG, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<KdsConfig>;
+        // Migrate: old "bell" chime type → "beep"
+        const mc = (v: unknown) => v === "bell" ? "beep" : v;
+        if (parsed.soundChime)           parsed.soundChime           = mc(parsed.soundChime) as ChimeType;
+        if (parsed.escalationWarnChime)  parsed.escalationWarnChime  = mc(parsed.escalationWarnChime) as ChimeType;
+        if (parsed.escalationAlertChime) parsed.escalationAlertChime = mc(parsed.escalationAlertChime) as ChimeType;
+        if (parsed.stationChimes) {
+          const sc = parsed.stationChimes as Record<string, unknown>;
+          for (const k of Object.keys(sc)) sc[k] = mc(sc[k]);
+        }
+        return { ...DEFAULT_CFG, ...parsed };
+      }
     } catch {}
     return DEFAULT_CFG;
   });
+  // ── Resolution-aware zoom ────────────────────────────────────────────────────
+  // Scale the entire UI relative to a 1920 px baseline so the KDS looks
+  // correct on 1280 p displays, 4K monitors, and everything in between.
+  const [kdsZoom, setKdsZoom] = useState(() =>
+    Math.min(2.2, Math.max(0.55, window.innerWidth / 1920)));
+  useEffect(() => {
+    const onResize = () =>
+      setKdsZoom(Math.min(2.2, Math.max(0.55, window.innerWidth / 1920)));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [activeTab, setTab]   = useState<string>("All");  // "All" | DB station ID
   const [focusedId, setFocus] = useState<string | null>(null);
   const [doneItems, setDone]  = useState<Set<string>>(new Set());
@@ -1333,7 +1356,7 @@ export default function KdsDisplay() {
 
   return (
     <div className="h-[100dvh] bg-[#0a0a0b] text-white flex flex-col select-none overflow-hidden relative"
-      style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
+      style={{ fontFamily: "'Inter',system-ui,sans-serif", zoom: kdsZoom }}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="h-12 flex items-center justify-between px-4 border-b border-white/[0.07] shrink-0 bg-[#0d0d10]">
