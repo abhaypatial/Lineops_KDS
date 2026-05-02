@@ -44,6 +44,8 @@ type KdsConfig = {
   escalationAlertChime: ChimeType;
   showStats: boolean;
   showFooter: boolean;
+  showNowServing: boolean;
+  nowServingExpirySec: number;
   expoSendMode: ExpoSendMode;
   bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
   bumpKey: string; prevKey: string; nextKey: string;
@@ -99,6 +101,8 @@ const DEFAULT_CFG: KdsConfig = {
   escalationAlertChime: "chime" as ChimeType,
   showStats: false,
   showFooter: true,
+  showNowServing: true,
+  nowServingExpirySec: 45,
   expoSendMode: "expo_bump" as ExpoSendMode,
   bumpBarEnabled: false, bumpBarPreset: "keyboard",
   bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
@@ -604,6 +608,15 @@ function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
         </div>
 
         <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Now Serving</span>
+          <button onClick={() => set("showNowServing", !cfg.showNowServing)}
+            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+            style={{ background: cfg.showNowServing ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+            <span className="w-3 h-3 rounded-full bg-white transition-all"
+              style={{ transform: cfg.showNowServing ? "translateX(16px)" : "translateX(0)" }} />
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
           <span className="text-[9px] text-white/30 uppercase tracking-wider">Stats Strip</span>
           <button onClick={() => set("showStats", !cfg.showStats)}
             className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
@@ -803,6 +816,30 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Now Serving */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Now Serving Strip</p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/55">Show strip</span>
+              <button onClick={() => set("showNowServing", !cfg.showNowServing)}
+                className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+                style={{ background: cfg.showNowServing ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+                <span className="w-3 h-3 rounded-full bg-white transition-all"
+                  style={{ transform: cfg.showNowServing ? "translateX(16px)" : "translateX(0)" }} />
+              </button>
+            </div>
+            {cfg.showNowServing && (
+              <div className="flex items-center gap-2 pl-3 border-l border-white/[0.07]">
+                <span className="text-[10px] text-white/40 shrink-0">Auto-dismiss</span>
+                <input type="range" min={15} max={120} step={5}
+                  value={cfg.nowServingExpirySec}
+                  onChange={e => set("nowServingExpirySec", parseInt(e.target.value))}
+                  className="flex-1 h-1 cursor-pointer accent-amber-500" />
+                <span className="text-[10px] text-white/30 w-8 text-right shrink-0">{cfg.nowServingExpirySec}s</span>
+              </div>
+            )}
           </div>
 
           {/* Content toggles */}
@@ -1117,6 +1154,10 @@ export default function KdsDisplay() {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (visibleOrders.length === 0) return;
+      // C key: clear Now Serving strip
+      if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setNowServing([]); e.preventDefault(); return;
+      }
       // Digit keys 1–9: jump directly to nth order
       if (/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const target = visibleOrders[parseInt(e.key) - 1];
@@ -1235,10 +1276,15 @@ export default function KdsDisplay() {
     }
   }, [doneItems, allOrders, bump]);
 
-  // ── Now Serving auto-expire ────────────────────────────────────────────────
+  // ── Now Serving auto-expire + clock tick ──────────────────────────────────
+  const [, setNsTick] = useState(0);
   useEffect(() => {
     if (nowServingOrders.length === 0) return;
-    const t = setInterval(() => setNowServing(prev => prev.filter(ns => Date.now() - ns.firedAt < 45_000)), 2000);
+    const expMs = cfgRef.current.nowServingExpirySec * 1000;
+    const t = setInterval(() => {
+      setNowServing(prev => prev.filter(ns => Date.now() - ns.firedAt < expMs));
+      setNsTick(n => n + 1);
+    }, 1000);
     return () => clearInterval(t);
   }, [nowServingOrders.length]);
 
@@ -1448,28 +1494,61 @@ export default function KdsDisplay() {
       )}
 
       {/* ── Now Serving strip (all modes) ────────────────────────────────── */}
-      {nowServingOrders.length > 0 && (
-        <div className="mx-4 mb-2 px-3 py-2 rounded-xl border flex items-center gap-3 shrink-0"
-          style={{ borderColor: "rgba(34,197,94,0.25)", background: "rgba(34,197,94,0.05)" }}>
-          <span className="text-[10px] font-black uppercase tracking-widest shrink-0"
-            style={{ color: "#4ade80", animation: "pulse 1.5s ease-in-out infinite" }}>
-            NOW SERVING
-          </span>
-          <div className="flex gap-2 flex-wrap">
-            {nowServingOrders.map(ns => (
-              <div key={ns.order.id} className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", color: "#86efac" }}>
-                #{ns.order.number}
-                <span className="text-white/25 font-normal text-[10px] ml-1">{ns.order.customer}</span>
-                <button
-                  onClick={() => recallOrder(ns.order.id)}
-                  className="ml-0.5 flex items-center justify-center w-4 h-4 rounded-full transition-all hover:bg-white/10"
-                  style={{ color: "rgba(134,239,172,0.6)", fontSize: 10 }}
-                  title="Recall order — bring it back to the display">
-                  ↩
-                </button>
-              </div>
-            ))}
+      {cfg.showNowServing && nowServingOrders.length > 0 && (
+        <div className="mx-3 mb-2 rounded-xl overflow-hidden shrink-0"
+          style={{
+            background: "linear-gradient(135deg,rgba(22,101,52,0.18) 0%,rgba(20,83,45,0.10) 100%)",
+            border: "1px solid rgba(34,197,94,0.2)",
+            boxShadow: "0 0 0 1px rgba(34,197,94,0.04),inset 0 1px 0 rgba(34,197,94,0.1)",
+          }}>
+          <div style={{ height: 2, background: "linear-gradient(90deg,rgba(74,222,128,0.9) 0%,rgba(74,222,128,0.18) 55%,transparent 100%)" }} />
+          <div className="flex items-center gap-3 px-3 py-2">
+            {/* Label */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="w-2 h-2 rounded-full"
+                style={{ background: "#4ade80", animation: "pulse 1.2s ease-in-out infinite", boxShadow: "0 0 7px rgba(74,222,128,0.7)" }} />
+              <span className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: "#4ade80" }}>Now Serving</span>
+            </div>
+            <div className="w-px self-stretch bg-white/[0.07] shrink-0" />
+            {/* Chips */}
+            <div className="flex-1 flex gap-1.5 flex-wrap items-center min-w-0">
+              {nowServingOrders.map(ns => {
+                const secAgo = Math.floor((Date.now() - ns.firedAt) / 1000);
+                const pct    = Math.min(secAgo / cfgRef.current.nowServingExpirySec, 1);
+                const barClr = pct > 0.72 ? "rgba(239,68,68,0.55)" : pct > 0.42 ? "rgba(245,158,11,0.55)" : "rgba(74,222,128,0.45)";
+                return (
+                  <div key={ns.order.id}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg relative overflow-hidden"
+                    style={{ background: "rgba(74,222,128,0.07)", border: "1px solid rgba(74,222,128,0.18)" }}>
+                    {/* Countdown bar */}
+                    <div className="absolute bottom-0 left-0 h-[2px]"
+                      style={{ width: `${(1 - pct) * 100}%`, background: barClr, transition: "width 1s linear,background 1s linear" }} />
+                    <span className="text-[13px] font-black tabular-nums" style={{ color: "#86efac" }}>
+                      #{ns.order.number}
+                    </span>
+                    {ns.order.customer && (
+                      <span className="text-[9px] font-medium" style={{ color: "rgba(134,239,172,0.45)" }}>
+                        {ns.order.customer}
+                      </span>
+                    )}
+                    <span className="font-mono text-[9px] tabular-nums" style={{ color: "rgba(255,255,255,0.22)" }}>
+                      {fmtSec(secAgo)}
+                    </span>
+                    <button onClick={() => recallOrder(ns.order.id)}
+                      className="flex items-center justify-center w-3.5 h-3.5 rounded transition-all hover:bg-white/10"
+                      style={{ color: "rgba(134,239,172,0.38)", fontSize: 9 }}
+                      title="Recall — reopen this order">↩</button>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Clear button */}
+            <button onClick={() => setNowServing([])}
+              className="shrink-0 h-6 px-2 rounded-lg text-[9px] font-bold border transition-all hover:bg-white/[0.06]"
+              style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.22)" }}
+              title="Clear all (C)">
+              ✕ Clear
+            </button>
           </div>
         </div>
       )}
@@ -1481,11 +1560,13 @@ export default function KdsDisplay() {
             const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
             const pk = cfg.prevKey === "ArrowLeft"  ? "←" : cfg.prevKey;
             const nk = cfg.nextKey === "ArrowRight" ? "→" : cfg.nextKey;
-            return [
+            const hints: { keys: string[]; label: string }[] = [
               { keys: [bk],     label: cfg.mode === "expo" ? "Fire" : "Bump" },
               { keys: ["R"],    label: "Refresh" },
               { keys: [pk, nk], label: "Navigate" },
             ];
+            if (cfg.showNowServing && nowServingOrders.length > 0) hints.push({ keys: ["C"], label: "Clear Served" });
+            return hints;
           })().map(({ keys, label }) => (
             <div key={label} className="flex items-center gap-1.5">
               <div className="flex gap-1">
