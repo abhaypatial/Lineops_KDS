@@ -9,7 +9,13 @@ import { squareAdapter }     from "../lib/pos/square";
 import { toastAdapter }      from "../lib/pos/toast";
 import { cloverAdapter }     from "../lib/pos/clover";
 import { lightspeedAdapter } from "../lib/pos/lightspeed";
-import { volanteAdapter }    from "../lib/pos/volante";
+import {
+  cacheMasterTrans,
+  processKitchenJobs,
+  verifyVolanteSignature,
+  type VeMasterTransEntity,
+  type VeKitchenChitJob,
+} from "../lib/pos/volante";
 import { genericAdapter }    from "../lib/pos/generic";
 import type { NormalisedOrder } from "../lib/pos/types";
 import { z } from "zod";
@@ -168,13 +174,113 @@ router.post("/integrations/lightspeed/webhook", async (req, res): Promise<void> 
   await handlePosWebhook(null as never, "lightspeed", storeId, lightspeedAdapter as Adapter, secret, rawBody, req.headers as Record<string, string | string[] | undefined>, res);
 });
 
-// Volante Systems VE POS
-router.post("/integrations/volante/webhook", async (req, res): Promise<void> => {
+// ── Volante Systems VE POS — real RPC push endpoints ──────────────────────
+//
+// VE does NOT use a single webhook URL. Instead it pushes two RPC calls on
+// every kitchen fire:
+//   PUT /api/integrations/volante/rpc/master-trans   → MasterTransEntity[]
+//   PUT /api/integrations/volante/rpc/kitchen-jobs   → KitchenChitJobEntity[]
+//
+// VE sends master-trans first (so the transaction cache is populated), then
+// kitchen-jobs.  Both calls carry an optional HMAC-SHA256 signature in the
+// X-Volante-Signature header verified against VOLANTE_WEBHOOK_SECRET.
+
+// 1. Receive full transaction data and cache it for job resolution
+router.put("/integrations/volante/rpc/master-trans", async (req, res): Promise<void> => {
   const storeId = req.query.storeId as string;
   const store = await getStoreOrFail(storeId, res); if (!store) return;
+
+  const secret  = process.env.VOLANTE_WEBHOOK_SECRET ?? "";
   const rawBody = JSON.stringify(req.body);
-  const secret = process.env.VOLANTE_WEBHOOK_SECRET ?? "";
-  await handlePosWebhook(null as never, "volante", storeId, volanteAdapter as Adapter, secret, rawBody, req.headers as Record<string, string | string[] | undefined>, res);
+
+  if (!verifyVolanteSignature(rawBody, req.headers as Record<string, string | string[] | undefined>, secret)) {
+    res.status(401).json({ error: "Invalid Volante signature" }); return;
+  }
+
+  const transList = (Array.isArray(req.body) ? req.body : [req.body]) as VeMasterTransEntity[];
+  cacheMasterTrans(transList);
+
+  await db.insert(integrationEventsTable).values({
+    id:        randomUUID(),
+    storeId,
+    source:    "volante",
+    eventType: "master-trans-update",
+    payload:   req.body,
+    processed: true,
+  }).catch(() => {/* non-fatal */});
+
+  // VE expects MasterTransUpdateResult shape
+  res.json({ success: true, updated: transList.length, failed: 0 });
+});
+
+// 2. Receive kitchen chit jobs (the actual "fire to KDS" trigger)
+router.put("/integrations/volante/rpc/kitchen-jobs", async (req, res): Promise<void> => {
+  const storeId = req.query.storeId as string;
+  const store = await getStoreOrFail(storeId, res); if (!store) return;
+
+  const secret  = process.env.VOLANTE_WEBHOOK_SECRET ?? "";
+  const rawBody = JSON.stringify(req.body);
+
+  if (!verifyVolanteSignature(rawBody, req.headers as Record<string, string | string[] | undefined>, secret)) {
+    res.status(401).json({ error: "Invalid Volante signature" }); return;
+  }
+
+  const jobs = (Array.isArray(req.body) ? req.body : [req.body]) as VeKitchenChitJob[];
+  const eventId = randomUUID();
+
+  try {
+    const results = processKitchenJobs(jobs);
+    const created: string[] = [];
+
+    for (const { order, jobId } of results) {
+      const dbOrder = await createOrderFromNormalised(
+        { ...order, externalId: order.externalId, notes: order.notes ?? "", items: order.items },
+        storeId,
+      );
+
+      await db.insert(integrationEventsTable).values({
+        id:         randomUUID(),
+        storeId,
+        source:     "volante",
+        eventType:  "kitchen-job",
+        externalId: jobId,
+        payload:    { jobId, masterTransId: jobs[0]?.masterTransId },
+        processed:  true,
+        orderId:    dbOrder.id,
+      }).catch(() => {/* non-fatal */});
+
+      created.push(dbOrder.id);
+    }
+
+    // Return KitchenChitJobEntity[] with bestResult = COMPLETE so VE
+    // knows the jobs were accepted by an external KDS.
+    const responseJobs = jobs.map(j => ({
+      ...j,
+      bestResult: "COMPLETE" as const,
+    }));
+
+    res.json(responseJobs);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await db.insert(integrationEventsTable).values({
+      id:        eventId,
+      storeId,
+      source:    "volante",
+      eventType: "kitchen-job-error",
+      payload:   { raw: rawBody.slice(0, 2000) },
+      processed: false,
+      error:     msg,
+    }).catch(() => {/* non-fatal */});
+    res.status(400).json({ error: msg });
+  }
+});
+
+// 3. VE may poll this to check job status (responds with empty page, job tracking is server-side)
+router.get("/integrations/volante/rpc/kitchen-jobs", async (req, res): Promise<void> => {
+  const storeId = req.query.storeId as string;
+  const store = await getStoreOrFail(storeId, res); if (!store) return;
+  // Return a valid paginated response; VE drives the push, so we have no pending jobs to return
+  res.json({ content: [], totalElements: 0, totalPages: 0, size: 100, number: 0, empty: true });
 });
 
 // Generic / Custom — authenticated with API key
@@ -217,7 +323,7 @@ router.get("/integrations/events", async (req, res): Promise<void> => {
 });
 
 // Integration status / capabilities
-router.get("/integrations", (_req, res): Promise<void> => {
+router.get("/integrations", (_req, res): void => {
   res.json({
     integrations: [
       {
@@ -264,12 +370,26 @@ router.get("/integrations", (_req, res): Promise<void> => {
         id:       "volante",
         name:     "Volante Systems VE POS",
         status:   "available",
-        webhook:  "/api/integrations/volante/webhook",
-        docs:     "https://www.volantesystems.com/partners/",
-        events:   ["kitchen.order.fired", "kitchen.course.fired"],
-        authType: "hmac_sha256",
-        envVar:   "VOLANTE_WEBHOOK_SECRET",
-        setupNote: "In VE Back Office → Kitchen Displays → External KDS, set the Endpoint URL and Auth Secret. Select Format: JSON and Fire Mode: On Course Fire.",
+        apiVersion: { pos: "2026.02.1684", auth: "1.3.0", menu: "1.3.0", transaction: "1.3.0" },
+        rpcEndpoints: {
+          masterTrans:  "/api/integrations/volante/rpc/master-trans",
+          kitchenJobs:  "/api/integrations/volante/rpc/kitchen-jobs",
+        },
+        docs:     "https://dev.volantecloud.com",
+        authType: "oauth2_client + hmac_sha256",
+        envVars: {
+          VOLANTE_HOST:          "Base URL of the VE server (e.g. https://acme.volantecloud.com)",
+          VOLANTE_CLIENT_ID:     "OAuth2 client id (grant_type=client, 'client' field)",
+          VOLANTE_CLIENT_SECRET: "OAuth2 client secret ('password' field)",
+          VOLANTE_WEBHOOK_SECRET:"Optional HMAC-SHA256 secret for RPC signature verification",
+        },
+        setupNote: [
+          "In VE Back Office → Kitchen Displays → External KDS configure two RPC endpoints:",
+          "  master-trans: PUT https://<host>/api/integrations/volante/rpc/master-trans?storeId=<id>",
+          "  kitchen-jobs: PUT https://<host>/api/integrations/volante/rpc/kitchen-jobs?storeId=<id>",
+          "Set the same HMAC secret in VE and in VOLANTE_WEBHOOK_SECRET.",
+          "For pull mode (LineOps polls VE): set VOLANTE_HOST, VOLANTE_CLIENT_ID, VOLANTE_CLIENT_SECRET.",
+        ].join("\n"),
       },
       {
         id:        "generic",
