@@ -5,12 +5,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout";
 import NotFound from "@/pages/not-found";
 
-import KdsDisplay    from "@/pages/index";
-import DashboardPage from "@/pages/dashboard";
-import OrdersPage    from "@/pages/orders";
-import DevicesPage   from "@/pages/devices";
-import SetupPage     from "@/pages/setup";
-import LivePage      from "@/pages/live";
+import KdsDisplay       from "@/pages/index";
+import DashboardPage    from "@/pages/dashboard";
+import OrdersPage       from "@/pages/orders";
+import DevicesPage      from "@/pages/devices";
+import SetupPage        from "@/pages/setup";
+import LivePage         from "@/pages/live";
+import TemplateBuilderPage from "@/pages/template-builder";
 
 const queryClient = new QueryClient();
 
@@ -34,9 +35,14 @@ function Router() {
         <AppLayout><SetupPage /></AppLayout>
       </Route>
 
-      {/* Live event monitor — useful for POS integration testing */}
+      {/* Live event monitor */}
       <Route path="/live">
         <AppLayout><LivePage /></AppLayout>
+      </Route>
+
+      {/* Template builder — display layout designer */}
+      <Route path="/template-builder">
+        <AppLayout><TemplateBuilderPage /></AppLayout>
       </Route>
 
       <Route component={NotFound} />
