@@ -6,39 +6,57 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 
 ## Features
 
-- **Live order grid** — orders appear the instant they are fired from the POS, no polling
-- **Multi-station filtering** — each KDS display shows only its own station (Grill, Cold, Fryer, Dessert, etc.)
-- **WebSocket push** — sub-100 ms order delivery to every connected display
-- **Kiosk mode** — auto-fullscreen on launch, browser chrome hidden, F4 to exit
-- **Bump bar support** — keyboard navigation (←/→) and bump (Space/Enter) without touching the screen
-- **Test order injection** — fire a realistic test order instantly from the KDS display or CLI
-- **Live event monitor** — real-time WebSocket feed showing every POS event as it arrives (great for integration testing)
-- **Manager dashboard** — active orders, avg ticket time, rush count, online devices, per-station load
-- **Order history** — full tabular log with bump/recall/status management
-- **Device management** — monitor every KDS display's online/idle/offline state
-- **Hierarchical setup** — Enterprise → Store → Station → Device configuration
-- **POS integration layer** — Square, Toast, Clover, Lightspeed K-Series, Volante VE, Generic/Custom
-- **Docker + systemd deployment** — one-liner install on any Linux server; `kds` CLI for ops
-- **systemd services** — backend and kiosk display both managed as proper system services
+- **Instant order display** — orders appear on every kitchen screen within a second of being fired from the POS
+- **Per-station views** — each screen only shows the items for its station (Grill, Cold Prep, Fryer, Dessert, etc.)
+- **Kiosk mode** — launches full-screen automatically; no browser bars or buttons visible; press F4 to exit
+- **Bump bar** — use keyboard arrows to navigate orders and Space/Enter to bump, without touching the screen
+- **RUSH & VIP badges** — priority orders are highlighted in red/gold with a visible label and urgent timer colour
+- **Test order button** — fire a test order to any station instantly, straight from the KDS screen or CLI
+- **Manager dashboard** — active orders, average ticket time, rush count, online screens, and per-station workload at a glance
+- **Order history** — full log of every order with bump, recall, and status controls
+- **Screen management** — see which KDS displays are online, idle, or offline
+- **Multi-location setup** — manage multiple restaurants, each with their own stations and screens
+- **POS integrations** — Square, Toast POS, Clover, Lightspeed K-Series, Volante VE, and any custom POS via webhook
+- **One-command install** — runs on any Linux server; `install.ps1` for Windows; `kds` CLI for day-to-day ops
+- **Auto-start on boot** — backend and kiosk display both start automatically when the server powers on
 
 ---
 
-## Quick Start (Development)
+## Quick Start
+
+The fastest way to get LineOps KDS running — no technical knowledge needed:
+
+**Linux / macOS:**
+```bash
+sudo bash install.sh
+```
+
+**Windows (Docker Desktop must be running):**
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\install.ps1
+```
+
+Then open `http://localhost` in any browser — the KDS display loads full-screen. Press **F4** to exit kiosk mode.
+
+---
+
+## Quick Start (for developers — running without Docker)
 
 ```bash
-# Prerequisites: Node.js 24+, pnpm 9+, PostgreSQL
+# Prerequisites: Node.js 24+, pnpm 9+, PostgreSQL running locally
 git clone <repo>
 pnpm install
 cp .env.example .env          # fill in DATABASE_URL at minimum
 
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/db run push   # set up database tables
 
-# Two terminals (or use the Replit workflow)
-pnpm --filter @workspace/api-server run dev   # API + WebSocket :8080
-pnpm --filter @workspace/kds run dev          # KDS frontend :19773
+# Run both in separate terminals:
+pnpm --filter @workspace/api-server run dev   # API server
+pnpm --filter @workspace/kds run dev          # KDS frontend
 ```
 
-Open `http://localhost/` — KDS display (auto-fullscreens, press F4 to exit).
+Open `http://localhost/` — the KDS display loads automatically.
 
 ---
 

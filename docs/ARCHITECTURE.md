@@ -1,8 +1,20 @@
 # LineOps KDS — Architecture
 
+> **This is a technical reference for developers.**
+> If you are setting up or operating LineOps KDS, you don't need to read this — go to [docs/INSTALL.md](INSTALL.md) instead.
+
+---
+
 ## Overview
 
-LineOps KDS is a multi-tenant, real-time Kitchen Display System built as a pnpm monorepo. It consists of three runtime services (API server, KDS frontend, PostgreSQL) sitting behind a single reverse-proxy, plus a shared library layer for the DB schema and generated API client.
+LineOps KDS is made up of four pieces that run together:
+
+| Piece | What it does |
+|---|---|
+| **nginx** | The front door — receives all requests on port 80 and routes them to the right service |
+| **KDS frontend** | The web app displayed on kitchen screens — built with React |
+| **API server** | Handles all data (orders, stations, devices) and pushes real-time updates to every screen |
+| **PostgreSQL** | The database — stores all orders, configuration, and event history |
 
 ```
                          ┌─────────────────────────────────────────────────┐
@@ -47,10 +59,10 @@ lineops-kds/
 │           ├── hooks/       # WebSocket hook, KDS data hooks
 │           └── pages/       # Dashboard, KDS display, Orders, Devices, Setup
 ├── lib/
-│   ├── db/                  # Drizzle schema + client (@workspace/db)
+│   ├── db/                  # Database schema + client (@workspace/db)
 │   │   └── src/schema/      # Table definitions (enterprises, stores, stations, …)
 │   ├── api-spec/            # OpenAPI YAML spec (@workspace/api-spec)
-│   ├── api-zod/             # Generated Zod schemas from OpenAPI
+│   ├── api-zod/             # Generated validation schemas from OpenAPI
 │   └── api-client-react/    # Generated React Query hooks from OpenAPI
 ├── docker/                  # Dockerfiles + nginx config
 ├── docs/                    # This documentation
@@ -85,7 +97,7 @@ Supporting tables:
 
 ---
 
-## Request / Data Flow
+## How an order flows through the system
 
 ### POS → KDS (order creation)
 
@@ -104,16 +116,15 @@ API Server /api/integrations/*
 WebSocket broadcast → all connected KDS tablets
     │
     ▼
-React Query cache invalidated → KDS grid re-renders
+KDS grid re-renders instantly with the new order
 ```
 
 ### Real-time push (WebSocket)
 
-- The API server runs a `ws` WebSocket server on the same port as Express (`/ws` path)
-- Every connected browser/tablet subscribes on page load via `useKdsWebSocket` hook
-- On any state change (order created, bumped, item status changed) the server calls `broadcast(event)`
-- The React hook receives the event and calls `queryClient.invalidateQueries()` — the correct query refetches immediately
-- Reconnection uses exponential backoff (1s → 2s → 4s … max 30s)
+- The API server holds an open connection to every browser/tablet (via WebSocket on `/ws`)
+- Every connected screen subscribes automatically when it loads
+- When any order changes (created, bumped, item status changed) the server notifies every screen in under 100 ms
+- If the connection drops, the screen reconnects automatically (1 s → 2 s → 4 s backoff, max 30 s)
 
 ---
 
@@ -123,7 +134,7 @@ All POS adapters live in `artifacts/api-server/src/lib/pos/`. Each adapter:
 
 1. Accepts the raw HTTP payload (headers + body) from the POS
 2. Verifies the signature / auth token
-3. Returns a `NormalisedOrder` (or `{ shouldProcess: false }` to silently ignore non-order events)
+3. Returns a normalised order (or signals to silently ignore non-order events)
 
 The route handler in `routes/integrations.ts` then persists the normalised order and broadcasts it.
 
@@ -140,7 +151,7 @@ The route handler in `routes/integrations.ts` then persists the normalised order
 
 ### Volante VE — special case
 
-Volante does not use a single webhook URL. It uses an **RPC push model**:
+Volante does not use a single webhook URL. It uses an RPC push model:
 
 ```
 VE POS Server (local network)

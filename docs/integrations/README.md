@@ -1,32 +1,48 @@
 # LineOps KDS — POS Integration Guide
 
-This guide explains how to connect each supported POS system to LineOps KDS.
+This guide explains how to connect each supported POS system to LineOps KDS so that orders fired from the POS appear on your kitchen screens instantly.
 
-> For Volante Systems VE POS, see the dedicated guide: [VOLANTE.md](VOLANTE.md)
-> For adding a brand-new POS adapter, see: [DEVELOPER.md](DEVELOPER.md)
+> **Volante Systems VE POS** has its own dedicated guide: [VOLANTE.md](VOLANTE.md)
+>
+> **Adding a brand-new POS system** (for developers): [DEVELOPER.md](DEVELOPER.md)
 
 ---
 
 ## How it works
 
-When a POS fires items to the kitchen, it sends an HTTP request to the LineOps KDS API. LineOps normalises the payload, creates a KDS order in the database, and broadcasts it in real time to all connected KDS displays.
+When a cashier fires items to the kitchen in your POS, the POS sends an automatic notification to LineOps KDS over your local network (or internet). LineOps receives it, figures out which station each item belongs to, and instantly pushes the order to every connected kitchen screen.
 
-All POS endpoints require a `?storeId=<uuid>` query parameter identifying which store the order belongs to. Find your store's UUID in the KDS **Setup → Stores** page.
+You don't need to touch the LineOps server after setup — orders appear automatically.
+
+---
+
+## Before you start — find your Store ID
+
+Every integration needs to know which of your stores the orders belong to.
+
+1. Open the LineOps KDS web interface
+2. Go to **Setup → Stores**
+3. Copy the long ID shown next to your store name (looks like: `e3c4adaf-30a3-41c7-826e...`)
+
+You'll use this ID in the webhook URL for every integration below.
 
 ---
 
 ## Generic / Custom POS
 
-Use this if your POS supports outbound HTTP webhooks with a custom JSON payload, or if you are building your own integration.
+Use this if your POS can send orders to a custom web address (sometimes called "webhook", "HTTP push", or "third-party integration"), or if you're building a custom connector.
 
-**Endpoint**
+**Where to send orders:**
 ```
-POST /api/integrations/orders
-Authorization: X-API-Key <your-key>
-Content-Type: application/json
+POST https://<your-server>/api/integrations/orders
 ```
 
-**Payload**
+**Required header:**
+```
+X-API-Key: <your-api-key>
+```
+
+**What to send (JSON):**
 ```json
 {
   "orderNumber": "101",
@@ -45,124 +61,120 @@ Content-Type: application/json
 }
 ```
 
-**Generate an API key**
+**Getting an API key:**
 
-Use the Setup page → API Keys, or via the CLI:
+Option A — through the KDS interface: go to **Integration Hub → API Keys → Generate new API key**
+
+Option B — through the CLI:
 ```bash
-kds keys create "My POS" orders:write
+kds keys create "My POS System" orders:write
 ```
+
+The key is shown once when created — save it somewhere safe.
 
 ---
 
 ## Square
 
-**Prerequisites**: Square Developer account, a Square application with Webhooks enabled.
+**What you need first:** A Square Developer account and a Square application with Webhooks turned on. If you haven't set this up before, [Square's developer guide](https://developer.squareup.com/docs/webhooks/overview) walks through it.
 
-**Steps**
+**Steps:**
 
-1. In [Square Developer Dashboard](https://developer.squareup.com), open your app → **Webhooks**
-2. Add an endpoint URL:
+1. Log in to the [Square Developer Dashboard](https://developer.squareup.com) and open your application
+2. Click **Webhooks** in the left menu
+3. Add a new endpoint with this URL (swap in your server address and Store ID):
    ```
-   https://<your-server>/api/integrations/square/webhook?storeId=<uuid>
+   https://<your-server>/api/integrations/square/webhook?storeId=<your-store-id>
    ```
-3. Select events: `order.created`, `order.updated`, `payment.created`
-4. Copy the **Signature Key** from Square
-5. Add to your `.env`:
+4. Enable these events: `order.created`, `order.updated`, `payment.created`
+5. Square will show you a **Signature Key** — copy it
+6. Open your LineOps `.env` file and add:
    ```
-   SQUARE_WEBHOOK_SECRET=<signature-key>
+   SQUARE_WEBHOOK_SECRET=<paste-the-signature-key-here>
    ```
-6. Restart LineOps: `kds restart`
+7. Apply the change: `kds restart`
+
+**To test:** Fire a test order in Square and check **Integration Hub → Live Event Feed** in LineOps — you should see the event appear within a few seconds.
 
 ---
 
 ## Toast POS
 
-**Prerequisites**: Toast back-office access, an API partner token.
+**What you need first:** Access to Toast Back Office and an API partner token.
 
-**Steps**
+**Steps:**
 
-1. In Toast Back Office, go to **Integrations → API Access → Webhooks**
-2. Add webhook URL:
+1. Log in to Toast Back Office
+2. Go to **Integrations → API Access → Webhooks**
+3. Add a new webhook with this URL:
    ```
-   https://<your-server>/api/integrations/toast/webhook?storeId=<uuid>
+   https://<your-server>/api/integrations/toast/webhook?storeId=<your-store-id>
    ```
-3. Select events: `ORDER_CREATED`, `ORDER_UPDATED`
-4. Copy the **Webhook Secret**
-5. Add to your `.env`:
+4. Enable these events: `ORDER_CREATED`, `ORDER_UPDATED`
+5. Toast will show you a **Webhook Secret** — copy it
+6. Add to your `.env` file:
    ```
-   TOAST_WEBHOOK_SECRET=<secret>
+   TOAST_WEBHOOK_SECRET=<paste-the-secret-here>
    ```
-6. Restart LineOps: `kds restart`
+7. Apply the change: `kds restart`
 
 ---
 
 ## Clover
 
-**Prerequisites**: Clover merchant account, an approved Clover app.
+**What you need first:** A Clover merchant account and an approved Clover app.
 
-**Steps**
+**Steps:**
 
-1. In [Clover Developer Dashboard](https://www.clover.com/developers), open your app
-2. Go to **Webhooks** and register:
+1. Log in to the [Clover Developer Dashboard](https://www.clover.com/developers) and open your app
+2. Go to **Webhooks** and register this URL:
    ```
-   https://<your-server>/api/integrations/clover/webhook?storeId=<uuid>
+   https://<your-server>/api/integrations/clover/webhook?storeId=<your-store-id>
    ```
-3. Select events: `CREATE`, `UPDATE`
-4. Clover authenticates via OAuth bearer token — add it to your `.env`:
+3. Enable events: `CREATE`, `UPDATE`
+4. Clover uses an access token (a password that proves it's really Clover sending the data). Find your token in Clover's app settings under **OAuth** or **API Access** and add it to your `.env`:
    ```
-   CLOVER_WEBHOOK_SECRET=<oauth-bearer-token>
+   CLOVER_WEBHOOK_SECRET=<your-clover-access-token>
    ```
-5. Restart LineOps: `kds restart`
+5. Apply the change: `kds restart`
 
 ---
 
 ## Lightspeed K-Series (Kounta)
 
-**Prerequisites**: Lightspeed Restaurant account with API access.
+**What you need first:** A Lightspeed Restaurant account with API access enabled.
 
-**Steps**
+**Steps:**
 
-1. In Lightspeed Back Office, go to **Settings → Webhooks**
-2. Add endpoint URL:
+1. Log in to Lightspeed Back Office
+2. Go to **Settings → Webhooks**
+3. Add a new webhook with this URL:
    ```
-   https://<your-server>/api/integrations/lightspeed/webhook?storeId=<uuid>
+   https://<your-server>/api/integrations/lightspeed/webhook?storeId=<your-store-id>
    ```
-3. Select events: `order.created`, `order.updated`
-4. Copy the **Signing Secret**
-5. Add to your `.env`:
+4. Enable events: `order.created`, `order.updated`
+5. Lightspeed will show you a **Signing Secret** — copy it
+6. Add to your `.env` file:
    ```
-   LIGHTSPEED_WEBHOOK_SECRET=<secret>
+   LIGHTSPEED_WEBHOOK_SECRET=<paste-the-secret-here>
    ```
-6. Restart LineOps: `kds restart`
+7. Apply the change: `kds restart`
 
 ---
 
-## Verify an integration is working
+## Verifying an integration is working
 
-After setup, check the event log:
-```bash
-curl "http://localhost/api/integrations/events?storeId=<uuid>&limit=20"
-```
+The easiest way is through the LineOps interface:
 
-Or tail the API log:
-```bash
-kds logs api
-```
+1. Open **Integration Hub** in the LineOps menu
+2. Look at **Live Event Feed** in the centre column
+3. Fire a test order from your POS — an event should appear within 2–3 seconds
+4. Green tick = received and processed correctly. Red dot = something went wrong (click the event to see details)
 
----
-
-## Integration capabilities endpoint
-
-List all configured integrations and their endpoints:
-```bash
-curl http://localhost/api/integrations
-```
+Alternatively, check **Live Monitor** from the sidebar — this shows all activity in real time.
 
 ---
 
 ## Security
 
-- All webhook endpoints verify the HMAC-SHA256 signature provided by the POS before processing the payload
-- Volante VE also supports TLS mutual auth on the local network
-- The Generic endpoint uses per-store API keys with permission scopes (`orders:write`)
-- Integration events (including errors) are logged in the `integration_events` table for auditing
+All the secrets and signing keys you set up above are how LineOps verifies that the orders it receives are genuinely coming from your POS and not from someone else. LineOps checks every incoming message before processing it. If the check fails (wrong or missing key), the message is rejected and logged — it will never appear on your kitchen screens.

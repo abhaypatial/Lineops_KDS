@@ -1,12 +1,122 @@
 # Volante Systems VE POS — Integration Guide
 
-LineOps KDS integrates with Volante VE using the **native RPC push model** from Volante's official POS API (`v2026.02.1684`). This is the same protocol VE uses to communicate between its own terminal software and cloud services.
+This guide explains how to connect Volante VE POS to LineOps KDS so that every kitchen fire from VE appears instantly on your kitchen screens.
 
 ---
 
-## How VE talks to LineOps
+## What you need before starting
 
-Unlike other POS systems that send a single webhook, VE pushes **two RPC calls** on every kitchen fire:
+- Volante VE version that includes the **External KDS** feature (POS API v2026.02 or newer)
+- LineOps KDS installed and reachable on your network (on the same LAN as the VE server, or a public URL)
+- Your LineOps **Store ID** — find it in **Setup → Stores** in the KDS interface
+
+---
+
+## How it works (plain English)
+
+When a VE cashier fires items to the kitchen, VE automatically sends the order details to LineOps over your network. LineOps receives them, figures out which kitchen station each item goes to, and pushes everything to your KDS screens in under a second.
+
+There are no manual steps after setup — orders flow automatically.
+
+VE sends two messages every time an order is fired (this is how Volante's own KDS protocol works):
+1. **Full order details** — what was ordered, by whom, with modifiers
+2. **Kitchen job** — which items go to which printer/station
+
+LineOps handles both automatically.
+
+---
+
+## Setup — Step by Step
+
+### Step 1 — Map your stations
+
+This is the only real configuration step. You need to tell LineOps which VE kitchen station corresponds to which LineOps station.
+
+In **VE Back Office → Kitchen Display Setup**, each terminal group has a **KDS Terminal ID** (a small number like 1, 2, 3). You'll use these numbers to build the mapping.
+
+In your LineOps `.env` file, add:
+```
+VOLANTE_STATION_MAP={"1":"grill","2":"cold","3":"fryer","4":"dessert"}
+```
+
+Replace the numbers and names to match your own setup. The numbers come from VE Back Office; the names (`grill`, `cold`, etc.) must match the station IDs in your LineOps **Setup → Stations** page.
+
+**Example — "The Crown Hotel":**
+
+| VE Terminal Group | KDS Terminal ID | LineOps Station |
+|---|---|---|
+| Crown — Hot Kitchen | 1 | `grill` |
+| Crown — Cold Side | 2 | `cold` |
+| Crown — Fry Station | 3 | `fryer` |
+| Crown — Pastry | 4 | `dessert` |
+
+This becomes:
+```
+VOLANTE_STATION_MAP={"1":"grill","2":"cold","3":"fryer","4":"dessert"}
+```
+
+> **No mapping set?** LineOps will try to guess the station from the item's category name (e.g. "Hot Mains" → grill). This works for basic setups but the explicit mapping above is more reliable.
+
+### Step 2 — Set a security secret
+
+This is a shared password that VE and LineOps use to verify orders are genuine. You create the value — make it something long and random.
+
+Add to your `.env`:
+```
+VOLANTE_WEBHOOK_SECRET=some-long-random-string-you-made-up
+```
+
+You'll enter the same value in VE Back Office in the next step.
+
+### Step 3 — Restart LineOps to apply changes
+
+```bash
+kds restart
+```
+
+### Step 4 — Configure VE Back Office
+
+In VE Back Office, find **Kitchen Displays → External KDS** (the exact menu path varies slightly by VE version — ask your Volante support rep if you can't find it).
+
+Enter these values:
+
+| VE Setting | What to enter |
+|---|---|
+| **master-trans Endpoint** | `http://<lineops-server>/api/integrations/volante/rpc/master-trans?storeId=<your-store-id>` |
+| **kitchen-jobs Endpoint** | `http://<lineops-server>/api/integrations/volante/rpc/kitchen-jobs?storeId=<your-store-id>` |
+| **Auth Secret** | The same value you set for `VOLANTE_WEBHOOK_SECRET` |
+| **Format** | JSON |
+
+Replace `<lineops-server>` with the IP address or hostname of your LineOps server (e.g. `192.168.1.50`). If LineOps is on the same network as VE, use the LAN IP — no internet required.
+
+### Step 5 — Test it
+
+Fire a test order from a VE terminal and check:
+
+1. Open **Integration Hub** in LineOps
+2. Look at the **Live Event Feed** in the middle column
+3. You should see two events appear: `master-trans-update` then `kitchen-job`
+4. The order should appear on the KDS display immediately
+
+If nothing appears, check **Live Monitor** (in the sidebar) and **Integration Hub → Live Event Feed** for error messages. The most common issue is a wrong server address or a mismatched secret.
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| No events appear at all | VE can't reach the LineOps server | Check the IP address in VE Back Office. Try pinging the LineOps server from the VE machine. |
+| Events appear but show "error" | Wrong `VOLANTE_WEBHOOK_SECRET` | Make sure the secret in `.env` and VE Back Office match exactly |
+| Orders appear on wrong station | Station mapping mismatch | Check your `VOLANTE_STATION_MAP` — compare the numbers to VE Back Office → Kitchen Display Setup |
+| Orders appear but items are missing | Items filtered as void | Items marked as voided in VE are intentionally skipped by LineOps |
+
+---
+
+<details>
+<summary><strong>For developers — technical reference</strong></summary>
+
+### RPC push flow
 
 ```
 VE POS Server (local network)
@@ -20,111 +130,9 @@ VE POS Server (local network)
          (LineOps resolves items from cache → creates KDS order → broadcasts)
 ```
 
-VE always sends `master-trans` before `kitchen-jobs` to ensure the transaction is cached before the job arrives.
+The response to `kitchen-jobs` is the same array echoed back with `bestResult: "COMPLETE"` — this signals to VE that an external KDS accepted the chit.
 
-The response to `kitchen-jobs` is the same array back with `bestResult: "COMPLETE"` — this signals to VE that an external KDS accepted the chit.
-
----
-
-## KDS Terminal ID → Station Mapping
-
-This is the only configuration needed to route orders to the right kitchen station.
-
-In VE Back Office, every **Terminal group** has a **KDS Terminal ID** field — a simple integer (1, 2, 3, …). VE sends this number in every kitchen job it fires. LineOps maps these integers to station IDs.
-
-```
-VOLANTE_STATION_MAP='{"1":"grill","2":"cold","3":"fryer","4":"dessert"}'
-```
-
-That's it. No UUIDs, no API calls — just the integers you can read directly from the VE Back Office screen.
-
-### How to find your KDS Terminal IDs
-
-1. In VE Back Office, go to **Kitchen Display Setup**
-2. For each **Terminal group**, note the **KDS Terminal ID** (integer on the right side of the terminal row)
-3. Match each integer to your LineOps station ID (visible in KDS **Setup → Stations**)
-
-### Example Back Office → LineOps mapping
-
-| VE Back Office Terminal group | KDS Terminal ID | LineOps Station ID |
-|---|---|---|
-| "Cecilias QSR — Grill" | 1 | `grill` |
-| "Cecilias QSR — Cold Side" | 2 | `cold` |
-| "Cecilias QSR — Fryer" | 3 | `fryer` |
-| "Cecilias QSR — Dessert" | 4 | `dessert` |
-
-```bash
-VOLANTE_STATION_MAP='{"1":"grill","2":"cold","3":"fryer","4":"dessert"}'
-```
-
-**Without this mapping**, LineOps falls back to keyword matching on `MenuItem.groupName` (e.g. "Hot Mains" → `grill`, "Cold Starters" → `cold`). This fallback works for basic installs but is less precise.
-
----
-
-## Setup Steps
-
-### 1. Prerequisites
-
-- Volante VE version that supports the External KDS RPC feature (POS API v2026.02+)
-- LineOps KDS installed and accessible on the local network (or cloud)
-- Your LineOps store UUID (Setup → Stores in the KDS UI)
-
-### 2. Configure environment variables
-
-In your `.env`:
-
-```bash
-# HMAC signing secret — set the same value in VE Back Office
-VOLANTE_WEBHOOK_SECRET=a-long-random-string
-
-# KDS Terminal ID → station mapping (JSON).
-# Keys = "KDS Terminal ID" integers from VE Back Office → Terminal group.
-# Values = LineOps station IDs from your Stations setup page.
-VOLANTE_STATION_MAP={"1":"grill","2":"cold","3":"fryer"}
-
-# Optional: pull mode credentials (LineOps calls VE API)
-VOLANTE_HOST=https://your-site.volantecloud.com
-VOLANTE_CLIENT_ID=your-client-id
-VOLANTE_CLIENT_SECRET=your-client-secret
-```
-
-Apply and restart:
-```bash
-kds restart
-```
-
-### 3. Configure VE Back Office
-
-In VE Back Office → **Kitchen Displays → External KDS** (exact path may vary by VE version):
-
-| VE Setting | Value |
-|---|---|
-| **master-trans Endpoint** | `PUT https://<lineops-server>/api/integrations/volante/rpc/master-trans?storeId=<uuid>` |
-| **kitchen-jobs Endpoint** | `PUT https://<lineops-server>/api/integrations/volante/rpc/kitchen-jobs?storeId=<uuid>` |
-| **Auth Secret** | Same value as `VOLANTE_WEBHOOK_SECRET` |
-| **Format** | JSON |
-
-> If your LineOps KDS is on the same LAN as the VE server, use the LAN IP:
-> `http://192.168.1.50/api/integrations/volante/rpc/master-trans?storeId=<uuid>`
-> No internet access is required.
-
-### 4. Test the connection
-
-Fire a test order from VE and check:
-
-```bash
-# See the last 10 integration events
-curl "http://localhost/api/integrations/events?storeId=<uuid>&limit=10"
-
-# Or tail the API log
-kds logs api
-```
-
-A successful fire shows two events: `master-trans-update` and `kitchen-job`.
-
----
-
-## Data mapping reference
+### Field mapping reference
 
 | VE Field | LineOps Field | Notes |
 |---|---|---|
@@ -141,7 +149,7 @@ A successful fire shows two events: `master-trans-update` and `kitchen-job`.
 | `KitchenChitJobEntity.printerTypeId` | `OrderItem.stationId` | Via `VOLANTE_PRINTER_STATION_MAP` |
 | `TransItem.details.groupName` | `OrderItem.stationId` | Fallback keyword matching |
 
-### Items that are silently ignored
+### Items silently ignored
 
 | VE condition | Behaviour |
 |---|---|
@@ -150,11 +158,9 @@ A successful fire shows two events: `master-trans-update` and `kitchen-job`.
 | `TransItem.type === "option"` | Modifier — attached to parent item, not a separate KDS line |
 | Any non-kitchen event type | Logged to `integration_events.processed = false`, not dispatched |
 
----
+### Pull mode (LineOps calls VE API)
 
-## Authentication (pull mode)
-
-When LineOps needs to call VE's API (e.g. to query menu items or verify transaction details), it authenticates using the VE OAuth2 client credentials flow:
+When LineOps needs to call VE's API (e.g. to verify transaction details), it authenticates using VE's OAuth2 client credentials flow:
 
 ```http
 POST https://{ve_host}/auth/auth/token
@@ -172,14 +178,11 @@ Response: `{ "success": true, "access_token": "...", "refresh_token": "...", "ac
 
 The `VeAuthClient` class in `artifacts/api-server/src/lib/pos/volante.ts` handles this automatically, including token caching and refresh.
 
----
+Configure pull mode credentials in `.env`:
+```
+VOLANTE_HOST=https://your-site.volantecloud.com
+VOLANTE_CLIENT_ID=your-client-id
+VOLANTE_CLIENT_SECRET=your-client-secret
+```
 
-## Local network deployment note
-
-Volante VE typically runs on-premise. LineOps KDS is installed on the same LAN (e.g. on a server or the KDS terminal itself). All VE → LineOps traffic stays on the local network.
-
-- VE server sends RPC pushes to `http://192.168.x.x/api/integrations/volante/rpc/*`
-- KDS tablets (also on LAN) connect to `http://192.168.x.x/` for the display
-- No internet access is required at runtime
-
-If LineOps is hosted in the cloud, configure VE's external KDS endpoint with the public HTTPS URL and ensure the HMAC signature verification is enabled (`VOLANTE_WEBHOOK_SECRET`).
+</details>

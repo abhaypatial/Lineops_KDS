@@ -1,5 +1,8 @@
 # Adding a New POS Adapter — Developer Guide
 
+> **This guide is for developers only.**
+> If you want to connect an existing POS system (Square, Toast, Clover, etc.), see [README.md](README.md) instead.
+
 This guide walks through every change needed to add support for a new POS system to LineOps KDS.
 
 ---
@@ -209,7 +212,7 @@ If the POS does not use a single webhook but instead pushes structured data to m
 
 ## Testing your adapter
 
-### Unit test (quick)
+### Send a test payload
 
 ```bash
 # Start the API server and inject a test payload
@@ -220,7 +223,7 @@ curl -X POST "localhost:80/api/integrations/myfancypos/webhook?storeId=$STORE_ID
   -d '{"eventType":"ORDER_CREATED","orderId":"test-1","orderNumber":"42","lineItems":[{"name":"Burger","quantity":1}]}'
 ```
 
-### Check integration events
+### Check the event log
 
 ```bash
 curl "localhost:80/api/integrations/events?storeId=$STORE_ID&limit=5"
