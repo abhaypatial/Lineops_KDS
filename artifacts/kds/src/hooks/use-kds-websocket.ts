@@ -45,6 +45,7 @@ export function useKdsWebSocket(
   queryClient: QueryClient,
   onNewOrder?: (orderNumber: string) => void,
   onConfigPush?: (safeConfig: Record<string, unknown>) => void,
+  onPing?: () => void,
 ) {
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -53,6 +54,8 @@ export function useKdsWebSocket(
   onNewOrderRef.current = onNewOrder;
   const onConfigPushRef = useRef(onConfigPush);
   onConfigPushRef.current = onConfigPush;
+  const onPingRef = useRef(onPing);
+  onPingRef.current = onPing;
 
   useEffect(() => {
     if (!storeId) return;
@@ -100,6 +103,9 @@ export function useKdsWebSocket(
               }
               break;
             }
+            case "kds_ping":
+              onPingRef.current?.();
+              break;
           }
         } catch (err) {
           console.error("Failed to parse WS message", err);

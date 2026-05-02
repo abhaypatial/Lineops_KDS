@@ -108,4 +108,20 @@ router.post("/devices/:id/push-config", async (req, res): Promise<void> => {
   res.json({ ok: true, reached, deviceName: device.name, deviceId: device.id });
 });
 
+router.post("/devices/:id/ping", async (req, res): Promise<void> => {
+  const [device] = await db
+    .select()
+    .from(devicesTable)
+    .where(eq(devicesTable.id, req.params.id));
+  if (!device) {
+    res.status(404).json({ error: "Device not found" });
+    return;
+  }
+  const reached = broadcastToDevice(device.id, {
+    type: "kds_ping",
+    payload: { deviceId: device.id, deviceName: device.name },
+  });
+  res.json({ ok: true, reached, deviceName: device.name });
+});
+
 export default router;

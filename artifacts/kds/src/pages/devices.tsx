@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Wifi, WifiOff, Clock, Send, ChevronDown, CheckCircle2, AlertCircle } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Clock, Send, ChevronDown, CheckCircle2, AlertCircle, Radio } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -31,6 +31,8 @@ export default function DevicesPage() {
   const [templates, setTemplates] = useState<KdsTemplate[]>([]);
   const [pushResults, setPushResults] = useState<Record<string, PushResult>>({});
   const [pushing, setPushing] = useState<string | null>(null);
+  const [pinging, setPinging] = useState<Record<string, boolean>>({});
+  const [pingResults, setPingResults] = useState<Record<string, "reached" | "offline">>({});
 
   const { data: stores } = useListStores();
 
@@ -49,6 +51,27 @@ export default function DevicesPage() {
       .then((data) => setTemplates(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);
+
+  async function pingDevice(deviceId: string, deviceName: string) {
+    setPinging((p) => ({ ...p, [deviceId]: true }));
+    setPingResults((p) => { const n = { ...p }; delete n[deviceId]; return n; });
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/ping`, { method: "POST" });
+      const data = await res.json() as { ok: boolean; reached: boolean; deviceName: string };
+      if (data.reached) {
+        setPingResults((p) => ({ ...p, [deviceId]: "reached" }));
+        toast.success(`${deviceName} responded to ping`);
+      } else {
+        setPingResults((p) => ({ ...p, [deviceId]: "offline" }));
+        toast.warning(`${deviceName} is offline`);
+      }
+    } catch {
+      toast.error("Ping failed");
+    } finally {
+      setPinging((p) => ({ ...p, [deviceId]: false }));
+      setTimeout(() => setPingResults((p) => { const n = { ...p }; delete n[deviceId]; return n; }), 4000);
+    }
+  }
 
   async function pushToDevice(deviceId: string, templateId: string, templateName: string) {
     setPushing(deviceId);
@@ -186,12 +209,37 @@ export default function DevicesPage() {
                   )}
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-border/50 text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Clock className="h-3 w-3" />
-                  Last seen{" "}
-                  {device.lastSeenAt
-                    ? formatDistanceToNow(new Date(device.lastSeenAt), { addSuffix: true })
-                    : "never"}
+                <div className="mt-auto pt-4 border-t border-border/50 flex items-center justify-between gap-2">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    Last seen{" "}
+                    {device.lastSeenAt
+                      ? formatDistanceToNow(new Date(device.lastSeenAt), { addSuffix: true })
+                      : "never"}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2.5 text-xs gap-1.5 shrink-0"
+                    disabled={pinging[device.id]}
+                    onClick={() => pingDevice(device.id, device.name)}
+                    style={
+                      pingResults[device.id] === "reached"
+                        ? { borderColor: "rgba(34,197,94,0.6)", color: "#4ade80" }
+                        : pingResults[device.id] === "offline"
+                        ? { borderColor: "rgba(239,68,68,0.5)", color: "#f87171" }
+                        : undefined
+                    }
+                  >
+                    <Radio className="h-3 w-3" />
+                    {pinging[device.id]
+                      ? "Pinging…"
+                      : pingResults[device.id] === "reached"
+                      ? "Reached"
+                      : pingResults[device.id] === "offline"
+                      ? "Offline"
+                      : "Ping"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

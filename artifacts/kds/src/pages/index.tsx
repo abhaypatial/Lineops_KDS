@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useQueryClient }          from "@tanstack/react-query";
 import { useListOrders, useListStations, useBumpOrder, useListStores } from "@workspace/api-client-react";
-import { useKdsWebSocket, stripMachineLocal } from "@/hooks/use-kds-websocket";
+import { useKdsWebSocket, stripMachineLocal, getKdsDeviceId } from "@/hooks/use-kds-websocket";
 import { useOrderChime, type ChimeType }    from "@/hooks/use-order-chime";
 import { FlaskConical, Maximize2, Minimize2, Zap } from "lucide-react";
 import { toast as sonnerToast }             from "sonner";
@@ -1197,6 +1197,7 @@ export default function KdsDisplay() {
   const [nowServingOrders, setNowServing] = useState<{ order: DisplayOrder; firedAt: number }[]>([]);
   const [recentBumped,    setRecentBumped] = useState<{ order: DisplayOrder; bumpedAt: number }[]>([]);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [pingActive, setPingActive] = useState(false);
 
   const { playChime } = useOrderChime();
   const cfgRef           = useRef(cfg);
@@ -1238,6 +1239,9 @@ export default function KdsDisplay() {
   useKdsWebSocket(storeId, queryClient, undefined, (safeCfg) => {
     setCfg(c => ({ ...c, ...(safeCfg as Partial<KdsConfig>) }));
     sonnerToast.info("Display config updated from template", { id: "cfg-push", duration: 3000 });
+  }, () => {
+    setPingActive(true);
+    setTimeout(() => setPingActive(false), 1600);
   });
 
   // Build a stationId → Station slug map from DB stations
@@ -1533,6 +1537,19 @@ export default function KdsDisplay() {
         height: `${(100 / kdsZoom).toFixed(3)}dvh`,
         width: `${(100 / kdsZoom).toFixed(3)}vw`,
       }}>
+
+      {/* ── Ping flash overlay ───────────────────────────────────────────── */}
+      {pingActive && (
+        <div className="fixed inset-0 z-[999] pointer-events-none flex items-center justify-center"
+          style={{ animation: "pingFlash 1.6s ease forwards" }}>
+          <div className="absolute inset-0" style={{ border: "3px solid rgba(34,197,94,0.9)", boxShadow: "inset 0 0 60px rgba(34,197,94,0.25), 0 0 60px rgba(34,197,94,0.3)" }} />
+          <div className="relative flex flex-col items-center gap-2"
+            style={{ background: "rgba(10,10,11,0.75)", border: "1px solid rgba(34,197,94,0.5)", borderRadius: 12, padding: "10px 22px", boxShadow: "0 0 24px rgba(34,197,94,0.3)" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", color: "#4ade80", textTransform: "uppercase" }}>● PING</span>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>{getKdsDeviceId()}</span>
+          </div>
+        </div>
+      )}
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="h-12 flex items-center justify-between px-4 border-b border-white/[0.07] shrink-0 bg-[#0d0d10]">
@@ -1933,6 +1950,7 @@ export default function KdsDisplay() {
         @keyframes fadeSlideIn { from{opacity:0;transform:translateX(-50%) translateY(6px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
         @keyframes warnPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 22px 6px rgba(245,158,11,0.32)} }
         @keyframes alertFlash  { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} 50%{box-shadow:0 0 28px 8px rgba(239,68,68,0.45)} }
+        @keyframes pingFlash   { 0%{opacity:0} 8%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
       `}</style>
     </div>
   );
