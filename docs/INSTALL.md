@@ -23,7 +23,7 @@ The backend can run on any Linux server (even a Raspberry Pi 4). Display clients
 
 | Item | Minimum | Recommended |
 |---|---|---|
-| OS | Ubuntu 20.04+, Debian 11+, RHEL 8+ | Ubuntu 22.04 LTS |
+| OS | Ubuntu 20.04+, Debian 11+, RHEL 8+, **Windows 10/11** | Ubuntu 22.04 LTS |
 | CPU | 2 cores | 4 cores |
 | RAM | 2 GB | 4 GB |
 | Disk | 10 GB | 20 GB |
@@ -34,14 +34,161 @@ The backend can run on any Linux server (even a Raspberry Pi 4). Display clients
 
 | Item | Minimum |
 |---|---|
-| OS | Ubuntu 22.04 Desktop, Raspberry Pi OS (64-bit) |
+| OS | Ubuntu 22.04 Desktop, Raspberry Pi OS (64-bit), Windows 10/11 (browser-only) |
 | RAM | 2 GB |
 | Display | Any HDMI screen 1280×720+ |
-| Browser | Chromium (headless install works too) |
+| Browser | Chromium, Edge, or Chrome (headless install works too) |
 
 ---
 
-## Option 1 — One-liner install (recommended)
+## Option 0 — Windows (Docker Desktop)
+
+> **Quickest way to test on a Windows laptop.**
+> All services run inside Linux containers — no WSL2 required beyond Docker Desktop's built-in VM.
+
+### Prerequisites
+
+| Software | Download |
+|---|---|
+| Docker Desktop 4.x+ | https://www.docker.com/products/docker-desktop/ |
+| PowerShell 5.1+ | Pre-installed on Windows 10/11 |
+| Git (optional) | https://git-scm.com/download/win |
+
+> Docker Desktop must be running (whale icon in the taskbar) before you start.
+
+### Quick start
+
+Open **PowerShell** (not CMD) in the repo folder:
+
+```powershell
+# 1. Allow the installer script to run (one-time, this session only)
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# 2. Run the installer — generates .env, builds images, starts all services
+.\install.ps1
+
+# 3. Open the KDS in your browser
+Start-Process "http://localhost"
+```
+
+The installer will:
+1. Verify Docker Desktop is running
+2. Generate `.env` with secure random secrets
+3. Build and start all four containers (db, api, web, proxy)
+4. Wait for the API health check to pass
+5. Inject a test order so you can see the KDS display immediately
+6. Print the local URL and LAN IP
+
+### If port 80 is already in use (e.g. IIS)
+
+```powershell
+# Install on port 8080 instead
+.\install.ps1 -Port 8080
+
+# Then open: http://localhost:8080
+```
+
+Or edit `.env` and add `HOST_PORT=8080`, then update `docker-compose.yml`:
+
+```yaml
+  proxy:
+    ports:
+      - "${HOST_PORT:-80}:80"
+```
+
+### Using the Windows CLI (`kds.ps1`)
+
+The `bin\kds.ps1` script is a full PowerShell equivalent of the Linux `kds` CLI:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+.\bin\kds.ps1 status              # Live system overview
+.\bin\kds.ps1 orders              # List active orders
+.\bin\kds.ps1 orders bump 101     # Bump order #101
+.\bin\kds.ps1 orders recall 101   # Recall a bumped order
+.\bin\kds.ps1 orders add          # Inject a test order
+.\bin\kds.ps1 stations            # List kitchen stations
+.\bin\kds.ps1 devices             # List registered KDS displays
+.\bin\kds.ps1 integrations        # POS integration status
+.\bin\kds.ps1 integrations events # Recent inbound webhook events
+.\bin\kds.ps1 keys                # List API keys
+.\bin\kds.ps1 inject              # Inject a test order via API
+.\bin\kds.ps1 logs api            # Tail API logs
+.\bin\kds.ps1 logs web            # Tail frontend logs
+.\bin\kds.ps1 logs db             # Tail database logs
+.\bin\kds.ps1 start               # Start all services
+.\bin\kds.ps1 stop                # Stop all services
+.\bin\kds.ps1 restart             # Restart all services
+.\bin\kds.ps1 help                # Full command reference
+```
+
+You can also set a persistent alias in your PowerShell profile:
+
+```powershell
+# Add to $PROFILE to use 'kds' anywhere in this repo
+Set-Alias kds "$PWD\bin\kds.ps1"
+```
+
+### Manual Docker Compose on Windows
+
+```powershell
+# 1. Copy the env template
+Copy-Item .env.example .env
+# Edit .env in Notepad or VS Code: notepad .env
+
+# 2. Build and start
+docker compose up -d --build
+
+# 3. Verify
+Invoke-RestMethod http://localhost/api/health
+# → @{status=ok; ...}
+
+# 4. Inject a test order
+Invoke-RestMethod -Method Post http://localhost/api/test/inject-order
+# → Order appears on the KDS display
+```
+
+### Windows troubleshooting
+
+**Port 80 in use (IIS or other service)**
+```powershell
+# Find what's using port 80
+netstat -ano | Select-String ":80 "
+# Stop IIS if needed: Stop-Service -Name W3SVC
+# Or use -Port 8080 with install.ps1
+```
+
+**Docker Desktop not starting**
+- Make sure virtualisation is enabled in BIOS
+- Enable WSL2 in Docker Desktop → Settings → General → "Use WSL 2 based engine"
+- Or enable Hyper-V: `Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All`
+
+**Script execution policy error**
+```powershell
+# Allow scripts for this session only (safest option)
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+**Access from other devices on the LAN**
+```powershell
+# Find your LAN IP
+.\bin\kds.ps1 ip
+
+# Windows Firewall — allow inbound on port 80
+New-NetFirewallRule -DisplayName "LineOps KDS" -Direction Inbound `
+  -Protocol TCP -LocalPort 80 -Action Allow
+```
+
+**Stopping everything**
+```powershell
+docker compose down          # stop and remove containers (keeps data)
+docker compose down -v       # stop AND delete all data (full reset)
+```
+
+---
+
+## Option 1 — Linux one-liner install (recommended for production)
 
 Runs on any Ubuntu/Debian/RHEL server with or without Docker pre-installed:
 
