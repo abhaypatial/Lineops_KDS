@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  LineOps KDS — Backend systemd service
+#
+#  Manages the Docker Compose stack (postgres + api + web + nginx).
+#  Install path: /etc/systemd/system/lineops-kds.service
+#
+#  Install:
+#    sudo cp lineops-kds.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable lineops-kds
+#    sudo systemctl start lineops-kds
+#
+#  Control:
+#    sudo systemctl start   lineops-kds
+#    sudo systemctl stop    lineops-kds
+#    sudo systemctl restart lineops-kds
+#    sudo systemctl status  lineops-kds
+#    journalctl -u lineops-kds -f
+# ─────────────────────────────────────────────────────────────────────────────
+
+[Unit]
+Description=LineOps KDS Backend (Docker Compose)
+Documentation=https://github.com/your-org/lineops-kds
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lineops-kds
+
+# Load the generated .env file
+EnvironmentFile=/opt/lineops-kds/.env
+
+ExecStartPre=/usr/bin/docker compose pull --quiet
+ExecStart=/usr/bin/docker compose up --remove-orphans
+ExecStop=/usr/bin/docker compose down --timeout 30
+ExecReload=/usr/bin/docker compose restart
+
+# Restart on failure (not on clean stop)
+Restart=on-failure
+RestartSec=15
+
+# Allow up to 3 minutes for services to start
+TimeoutStartSec=180
+TimeoutStopSec=60
+
+# Log to journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lineops-kds
+
+[Install]
+WantedBy=multi-user.target

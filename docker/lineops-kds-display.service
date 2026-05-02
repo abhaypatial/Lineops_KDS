@@ -1,0 +1,80 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  LineOps KDS — Display (Chromium Kiosk) systemd service
+#
+#  Launches Chromium in full-screen kiosk mode pointing at the local KDS
+#  server.  Run this on the kitchen display machine (Raspberry Pi, mini PC,
+#  or any Ubuntu/Debian box with a connected screen).
+#
+#  Prerequisites:
+#    - A display server running (X11 or Wayland with XWayland)
+#    - chromium-browser or chromium installed
+#    - A non-root user account (default: kds)
+#
+#  Create the kds system user (if needed):
+#    sudo useradd -m -s /bin/bash kds
+#    sudo loginctl enable-linger kds
+#
+#  Install:
+#    sudo cp lineops-kds-display.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable lineops-kds-display
+#    sudo systemctl start lineops-kds-display
+#
+#  Override KDS_URL if the server is on a different machine:
+#    sudo systemctl edit lineops-kds-display
+#    # Add: [Service]
+#    #       Environment=KDS_URL=http://192.168.1.50/
+#
+#  Exit kiosk from inside the app: press F4
+#  Exit kiosk from a terminal:     sudo systemctl stop lineops-kds-display
+#                                  — or — sudo pkill chromium
+# ─────────────────────────────────────────────────────────────────────────────
+
+[Unit]
+Description=LineOps KDS Display (Chromium Kiosk Mode)
+Documentation=https://github.com/your-org/lineops-kds
+After=graphical.target lineops-kds.service
+Wants=lineops-kds.service graphical.target
+
+[Service]
+Type=simple
+User=kds
+Group=kds
+
+# URL of the KDS — change to your server's IP if display is a separate machine
+Environment=KDS_URL=http://localhost/
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/kds/.Xauthority
+
+# Disable crash restore / infobars so kiosk starts cleanly
+ExecStartPre=/bin/sh -c 'rm -f /home/kds/.config/chromium/Default/Preferences'
+
+# Wait for the KDS backend to be available (up to 30s)
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 30); do curl -sf http://localhost/api/healthz && break || sleep 1; done'
+
+ExecStart=/usr/bin/chromium-browser \
+  --kiosk \
+  --no-first-run \
+  --no-sandbox \
+  --disable-infobars \
+  --disable-session-crashed-bubble \
+  --disable-restore-session-state \
+  --disable-features=TranslateUI \
+  --noerrdialogs \
+  --disable-pinch \
+  --overscroll-history-navigation=0 \
+  --disable-background-networking \
+  --disable-extensions \
+  --check-for-update-interval=604800 \
+  ${KDS_URL}
+
+# If Chromium crashes, restart after 5 seconds
+Restart=on-failure
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lineops-kds-display
+
+[Install]
+WantedBy=graphical.target

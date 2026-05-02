@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, MonitorSpeaker, Settings, Monitor, ListOrdered } from "lucide-react";
+import { LayoutDashboard, MonitorSpeaker, Settings, Monitor, ListOrdered, Activity } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,11 +15,12 @@ import {
 import { LogoFull } from "@/components/logo";
 
 const navItems = [
-  { title: "KDS Display", href: "/", icon: MonitorSpeaker },
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Orders", href: "/orders", icon: ListOrdered },
-  { title: "Devices", href: "/devices", icon: Monitor },
-  { title: "Setup", href: "/setup", icon: Settings },
+  { title: "KDS Display",    href: "/",          icon: MonitorSpeaker },
+  { title: "Dashboard",      href: "/dashboard", icon: LayoutDashboard },
+  { title: "Orders",         href: "/orders",    icon: ListOrdered },
+  { title: "Devices",        href: "/devices",   icon: Monitor },
+  { title: "Setup",          href: "/setup",     icon: Settings },
+  { title: "Live Monitor",   href: "/live",      icon: Activity },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {

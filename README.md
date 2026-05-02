@@ -1,21 +1,25 @@
 # LineOps KDS
 
-Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, real-time, self-hosted on any Linux server or Docker host. Connects to major POS systems and runs on standard kitchen display tablets over your local network.
+Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, real-time, self-hosted on any Linux server. Displays run in full-screen kiosk mode on any tablet, mini-PC, or Raspberry Pi connected to a kitchen screen.
 
 ---
 
 ## Features
 
 - **Live order grid** — orders appear the instant they are fired from the POS, no polling
-- **Multi-station filtering** — each KDS display shows only its own station (grill, cold, fryer, dessert, etc.)
+- **Multi-station filtering** — each KDS display shows only its own station (Grill, Cold, Fryer, Dessert, etc.)
 - **WebSocket push** — sub-100 ms order delivery to every connected display
+- **Kiosk mode** — auto-fullscreen on launch, browser chrome hidden, F4 to exit
 - **Bump bar support** — keyboard navigation (←/→) and bump (Space/Enter) without touching the screen
+- **Test order injection** — fire a realistic test order instantly from the KDS display or CLI
+- **Live event monitor** — real-time WebSocket feed showing every POS event as it arrives (great for integration testing)
 - **Manager dashboard** — active orders, avg ticket time, rush count, online devices, per-station load
 - **Order history** — full tabular log with bump/recall/status management
 - **Device management** — monitor every KDS display's online/idle/offline state
 - **Hierarchical setup** — Enterprise → Store → Station → Device configuration
 - **POS integration layer** — Square, Toast, Clover, Lightspeed K-Series, Volante VE, Generic/Custom
-- **Docker + CLI deployment** — one-liner install on any Linux server; `kds` CLI for ops
+- **Docker + systemd deployment** — one-liner install on any Linux server; `kds` CLI for ops
+- **systemd services** — backend and kiosk display both managed as proper system services
 
 ---
 
@@ -23,90 +27,111 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 
 ```bash
 # Prerequisites: Node.js 24+, pnpm 9+, PostgreSQL
-
 git clone <repo>
 pnpm install
 cp .env.example .env          # fill in DATABASE_URL at minimum
 
-# Push DB schema
 pnpm --filter @workspace/db run push
 
-# Start both services (two terminals, or use the Replit workflow)
-pnpm --filter @workspace/api-server run dev   # API + WebSocket on :8080
-pnpm --filter @workspace/kds run dev          # KDS frontend on :19773
+# Two terminals (or use the Replit workflow)
+pnpm --filter @workspace/api-server run dev   # API + WebSocket :8080
+pnpm --filter @workspace/kds run dev          # KDS frontend :19773
 ```
 
-Open `http://localhost/` for the KDS display, `http://localhost/dashboard` for the manager view.
+Open `http://localhost/` — KDS display (auto-fullscreens, press F4 to exit).
 
 ---
 
-## Production Install (Linux / Docker)
+## Production Install (Linux)
 
 ```bash
-# One-liner on any Ubuntu/Debian/RHEL server
 sudo bash install.sh
 ```
 
-This installs Docker, Docker Compose, the `kds` CLI, and creates `/opt/lineops-kds` with your `.env`.
+Full step-by-step: **[docs/INSTALL.md](docs/INSTALL.md)**
 
-### Manual Docker Compose
+---
+
+## Kiosk Mode
+
+The KDS display at `/` is designed to run as a dedicated kitchen display:
+
+- **Auto-fullscreen** — requests fullscreen automatically on load
+- **F4** — exits fullscreen (only keyboard shortcut that works in kiosk)
+- **Test button** — small "Test" button in the header fires a random order instantly
+- **Empty state** — when no orders are active, shows a prominent "Inject a test order" button
+
+For a fully locked-down display (browser chrome completely hidden), launch Chromium via the systemd display service:
+
+```bash
+sudo systemctl start lineops-kds-display
+```
+
+See [docs/INSTALL.md — Setting up a dedicated KDS display](docs/INSTALL.md#setting-up-a-dedicated-kds-display-kiosk-mode) for the full setup.
+
+---
+
+## Docker / systemd Deployment
 
 ```bash
 cp .env.example .env
-# Edit .env — set DATABASE_URL, SESSION_SECRET, and any POS secrets
 docker compose up -d
 ```
 
-Services started:
-| Container | Role | Exposed |
-|---|---|---|
-| `nginx` | Reverse proxy | `:80` (public) |
-| `api` | REST + WebSocket | `127.0.0.1:3000` (CLI only) |
-| `web` | KDS frontend | internal only |
-| `db` | PostgreSQL | internal only |
+| File | Purpose |
+|---|---|
+| `docker-compose.yml` | Orchestrates postgres + api + web + nginx |
+| `docker/Dockerfile.api` | Multi-stage build for the API server |
+| `docker/Dockerfile.web` | Vite build + nginx for the KDS frontend |
+| `docker/nginx.conf` | Reverse proxy — routes `/api`, `/ws`, `/` |
+| `docker/lineops-kds.service` | systemd service — starts the Docker Compose stack on boot |
+| `docker/lineops-kds-display.service` | systemd service — launches Chromium kiosk on the display machine |
+| `bin/kds` | Bash CLI — terminal commands for ops |
+| `install.sh` | One-liner Linux installer |
+| `.env.example` | Environment variable reference |
 
-All KDS tablets on your LAN connect to `http://<server-ip>/`.
+### Network layout
+
+```
+LAN clients (tablets, KDS screens)
+        │
+      :80 (nginx)
+        ├── /          → KDS frontend
+        ├── /api/*     → API server
+        └── /ws        → WebSocket (same API process)
+
+API → PostgreSQL (internal Docker network, no public port)
+```
 
 ---
 
 ## CLI
 
-The `kds` CLI is installed at `/usr/local/bin/kds` by the installer.
-
 ```bash
 kds status              # Live system overview
 kds orders              # List active orders
 kds orders bump 101     # Bump order #101
-kds orders recall 101   # Recall a bumped order
-kds orders add          # Inject a test order
+kds orders recall 101   # Recall bumped order
+kds orders add          # Inject a CLI test order
 kds stations            # List stations
-kds devices             # List registered KDS displays
+kds devices             # List KDS displays
 kds logs [api|web|db]   # Tail service logs
-kds ip                  # Show LAN IP and connection URLs
-kds start               # Start all services
-kds stop                # Stop all services
-kds restart             # Rolling restart
-kds update              # Pull latest image and restart
+kds ip                  # Show LAN IP + connection URLs
+kds start / stop / restart / update
 ```
 
 ---
 
-## Configuration
+## App Pages
 
-All configuration lives in `.env`. See [`.env.example`](.env.example) for every option with explanations.
-
-Key variables:
-
-| Variable | Required | Description |
+| URL | Page | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `SESSION_SECRET` | Yes | Random string for session signing |
-| `PORT` | No | API server port (default 8080) |
-| `KDS_STORE_NAME` | No | Display name shown in UI |
-| `VOLANTE_WEBHOOK_SECRET` | No | HMAC secret for Volante VE RPC |
-| `VOLANTE_PRINTER_STATION_MAP` | No | JSON: VE printer type UUID → station ID |
-| `SQUARE_WEBHOOK_SECRET` | No | Square webhook signing secret |
-| `TOAST_WEBHOOK_SECRET` | No | Toast webhook signing secret |
+| `/` | **KDS Display** | Full-screen order grid, station tabs, bump bar |
+| `/dashboard` | **Manager Dashboard** | Stats, station load, activity feed |
+| `/orders` | **Order History** | All orders with bump/recall |
+| `/devices` | **Devices** | KDS display status monitoring |
+| `/setup` | **Setup** | Enterprise → Store → Station → Device hierarchy |
+| `/live` | **Live Monitor** | Real-time WebSocket event feed for POS testing |
 
 ---
 
@@ -114,14 +139,26 @@ Key variables:
 
 | POS | Mode | Guide |
 |---|---|---|
-| Volante Systems VE | RPC push (native) | [docs/integrations/VOLANTE.md](docs/integrations/VOLANTE.md) |
+| Volante Systems VE | RPC push (PUT, native) | [docs/integrations/VOLANTE.md](docs/integrations/VOLANTE.md) |
 | Square | Webhook | [docs/integrations/README.md](docs/integrations/README.md) |
 | Toast POS | Webhook | [docs/integrations/README.md](docs/integrations/README.md) |
 | Clover | Webhook | [docs/integrations/README.md](docs/integrations/README.md) |
 | Lightspeed K-Series | Webhook | [docs/integrations/README.md](docs/integrations/README.md) |
 | Generic / Custom | REST push | [docs/integrations/README.md](docs/integrations/README.md) |
 
-Full integration guide: [docs/integrations/README.md](docs/integrations/README.md)
+---
+
+## Configuration
+
+See [`.env.example`](.env.example) for all options. Key variables:
+
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `SESSION_SECRET` | Yes | Random string for session signing |
+| `VOLANTE_STATION_MAP` | No | JSON: KDS Terminal ID → station ID e.g. `{"1":"grill","2":"cold"}` |
+| `SQUARE_WEBHOOK_SECRET` | No | Square webhook signing key |
+| `TOAST_WEBHOOK_SECRET` | No | Toast webhook signing key |
 
 ---
 
@@ -129,9 +166,10 @@ Full integration guide: [docs/integrations/README.md](docs/integrations/README.m
 
 | Document | Purpose |
 |---|---|
+| **[docs/INSTALL.md](docs/INSTALL.md)** | Complete installation guide — Docker, systemd, kiosk display setup |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data flow, component map |
 | [docs/ai.md](docs/ai.md) | AI assistant context (codebase guide) |
-| [docs/integrations/README.md](docs/integrations/README.md) | Connecting a POS system |
+| [docs/integrations/README.md](docs/integrations/README.md) | Connecting each POS system |
 | [docs/integrations/VOLANTE.md](docs/integrations/VOLANTE.md) | Volante VE deep-dive |
 | [docs/integrations/DEVELOPER.md](docs/integrations/DEVELOPER.md) | Adding a new POS adapter |
 
@@ -140,8 +178,7 @@ Full integration guide: [docs/integrations/README.md](docs/integrations/README.m
 ## Development Commands
 
 ```bash
-pnpm run typecheck                              # Full typecheck (all packages)
-pnpm --filter @workspace/api-spec run codegen  # Regenerate API hooks and Zod schemas
-pnpm --filter @workspace/db run push           # Push DB schema changes (dev only)
-pnpm --filter @workspace/db run generate       # Generate new migration file
+pnpm run typecheck                              # Full typecheck
+pnpm --filter @workspace/api-spec run codegen  # Regenerate API hooks/schemas
+pnpm --filter @workspace/db run push           # Push DB schema (dev only)
 ```

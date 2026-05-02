@@ -9,6 +9,7 @@ import dashboardRouter    from "./dashboard";
 import keysRouter         from "./keys";
 import webhooksRouter     from "./webhooks";
 import integrationsRouter from "./integrations";
+import testRouter         from "./test";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(dashboardRouter);
 router.use(keysRouter);
 router.use(webhooksRouter);
 router.use(integrationsRouter);
+router.use(testRouter);
 
 export default router;

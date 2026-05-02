@@ -137,8 +137,11 @@ Adding a new POS: see `docs/integrations/DEVELOPER.md`.
 | Add a DB table | `lib/db/src/schema/<name>.ts` + re-export in `lib/db/src/schema/index.ts` → run `db push` |
 | Change sidebar nav | `artifacts/kds/src/components/layout.tsx` |
 | Change a UI page | `artifacts/kds/src/pages/<page>.tsx` |
+| Change KDS display (kiosk) | `artifacts/kds/src/pages/index.tsx` |
+| Change live monitor page | `artifacts/kds/src/pages/live.tsx` |
 | Change branding / logo | `artifacts/kds/src/components/logo.tsx` + `artifacts/kds/public/favicon.svg` |
 | Change station routing heuristics | `artifacts/api-server/src/lib/pos/types.ts` — `DEFAULT_STATION_MAP` |
+| Add test order menu items | `artifacts/api-server/src/routes/test.ts` — `MENU_ITEMS` array |
 
 ---
 
