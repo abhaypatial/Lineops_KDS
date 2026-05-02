@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Kitchen Display System API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: enterprises
+    description: Enterprise management
+  - name: stores
+    description: Store management
+  - name: devices
+    description: Device management
+  - name: stations
+    description: Kitchen stations
+  - name: orders
+    description: Order management
+  - name: dashboard
+    description: Dashboard aggregates
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,455 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Enterprises ──────────────────────────────────────────────────────────
+  /enterprises:
+    get:
+      operationId: listEnterprises
+      tags: [enterprises]
+      summary: List all enterprises
+      responses:
+        "200":
+          description: List of enterprises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Enterprise"
+    post:
+      operationId: createEnterprise
+      tags: [enterprises]
+      summary: Create enterprise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEnterpriseBody"
+      responses:
+        "201":
+          description: Created enterprise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enterprise"
+
+  /enterprises/{id}:
+    get:
+      operationId: getEnterprise
+      tags: [enterprises]
+      summary: Get enterprise by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Enterprise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enterprise"
+
+  # ── Stores ───────────────────────────────────────────────────────────────
+  /stores:
+    get:
+      operationId: listStores
+      tags: [stores]
+      summary: List stores
+      parameters:
+        - name: enterpriseId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of stores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Store"
+    post:
+      operationId: createStore
+      tags: [stores]
+      summary: Create store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStoreBody"
+      responses:
+        "201":
+          description: Created store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+
+  /stores/{id}:
+    get:
+      operationId: getStore
+      tags: [stores]
+      summary: Get store by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+
+  # ── Stations ─────────────────────────────────────────────────────────────
+  /stations:
+    get:
+      operationId: listStations
+      tags: [stations]
+      summary: List stations
+      parameters:
+        - name: storeId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of stations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Station"
+    post:
+      operationId: createStation
+      tags: [stations]
+      summary: Create station
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStationBody"
+      responses:
+        "201":
+          description: Created station
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+
+  /stations/{id}:
+    get:
+      operationId: getStation
+      tags: [stations]
+      summary: Get station by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Station
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+
+  # ── Devices ──────────────────────────────────────────────────────────────
+  /devices:
+    get:
+      operationId: listDevices
+      tags: [devices]
+      summary: List devices
+      parameters:
+        - name: storeId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Device"
+    post:
+      operationId: createDevice
+      tags: [devices]
+      summary: Register device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeviceBody"
+      responses:
+        "201":
+          description: Created device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+  /devices/{id}:
+    get:
+      operationId: getDevice
+      tags: [devices]
+      summary: Get device by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+    patch:
+      operationId: updateDevice
+      tags: [devices]
+      summary: Update device
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDeviceBody"
+      responses:
+        "200":
+          description: Updated device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+  # ── Orders ───────────────────────────────────────────────────────────────
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders
+      parameters:
+        - name: storeId
+          in: query
+          schema:
+            type: string
+        - name: stationId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_progress, ready, completed, cancelled]
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create order (POS integration)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+    patch:
+      operationId: updateOrder
+      tags: [orders]
+      summary: Update order status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderBody"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}/bump:
+    post:
+      operationId: bumpOrder
+      tags: [orders]
+      summary: Bump (complete) order via bump bar or touch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bumped order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}/items/{itemId}/status:
+    patch:
+      operationId: updateOrderItemStatus
+      tags: [orders]
+      summary: Update individual order item status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemStatusBody"
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderItem"
+
+  # ── Dashboard ─────────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Dashboard summary (order counts, avg times, station load)
+      parameters:
+        - name: storeId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Recent order activity feed
+      parameters:
+        - name: storeId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEvent"
+
+  /dashboard/station-load:
+    get:
+      operationId: getStationLoad
+      tags: [dashboard]
+      summary: Current order load per station
+      parameters:
+        - name: storeId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Station load data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StationLoad"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +492,356 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Enterprise:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, slug, createdAt]
+
+    CreateEnterpriseBody:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+      required: [name, slug]
+
+    Store:
+      type: object
+      properties:
+        id:
+          type: string
+        enterpriseId:
+          type: string
+        name:
+          type: string
+        location:
+          type: string
+        timezone:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, enterpriseId, name, createdAt]
+
+    CreateStoreBody:
+      type: object
+      properties:
+        enterpriseId:
+          type: string
+        name:
+          type: string
+        location:
+          type: string
+        timezone:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+      required: [enterpriseId, name]
+
+    Station:
+      type: object
+      properties:
+        id:
+          type: string
+        storeId:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, storeId, name, sortOrder, createdAt]
+
+    CreateStationBody:
+      type: object
+      properties:
+        storeId:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+        sortOrder:
+          type: integer
+      required: [storeId, name]
+
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+        storeId:
+          type: string
+        name:
+          type: string
+        deviceToken:
+          type: string
+        stationIds:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [online, offline, idle]
+        lastSeenAt:
+          type: string
+          format: date-time
+        config:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, storeId, name, deviceToken, stationIds, status, createdAt]
+
+    CreateDeviceBody:
+      type: object
+      properties:
+        storeId:
+          type: string
+        name:
+          type: string
+        stationIds:
+          type: array
+          items:
+            type: string
+        config:
+          type: object
+          additionalProperties: true
+      required: [storeId, name, stationIds]
+
+    UpdateDeviceBody:
+      type: object
+      properties:
+        name:
+          type: string
+        stationIds:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [online, offline, idle]
+        config:
+          type: object
+          additionalProperties: true
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        storeId:
+          type: string
+        posOrderId:
+          type: string
+        orderNumber:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, ready, completed, cancelled]
+        priority:
+          type: string
+          enum: [normal, rush, vip]
+        customerName:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        elapsedSeconds:
+          type: integer
+      required: [id, storeId, orderNumber, status, priority, items, createdAt]
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+        orderId:
+          type: string
+        stationId:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        modifiers:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, ready, cancelled]
+        sortOrder:
+          type: integer
+      required: [id, orderId, stationId, name, quantity, status, sortOrder]
+
+    CreateOrderBody:
+      type: object
+      properties:
+        storeId:
+          type: string
+        posOrderId:
+          type: string
+        orderNumber:
+          type: string
+        priority:
+          type: string
+          enum: [normal, rush, vip]
+        customerName:
+          type: string
+        notes:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateOrderItemBody"
+      required: [storeId, orderNumber, items]
+
+    CreateOrderItemBody:
+      type: object
+      properties:
+        stationId:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        modifiers:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        sortOrder:
+          type: integer
+      required: [stationId, name, quantity]
+
+    UpdateOrderBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, in_progress, ready, completed, cancelled]
+        priority:
+          type: string
+          enum: [normal, rush, vip]
+        notes:
+          type: string
+
+    UpdateItemStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, in_progress, ready, cancelled]
+      required: [status]
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalActive:
+          type: integer
+        totalPending:
+          type: integer
+        totalInProgress:
+          type: integer
+        totalReady:
+          type: integer
+        totalCompletedToday:
+          type: integer
+        avgCompletionSeconds:
+          type: integer
+        rushCount:
+          type: integer
+        onlineDevices:
+          type: integer
+      required:
+        - totalActive
+        - totalPending
+        - totalInProgress
+        - totalReady
+        - totalCompletedToday
+        - avgCompletionSeconds
+        - rushCount
+        - onlineDevices
+
+    ActivityEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [order_created, order_bumped, order_ready, item_ready, device_online, device_offline]
+        orderId:
+          type: string
+        orderNumber:
+          type: string
+        stationName:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [id, type, message, timestamp]
+
+    StationLoad:
+      type: object
+      properties:
+        stationId:
+          type: string
+        stationName:
+          type: string
+        color:
+          type: string
+        pendingCount:
+          type: integer
+        inProgressCount:
+          type: integer
+        readyCount:
+          type: integer
+        totalActive:
+          type: integer
+      required: [stationId, stationName, pendingCount, inProgressCount, readyCount, totalActive]

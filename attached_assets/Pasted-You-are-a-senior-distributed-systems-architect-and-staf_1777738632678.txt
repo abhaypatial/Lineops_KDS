@@ -1,0 +1,136 @@
+You are a senior distributed systems architect and staff-level full-stack engineer.
+Your task is to design and implement a production-ready Kitchen Display System (KDS) with clean architecture, modular structure, and minimal future token usage for iterative edits.
+IMPORTANT RULES:
+
+* Be concise, structured, and avoid unnecessary explanations.
+* Prefer modular files over long monolithic code.
+* Use clear folder structures so future edits require touching minimal files.
+* Every component must be independently replaceable.
+* Output in sections with headings.
+* Do NOT generate excessive boilerplate unless necessary.
+* Use consistent naming conventions.
+🎯 SYSTEM GOAL
+Build a real-time, multi-tenant Kitchen Display System (KDS) that:
+
+* Runs on Linux mini PCs (browser kiosk mode)
+* Is web-based (PWA-first)
+* Supports multiple KDS screens per store
+* Supports multiple stations per KDS
+* Integrates easily with POS systems
+* Supports both bump bar (keyboard input) and touchscreen
+* Has centralized configuration (enterprise → store → device)
+* Has template-based theming and workflows
+🧱 CORE ARCHITECTURE REQUIREMENTS
+Use clean architecture:
+
+* Presentation layer (frontend)
+* Application layer (services / use cases)
+* Domain layer (core logic)
+* Infrastructure layer (DB, Redis, WebSockets)
+Backend:
+
+* Node.js (NestJS preferred) OR Go (if justified)
+* PostgreSQL
+* Redis (pub/sub + caching)
+* WebSockets (primary real-time transport)
+Frontend:
+
+* React + TypeScript
+* Tailwind CSS
+* State management (Zustand or equivalent)
+* WebSocket client
+🔑 KEY DESIGN CONSTRAINTS
+
+1. Device identity must NOT rely on IP
+   * Use device_id + token (JWT)
+2. Real-time updates are critical
+   * Orders must sync instantly across all KDS
+3. Multi-station support:
+   * Each item belongs to a station
+   * Each KDS subscribes to one or more stations
+4. Multi-tenant:
+   * Enterprise → Stores → Devices hierarchy
+5. Config system:
+   * Template-based
+   * Override at store and device level
+6. Input abstraction:
+   * Treat bump bar as keyboard input mapping
+   * Same actions callable via UI
+📦 REQUIRED OUTPUT FORMAT
+1. System Overview
+
+* Short architecture summary
+* Data flow diagram (text-based)
+2. Folder Structure (VERY IMPORTANT)
+
+* Backend folder structure
+* Frontend folder structure
+* Keep modular and scalable
+3. Database Schema
+
+* Multi-tenant structure
+* Tables:
+   * enterprises
+   * stores
+   * devices
+   * orders
+   * order_items
+   * templates
+   * configs
+Provide minimal but scalable schema.
+4. API Design
+
+* REST endpoints
+* WebSocket events
+* Keep consistent naming
+5. Real-Time Architecture
+
+* Redis pub/sub flow
+* Event structure
+6. Device Lifecycle
+
+* Registration flow
+* Authentication
+* Reconnection handling
+7. POS Integration Layer
+
+* Adapter pattern
+* Example normalized payload
+8. Frontend Architecture
+
+* Component structure
+* State management approach
+* WebSocket handling
+9. Input System (Bump Bar + Touch)
+
+* Key mapping system
+* Action dispatch design
+10. Config + Template System
+
+* Hierarchical config resolution: enterprise → store → device
+11. Deployment Strategy
+
+* Docker setup
+* Cloud vs on-prem
+12. MVP Scope
+
+* What to build first (lean version)
+⚡ OUTPUT STYLE RULES
+
+* Use bullet points and short code snippets
+* Avoid long paragraphs
+* Prefer JSON examples over explanations
+* Keep each section independent
+* No repetition
+🚫 DO NOT
+
+* Do not write essays
+* Do not over-explain basic concepts
+* Do not mix unrelated concerns
+* Do not generate unnecessary UI styling code
+✅ BONUS (if space allows)
+
+* Suggest scaling strategy (1000+ devices)
+* Suggest offline mode approach
+* Suggest monitoring/logging approach
+Now generate the full system design and starter structure.
