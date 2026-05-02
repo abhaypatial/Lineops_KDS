@@ -446,13 +446,13 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
               </svg>
               <span className="font-mono tabular-nums font-bold" style={{ fontSize: fs.timer, color: tColor }}>{fmtTime(elapsed)}</span>
             </div>
-            <span className="text-[9px] text-white/25 font-medium">{doneCount}/{order.items.length}</span>
+            <span className="text-[9px] text-white/50 font-medium">{doneCount}/{order.items.length}</span>
             <button onClick={e => { e.stopPropagation(); onBump(); }}
               className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border transition-all active:scale-95"
               style={{
-                background: hasPrio ? `${pColor}18` : "rgba(255,255,255,0.05)",
-                borderColor: hasPrio ? `${pColor}44` : "rgba(255,255,255,0.1)",
-                color: hasPrio ? pColor : "rgba(255,255,255,0.38)",
+                background: hasPrio ? `${pColor}18` : "rgba(255,255,255,0.06)",
+                borderColor: hasPrio ? `${pColor}44` : "rgba(255,255,255,0.15)",
+                color: hasPrio ? pColor : "rgba(255,255,255,0.62)",
               }}>
               {cfg.mode === "expo" ? "Fire →" : "Bump ↵"}
             </button>
@@ -495,7 +495,7 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
         )}
 
         {allDone && (
-          <p className="text-center text-[10px] text-white/22 tracking-wide">
+          <p className="text-center text-[10px] text-white/45 tracking-wide font-semibold">
             All ready — {cfg.mode === "expo" ? "fire" : "bump"} to complete
           </p>
         )}
@@ -1812,14 +1812,14 @@ export default function KdsDisplay() {
             <div key={label} className="flex items-center gap-1.5">
               <div className="flex gap-1">
                 {keys.map(k => (
-                  <kbd key={k} className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.13] bg-white/[0.06] text-white/50">{k}</kbd>
+                  <kbd key={k} className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.18] bg-white/[0.08] text-white/70">{k}</kbd>
                 ))}
               </div>
-              <span className="text-[10px] text-white/28 uppercase tracking-wider">{label}</span>
+              <span className="text-[10px] text-white/45 uppercase tracking-wider">{label}</span>
             </div>
           ))}
           {doneTotal > 0 && (
-            <span className="text-[10px] text-white/22">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
+            <span className="text-[10px] text-white/40">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
           )}
           {/* Kitchen health indicator */}
           {allOrders.length > 0 && (
@@ -1850,7 +1850,7 @@ export default function KdsDisplay() {
                   setFocus(visibleOrders[Math.max(idx - 1, 0)]?.id ?? null);
                 }}
                 className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
-                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
+                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.62)" }}
                 title="Previous order">◀</button>
               <button
                 onClick={() => focusedOrder && bump(focusedOrder.id)}
@@ -1878,7 +1878,7 @@ export default function KdsDisplay() {
                   setFocus(visibleOrders[Math.min(idx + 1, visibleOrders.length - 1)]?.id ?? null);
                 }}
                 className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
-                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
+                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.62)" }}
                 title="Next order">▶</button>
               <button
                 onClick={() => setCfg(c => ({ ...c, showVirtualBumpBar: false }))}
