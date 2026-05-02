@@ -42,13 +42,20 @@ Open `http://localhost/` — KDS display (auto-fullscreens, press F4 to exit).
 
 ---
 
-## Production Install (Linux)
+## Production Install
 
+**Linux (one-liner):**
 ```bash
 sudo bash install.sh
 ```
 
-Full step-by-step: **[docs/INSTALL.md](docs/INSTALL.md)**
+**Windows (Docker Desktop):**
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\install.ps1
+```
+
+Full step-by-step for all platforms: **[docs/INSTALL.md](docs/INSTALL.md)**
 
 ---
 
@@ -78,17 +85,19 @@ cp .env.example .env
 docker compose up -d
 ```
 
-| File | Purpose |
-|---|---|
-| `docker-compose.yml` | Orchestrates postgres + api + web + nginx |
-| `docker/Dockerfile.api` | Multi-stage build for the API server |
-| `docker/Dockerfile.web` | Vite build + nginx for the KDS frontend |
-| `docker/nginx.conf` | Reverse proxy — routes `/api`, `/ws`, `/` |
-| `docker/lineops-kds.service` | systemd service — starts the Docker Compose stack on boot |
-| `docker/lineops-kds-display.service` | systemd service — launches Chromium kiosk on the display machine |
-| `bin/kds` | Bash CLI — terminal commands for ops |
-| `install.sh` | One-liner Linux installer |
-| `.env.example` | Environment variable reference |
+| File | Platform | Purpose |
+|---|---|---|
+| `docker-compose.yml` | All | Orchestrates postgres + api + web + nginx |
+| `docker/Dockerfile.api` | All | Multi-stage build for the API server |
+| `docker/Dockerfile.web` | All | Vite build + nginx for the KDS frontend |
+| `docker/nginx.conf` | All | Reverse proxy — routes `/api`, `/ws`, `/` |
+| `docker/lineops-kds.service` | Linux | systemd service — starts the Docker Compose stack on boot |
+| `docker/lineops-kds-display.service` | Linux | systemd service — launches Chromium kiosk on the display machine |
+| `install.sh` | Linux/macOS | One-liner installer |
+| `install.ps1` | Windows | PowerShell installer — Docker Desktop |
+| `bin/kds` | Linux/macOS | Bash CLI — terminal commands for ops |
+| `bin/kds.ps1` | Windows | PowerShell CLI — same commands as `bin/kds` |
+| `.env.example` | All | Environment variable reference |
 
 ### Network layout
 
@@ -128,10 +137,12 @@ kds start / stop / restart / update
 |---|---|---|
 | `/` | **KDS Display** | Full-screen order grid, station tabs, bump bar |
 | `/dashboard` | **Manager Dashboard** | Stats, station load, activity feed |
-| `/orders` | **Order History** | All orders with bump/recall |
-| `/devices` | **Devices** | KDS display status monitoring |
+| `/orders` | **Order History** | All orders with bump/recall/status management |
+| `/devices` | **Devices** | KDS display status monitoring (online/idle/offline) |
+| `/template-builder` | **Template Builder** | Visual grid editor — drag zones, pick presets, export JSON |
+| `/integration-hub` | **Integration Hub** | POS system config, live event feed, API keys, webhooks |
 | `/setup` | **Setup** | Enterprise → Store → Station → Device hierarchy |
-| `/live` | **Live Monitor** | Real-time WebSocket event feed for POS testing |
+| `/live` | **Live Monitor** | Real-time WebSocket event feed for POS integration testing |
 
 ---
 
