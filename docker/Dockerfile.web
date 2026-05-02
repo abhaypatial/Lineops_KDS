@@ -33,7 +33,7 @@ FROM nginx:1.27-alpine AS runner
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy built assets
-COPY --from=builder /workspace/artifacts/kds/dist /usr/share/nginx/html
+COPY --from=builder /workspace/artifacts/kds/dist/public /usr/share/nginx/html
 
 # Nginx config is mounted from docker-compose (nginx/kds.conf)
 # but we provide a sensible default here

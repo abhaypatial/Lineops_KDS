@@ -189,6 +189,14 @@ Both Dockerfiles copy `package.json` stubs for all workspace packages to avoid
 `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`. If you add a new workspace package, add its
 `package.json` stub to both Dockerfiles.
 
+**Critical:** `Dockerfile.web` must copy `dist/public` (not `dist`) into nginx:
+```
+COPY --from=builder /workspace/artifacts/kds/dist/public /usr/share/nginx/html
+```
+The KDS Vite config sets `outDir: "dist/public"`, so `index.html` lives at
+`dist/public/index.html`. Copying the parent `dist/` directory leaves nginx with
+`/usr/share/nginx/html/public/index.html` and returns 403 Forbidden on every request.
+
 ---
 
 ## Common mistakes to avoid
@@ -202,3 +210,4 @@ Both Dockerfiles copy `package.json` stubs for all workspace packages to avoid
 - Forgetting to `return` after `res.status(...).json(...)` in async route handlers.
 - Removing `.onConflictDoNothing()` or `db.transaction()` from `createOrderFromNormalised` — they prevent duplicate orders under concurrent POS bursts.
 - Using `node:24-alpine` as the Dockerfile.web builder — rollup's musl binary is excluded in `pnpm-workspace.yaml`; use `node:24-slim` (Debian/glibc) instead.
+- Copying `dist/` instead of `dist/public/` in `Dockerfile.web` — Vite outputs to `dist/public/`; nginx gets 403 Forbidden if you copy the wrong directory.
