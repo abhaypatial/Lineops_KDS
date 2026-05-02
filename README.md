@@ -177,9 +177,9 @@ See [`.env.example`](.env.example) for all options. Key variables:
 
 | Document | Purpose |
 |---|---|
-| **[docs/INSTALL.md](docs/INSTALL.md)** | Complete installation guide — Docker, systemd, kiosk display setup |
+| **[docs/INSTALL.md](docs/INSTALL.md)** | Complete installation guide — Windows, Docker, systemd, kiosk display setup |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data flow, component map |
-| [docs/ai.md](docs/ai.md) | AI assistant context (codebase guide) |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
 | [docs/integrations/README.md](docs/integrations/README.md) | Connecting each POS system |
 | [docs/integrations/VOLANTE.md](docs/integrations/VOLANTE.md) | Volante VE deep-dive |
 | [docs/integrations/DEVELOPER.md](docs/integrations/DEVELOPER.md) | Adding a new POS adapter |
