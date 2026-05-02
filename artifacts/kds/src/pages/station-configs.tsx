@@ -304,15 +304,31 @@ export default function StationConfigsPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 font-bold uppercase tracking-wider text-xs gap-1.5 h-8"
+                    className={`flex-1 font-bold uppercase tracking-wider text-xs gap-1.5 h-8 ${
+                      hasCfg && onlineAtStation.length > 0
+                        ? "border-green-500/30 text-green-400 hover:text-green-300 hover:border-green-500/50"
+                        : ""
+                    }`}
                     disabled={!hasCfg || isBusy}
                     onClick={() => pushConfig(station.id, station.name)}
-                    title={hasCfg ? "Push saved config to all displays at this station" : "Save a config first"}
+                    title={
+                      !hasCfg
+                        ? "Save a config template first"
+                        : onlineAtStation.length === 0
+                        ? assignedDevices.length === 0
+                          ? "No displays assigned to this station"
+                          : `${assignedDevices.length} display(s) assigned but none are online right now`
+                        : `Push to ${onlineAtStation.length} live display(s) at ${station.name}`
+                    }
                   >
-                    {busyAction === "push"
-                      ? <RefreshCw className="h-3 w-3 animate-spin" />
-                      : <Send className="h-3 w-3" />}
-                    Push to Displays
+                    {busyAction === "push" ? (
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Send className="h-3 w-3" />
+                    )}
+                    {onlineAtStation.length > 0
+                      ? `Push to ${onlineAtStation.length} live`
+                      : "Push to Displays"}
                   </Button>
 
                   {copyableSources.length > 0 && (

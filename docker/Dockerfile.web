@@ -7,11 +7,18 @@ RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
 
-# Only the packages the KDS frontend needs
-COPY lib/api-spec/      ./lib/api-spec/
-COPY lib/api-zod/       ./lib/api-zod/
+# Copy package.json stubs for ALL workspace packages so pnpm computes
+# identical overrides to the lockfile (partial workspace causes mismatch).
+COPY lib/db/package.json                   ./lib/db/
+COPY artifacts/api-server/package.json     ./artifacts/api-server/
+COPY artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/
+COPY scripts/package.json                  ./scripts/
+
+# Full source for the packages we actually build
+COPY lib/api-spec/         ./lib/api-spec/
+COPY lib/api-zod/          ./lib/api-zod/
 COPY lib/api-client-react/ ./lib/api-client-react/
-COPY artifacts/kds/     ./artifacts/kds/
+COPY artifacts/kds/        ./artifacts/kds/
 
 RUN pnpm install --frozen-lockfile
 

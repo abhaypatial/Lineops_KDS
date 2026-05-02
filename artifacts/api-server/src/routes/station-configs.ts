@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, kdsStationConfigsTable, devicesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { broadcast, broadcastToDevice, stripMachineLocal } from "../lib/ws";
+import { broadcastToDevice, stripMachineLocal } from "../lib/ws";
 
 const router = Router();
 
@@ -48,12 +48,13 @@ router.post("/stations/:id/push-config", async (req, res): Promise<void> => {
   const safe = stripMachineLocal(row.config as Record<string, unknown>);
   let devicesReached = 0;
   for (const device of assigned) {
-    if (broadcastToDevice(device.id, { type: "kds_config_push", payload: { config: safe } })) {
+    if (broadcastToDevice(device.id, {
+      type: "kds_config_push",
+      payload: { config: safe, stationId: req.params.id },
+    })) {
       devicesReached++;
     }
   }
-
-  broadcast({ type: "kds_config_push", payload: { config: safe, stationId: req.params.id } });
 
   res.json({ ok: true, devicesFound: assigned.length, devicesReached });
 });
