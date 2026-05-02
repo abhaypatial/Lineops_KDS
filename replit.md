@@ -46,6 +46,27 @@ Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (li
 - **Devices Page** (`/devices`): Device status monitoring (online/idle/offline)
 - **Setup Page** (`/setup`): Hierarchical config — enterprises, stores, stations, devices
 
+## POS Integration Layer
+
+All adapters live in `artifacts/api-server/src/lib/pos/`. Each returns `AdapterResult` from `types.ts`.
+
+| POS | Mode | Adapter file | Route(s) |
+|---|---|---|---|
+| Volante VE | RPC push (PUT) | `volante.ts` | `rpc/master-trans` + `rpc/kitchen-jobs` |
+| Square | Webhook POST | `square.ts` | `square/webhook` |
+| Toast POS | Webhook POST | `toast.ts` | `toast/webhook` |
+| Clover | Webhook POST | `clover.ts` | `clover/webhook` |
+| Lightspeed K-Series | Webhook POST | `lightspeed.ts` | `lightspeed/webhook` |
+| Generic / Custom | REST POST + API key | `generic.ts` | `orders` |
+
+### Volante VE — printer type → station mapping
+
+VE assigns a `printerTypeId` (UUID) to every kitchen chit. LineOps maps this UUID to a station ID via `VOLANTE_PRINTER_STATION_MAP` env var (JSON). Without it, `MenuItem.groupName` keyword heuristics are used as fallback. See `docs/integrations/VOLANTE.md`.
+
+### Adding a new POS
+
+See `docs/integrations/DEVELOPER.md` for the full step-by-step.
+
 ## Routing
 
 - `/` → KDS frontend (port 19773)
@@ -99,9 +120,23 @@ kds start / stop / restart / update
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate hooks/schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 
+## Documentation
+
+| File | Purpose |
+|---|---|
+| `README.md` | Project overview, quickstart, Docker install, CLI reference |
+| `docs/ARCHITECTURE.md` | System design, data flow, station routing, deployment network |
+| `docs/ai.md` | AI assistant context — tech stack, patterns, what NOT to do |
+| `docs/integrations/README.md` | How to connect each POS (Square, Toast, Clover, Lightspeed, Generic) |
+| `docs/integrations/VOLANTE.md` | Volante VE deep-dive — printer types, RPC setup, data mapping |
+| `docs/integrations/DEVELOPER.md` | How to add a new POS adapter (step-by-step with template) |
+
 ## Important Notes
 
 - After running codegen, `lib/api-zod/src/index.ts` must only export from `./generated/api` (codegen may generate a duplicate export from `./generated/types` — remove it to avoid TS2308)
 - API server auto-seeds on startup if no enterprises exist (`lib/seed.ts`)
 - Express 5: async handlers need `Promise<void>` return type; early returns use `res.status().json(); return;` pattern
 - WebSocket broadcasts fire on order create/bump/item-status changes to invalidate React Query caches on all connected clients
+- Zod import: always `from "zod"`, never `from "zod/v4"` — esbuild cannot resolve the v4 subpath
+- Logging: use `req.log` in route handlers, `logger` singleton elsewhere — never `console.log` in server code
+- Volante VE uses RPC push (PUT), not a single POST webhook — see `docs/integrations/VOLANTE.md`

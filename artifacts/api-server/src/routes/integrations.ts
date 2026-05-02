@@ -229,7 +229,14 @@ router.put("/integrations/volante/rpc/kitchen-jobs", async (req, res): Promise<v
   const eventId = randomUUID();
 
   try {
-    const results = processKitchenJobs(jobs);
+    // Load the VE printer type → station ID mapping from env (JSON string)
+    let printerMap: Record<string, string> | undefined;
+    try {
+      const raw = process.env.VOLANTE_PRINTER_STATION_MAP;
+      if (raw) printerMap = JSON.parse(raw) as Record<string, string>;
+    } catch { /* ignore malformed JSON — fall through to groupName heuristic */ }
+
+    const results = processKitchenJobs(jobs, printerMap);
     const created: string[] = [];
 
     for (const { order, jobId } of results) {

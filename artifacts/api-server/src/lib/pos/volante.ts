@@ -122,6 +122,14 @@ export interface VeKitchenChitJob {
   masterTransId: number;              // POS check number
   storeId: string;
   terminalId: string;
+  /**
+   * VE printer type UUID — configured in VE Back Office under
+   * "Kitchen Display Setup → Printer Types".  Each printer type maps to one
+   * physical kitchen display / station.  LineOps stores the mapping as
+   * { [printerTypeId: UUID]: stationId } per installation.
+   * When present this overrides the groupName-based station heuristic.
+   */
+  printerTypeId?: string;
   itemIds?: number[];                 // transItemIds fired in this chit (unique)
   voidItemIds?: number[];             // transItemIds that were voided
   bestResult?: "UNKNOWN" | "QUEUED" | "SENT" | "COMPLETE";
@@ -131,6 +139,25 @@ export interface VeKitchenChitJob {
   pluginId?: number;
   primaryPrint?: unknown;             // raw VE print engine payload — not needed by KDS
 }
+
+/**
+ * Maps VE printer type UUIDs to LineOps station IDs.
+ *
+ * Configured in VE Back Office: Kitchen Display Setup → Printer Types.
+ * Every printer type that points to a KDS display should have a matching
+ * entry here.  Without a match, groupName-based heuristics are used.
+ *
+ * Example:
+ *   {
+ *     "aaaa-1111-...": "grill",
+ *     "bbbb-2222-...": "cold",
+ *     "cccc-3333-...": "fryer",
+ *   }
+ *
+ * Store this in your environment as JSON:
+ *   VOLANTE_PRINTER_STATION_MAP='{"aaaa-1111":  "grill", ...}'
+ */
+export type VePrinterStationMap = Record<string, string>;
 
 export interface VeMasterTransUpdateResult {
   success?: boolean;
@@ -191,6 +218,12 @@ function resolveTrans(job: VeKitchenChitJob): VeMasterTransEntity | undefined {
 function extractItems(
   tx: VeMasterTransEntity,
   firedItemIds: Set<number>,
+  /**
+   * Station override from the chit's printerTypeId — when set, ALL items in
+   * this chit are assigned to this station (mirrors how VE routes chits to
+   * physical displays via printer types configured in Back Office).
+   */
+  chitStation: string | undefined,
   stationMap?: StationMap,
 ): NormalisedItem[] {
   const result: NormalisedItem[] = [];
@@ -219,9 +252,11 @@ function extractItems(
       // Prefer kitchenName for display; fall back to name
       const displayName = (det.kitchenName || det.name || "Item").trim();
 
-      // Determine station from VE category hierarchy:
-      //   groupName (menu group) → catName (menu category) → item name
-      const category = det.groupName || det.catName || displayName;
+      // Station resolution (priority order):
+      //   1. printerTypeId from the chit → explicit Back Office mapping (most accurate)
+      //   2. MenuItem.groupName / catName → heuristic keyword match
+      const stationId = chitStation
+        ?? mapStation(det.groupName || det.catName || displayName, stationMap);
 
       // Collect modifier strings from child TransOption records
       const opts = optionsByParent.get(item.transItemId) ?? [];
@@ -237,9 +272,9 @@ function extractItems(
       const notes = (item.notes ?? []).filter(Boolean).join("; ");
 
       result.push({
-        name:      displayName,
-        quantity:  item.userQty,
-        stationId: mapStation(category, stationMap),
+        name: displayName,
+        quantity: item.userQty,
+        stationId,
         modifiers,
         notes,
       });
@@ -264,9 +299,17 @@ export interface VeNormalisedOrder {
 /**
  * Process a batch of kitchen chit jobs against the cached transactions and
  * return normalised KDS orders ready to persist.
+ *
+ * @param jobs           KitchenChitJobEntity array from VE RPC push
+ * @param printerMap     VE printerTypeId UUID → LineOps stationId  (from
+ *                       VOLANTE_PRINTER_STATION_MAP env var or store config).
+ *                       When a chit's printerTypeId has an entry here it
+ *                       takes precedence over the groupName heuristic.
+ * @param stationMap     Keyword → stationId fallback for groupName matching
  */
 export function processKitchenJobs(
   jobs: VeKitchenChitJob[],
+  printerMap?: VePrinterStationMap,
   stationMap?: StationMap,
 ): { order: VeNormalisedOrder; jobId: string }[] {
   const results: { order: VeNormalisedOrder; jobId: string }[] = [];
@@ -284,9 +327,14 @@ export function processKitchenJobs(
     const customerName = tx?.serviceInfo?.customerName ?? undefined;
     const orderNotes   = tx?.serviceInfo?.orderNotes ?? "";
 
+    // Resolve station from printerTypeId (Back Office mapping) if available
+    const chitStation = job.printerTypeId && printerMap
+      ? printerMap[job.printerTypeId]
+      : undefined;
+
     // Extract items — with tx we get full detail; without we get a stub
     const items: NormalisedItem[] = tx
-      ? extractItems(tx, firedItemIds, stationMap)
+      ? extractItems(tx, firedItemIds, chitStation, stationMap)
       : Array.from(firedItemIds).map(id => ({
           name:      `Item #${id}`,
           quantity:  1,
