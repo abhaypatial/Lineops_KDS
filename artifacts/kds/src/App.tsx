@@ -11,7 +11,8 @@ import OrdersPage       from "@/pages/orders";
 import DevicesPage      from "@/pages/devices";
 import SetupPage        from "@/pages/setup";
 import LivePage         from "@/pages/live";
-import TemplateBuilderPage from "@/pages/template-builder";
+import TemplateBuilderPage  from "@/pages/template-builder";
+import IntegrationHubPage  from "@/pages/integration-hub";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,11 @@ function Router() {
       {/* Template builder — display layout designer */}
       <Route path="/template-builder">
         <AppLayout><TemplateBuilderPage /></AppLayout>
+      </Route>
+
+      {/* Integration Hub — POS connections, API keys, webhooks */}
+      <Route path="/integration-hub">
+        <AppLayout><IntegrationHubPage /></AppLayout>
       </Route>
 
       <Route component={NotFound} />
