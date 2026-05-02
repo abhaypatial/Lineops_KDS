@@ -40,7 +40,8 @@ export default function DevicesPage() {
     }
   }, [stores, storeId]);
 
-  const { data: devices } = useListDevices({ storeId }, { query: { enabled: !!storeId } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: devices } = useListDevices({ storeId }, { query: { enabled: !!storeId } as any });
 
   useEffect(() => {
     fetch("/api/kds/templates")

@@ -20,9 +20,12 @@ export default function DashboardPage() {
 
   useKdsWebSocket(storeId, queryClient);
 
-  const { data: summary } = useGetDashboardSummary({ storeId }, { query: { enabled: !!storeId } });
-  const { data: stationLoads } = useGetStationLoad({ storeId }, { query: { enabled: !!storeId } });
-  const { data: activity } = useGetRecentActivity({ storeId, limit: 50 }, { query: { enabled: !!storeId } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: summary } = useGetDashboardSummary({ storeId }, { query: { enabled: !!storeId } as any });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: stationLoads } = useGetStationLoad({ storeId }, { query: { enabled: !!storeId } as any });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: activity } = useGetRecentActivity({ storeId, limit: 50 }, { query: { enabled: !!storeId } as any });
 
   return (
     <div className="p-8 flex flex-col h-full gap-8 overflow-y-auto">

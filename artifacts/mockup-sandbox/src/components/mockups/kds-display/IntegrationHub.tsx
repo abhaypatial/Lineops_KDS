@@ -318,7 +318,7 @@ function EventsFeed({ events }: { events: Event[] }) {
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Live Event Feed</p>
         <span className="w-1.5 h-1.5 rounded-full" style={{ background:"#22c55e", boxShadow:"0 0 6px #22c55e", animation:"pulse 2s ease-in-out infinite" }} />
       </div>
-      <div className="flex flex-col divide-y" style={{ divideColor:"rgba(255,255,255,0.04)" }}>
+      <div className="flex flex-col divide-y divide-white/[0.04]">
         {events.map(ev => (
           <div key={ev.id} className="flex items-center gap-3 px-4 py-2.5">
             <div className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-black shrink-0"

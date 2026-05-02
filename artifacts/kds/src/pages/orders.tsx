@@ -15,7 +15,8 @@ export default function OrdersPage() {
     }
   }, [stores, storeId]);
 
-  const { data: orders } = useListOrders({ storeId }, { query: { enabled: !!storeId } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orders } = useListOrders({ storeId }, { query: { enabled: !!storeId } as any });
   const bumpOrder = useBumpOrder();
   const queryClient = useQueryClient();
 

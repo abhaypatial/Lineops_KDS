@@ -1216,10 +1216,12 @@ export default function KdsDisplay() {
 
   // ── Data ──────────────────────────────────────────────────────────────────
   const { data: stores }   = useListStores();
-  const { data: dbStations } = useListStations({ storeId }, { query: { enabled: !!storeId } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: dbStations } = useListStations({ storeId }, { query: { enabled: !!storeId } as any });
   const { data: rawOrders } = useListOrders(
     { storeId, status: "in_progress" },
-    { query: { enabled: !!storeId, refetchInterval: 10000 } }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { query: { enabled: !!storeId, refetchInterval: 10000 } as any }
   );
   const bumpOrderMutation = useBumpOrder();
 
