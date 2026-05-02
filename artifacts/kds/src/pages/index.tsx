@@ -50,6 +50,7 @@ type KdsConfig = {
   bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
   bumpKey: string; prevKey: string; nextKey: string;
   zoomOverride: number | null;
+  showVirtualBumpBar: boolean;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -108,6 +109,7 @@ const DEFAULT_CFG: KdsConfig = {
   bumpBarEnabled: false, bumpBarPreset: "keyboard",
   bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
   zoomOverride: null,
+  showVirtualBumpBar: true,
 };
 
 // ─── Bump bar presets ─────────────────────────────────────────────────────────
@@ -658,6 +660,15 @@ function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
               style={{ transform: cfg.showFooter ? "translateX(16px)" : "translateX(0)" }} />
           </button>
         </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Virtual Bump Bar</span>
+          <button onClick={() => set("showVirtualBumpBar", !cfg.showVirtualBumpBar)}
+            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+            style={{ background: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+            <span className="w-3 h-3 rounded-full bg-white transition-all"
+              style={{ transform: cfg.showVirtualBumpBar ? "translateX(16px)" : "translateX(0)" }} />
+          </button>
+        </div>
 
         {/* Clear All — danger zone */}
         <div className="pt-1 border-t border-white/[0.06]">
@@ -707,6 +718,22 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
   const set = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
   const autoZoomVal = Math.min(2.2, Math.max(0.40, window.innerWidth / 1920));
   const curZ = cfg.zoomOverride ?? autoZoomVal;
+
+  const [templates, setTemplates] = useState<{ id: string; name: string; config: unknown; isActive: boolean }[]>([]);
+  const [activeTpl, setActiveTpl] = useState<{ config: unknown } | null>(null);
+  const [newTplName, setNewTplName] = useState("");
+  const [tplSaving, setTplSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/kds/templates").then(r => r.json()),
+      fetch("/api/kds/templates/active").then(r => r.json()),
+    ]).then(([tpls, active]: [unknown, unknown]) => {
+      setTemplates(tpls as typeof templates);
+      setActiveTpl(active as typeof activeTpl);
+    }).catch(() => {});
+  }, []);
+
   type ToggleItem = { label: string; key: keyof KdsConfig };
   const toggles: ToggleItem[] = [
     { label: "Order number",     key: "showOrderNumber"   },
@@ -1045,6 +1072,134 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 <p className="text-[9px] text-white/25 leading-relaxed">USB HID bump bars connect as keyboards — plug in and pick your model. For gamepad-protocol bars, button A = bump, L/R = navigate.</p>
               </div>
             </>)}
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-xs text-white/55">Virtual bump buttons</span>
+              <button onClick={() => set("showVirtualBumpBar", !cfg.showVirtualBumpBar)}
+                className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+                style={{ background: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+                <span className="w-3 h-3 rounded-full bg-white transition-all"
+                  style={{ transform: cfg.showVirtualBumpBar ? "translateX(16px)" : "translateX(0)" }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Config Templates */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Config Templates</p>
+
+            {/* Broadcast config alert */}
+            {activeTpl && (
+              <div className="px-2.5 py-2 rounded-lg border flex flex-col gap-1.5"
+                style={{ background: "rgba(74,222,128,0.05)", borderColor: "rgba(74,222,128,0.18)" }}>
+                <p className="text-[9px]" style={{ color: "rgba(74,222,128,0.6)" }}>
+                  A config has been pushed to all displays.
+                </p>
+                <button
+                  onClick={() => { setCfg(c => ({ ...c, ...(activeTpl.config as Partial<KdsConfig>) })); setActiveTpl(null); }}
+                  className="w-full py-1 rounded text-[9px] font-bold border transition-all"
+                  style={{ background: "rgba(74,222,128,0.12)", borderColor: "rgba(74,222,128,0.3)", color: "#4ade80" }}>
+                  Apply to this display
+                </button>
+              </div>
+            )}
+
+            {/* Save as template */}
+            <div className="flex gap-1.5">
+              <input value={newTplName} onChange={e => setNewTplName(e.target.value)}
+                placeholder="Template name…"
+                className="flex-1 h-7 px-2 rounded-lg border text-[10px] bg-transparent outline-none"
+                style={{ borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }} />
+              <button
+                disabled={!newTplName.trim() || tplSaving}
+                onClick={async () => {
+                  setTplSaving(true);
+                  try {
+                    await fetch("/api/kds/templates", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ name: newTplName.trim(), config: cfg }),
+                    });
+                    const tpls = await fetch("/api/kds/templates").then(r => r.json());
+                    setTemplates(tpls as typeof templates);
+                    setNewTplName("");
+                  } finally { setTplSaving(false); }
+                }}
+                className="h-7 px-2.5 rounded-lg text-[9px] font-bold border transition-all disabled:opacity-40"
+                style={{ background: "rgba(245,158,11,0.1)", borderColor: "rgba(245,158,11,0.3)", color: "#f59e0b" }}>
+                {tplSaving ? "…" : "Save"}
+              </button>
+            </div>
+
+            {/* Template list */}
+            {templates.length > 0 && (
+              <div className="flex flex-col gap-1">
+                {templates.map(t => (
+                  <div key={t.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border"
+                    style={{ background: "rgba(255,255,255,0.02)", borderColor: t.isActive ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.07)" }}>
+                    <span className="flex-1 text-[10px] truncate" style={{ color: "rgba(255,255,255,0.55)" }}>{t.name}</span>
+                    {t.isActive && <span className="text-[8px] font-black" style={{ color: "#4ade80" }}>LIVE</span>}
+                    <button onClick={() => setCfg(c => ({ ...c, ...(t.config as Partial<KdsConfig>) }))}
+                      className="h-5 px-1.5 rounded text-[8px] font-bold border transition-all"
+                      style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}>
+                      Apply
+                    </button>
+                    <button onClick={async () => {
+                      await fetch(`/api/kds/templates/${t.id}`, { method: "DELETE" });
+                      setTemplates(prev => prev.filter(x => x.id !== t.id));
+                    }}
+                      className="h-5 px-1.5 rounded text-[8px] font-bold border transition-all"
+                      style={{ background: "rgba(239,68,68,0.06)", borderColor: "rgba(239,68,68,0.15)", color: "rgba(239,68,68,0.5)" }}>
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Push to all / Export / Import */}
+            <div className="flex gap-1.5 flex-wrap">
+              <button
+                onClick={async () => {
+                  await fetch("/api/kds/templates/active", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: "Broadcast", config: cfg }),
+                  });
+                  sonnerToast.success("Config pushed to all displays", { duration: 2500 });
+                }}
+                className="flex-1 h-7 rounded-lg text-[9px] font-bold border transition-all"
+                style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.7)" }}>
+                ↑ Push to all displays
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a"); a.href = url; a.download = "kds-config.json"; a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="h-7 px-2.5 rounded-lg text-[9px] font-bold border transition-all"
+                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}>
+                Export JSON
+              </button>
+              <label
+                className="h-7 px-2.5 rounded-lg text-[9px] font-bold border transition-all cursor-pointer flex items-center"
+                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}>
+                Import JSON
+                <input type="file" accept=".json" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = ev => {
+                    try {
+                      const parsed = JSON.parse(ev.target?.result as string) as Partial<KdsConfig>;
+                      setCfg(c => ({ ...c, ...parsed }));
+                      sonnerToast.success("Config imported", { duration: 2000 });
+                    } catch { sonnerToast.error("Invalid config file"); }
+                  };
+                  reader.readAsText(file);
+                }} />
+              </label>
+            </div>
           </div>
 
         </div>
@@ -1728,6 +1883,47 @@ export default function KdsDisplay() {
               {alertCount === 0 && warnCount === 0 && (
                 <span className="text-[10px] font-medium" style={{ color: "rgba(74,222,128,0.55)" }}>✓ On time</span>
               )}
+            </div>
+          )}
+          {/* Virtual bump buttons */}
+          {cfg.showVirtualBumpBar && (
+            <div className="flex items-center gap-1 shrink-0 ml-2 border-l border-white/[0.07] pl-3">
+              <button
+                onClick={() => {
+                  const idx = visibleOrders.findIndex(o => o.id === focusedId);
+                  setFocus(visibleOrders[Math.max(idx - 1, 0)]?.id ?? null);
+                }}
+                className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
+                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
+                title="Previous order">◀</button>
+              <button
+                onClick={() => focusedOrder && bump(focusedOrder.id)}
+                disabled={!focusedOrder}
+                className="h-7 px-3 rounded-lg text-[10px] font-black border transition-all active:scale-95 disabled:opacity-30"
+                style={{ background: "rgba(245,158,11,0.14)", borderColor: "rgba(245,158,11,0.4)", color: "#f59e0b" }}
+                title="Bump focused order">BUMP</button>
+              {(() => {
+                const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
+                const last = recentBumped.find(r => !activeIds.has(r.order.id));
+                return (
+                  <button
+                    onClick={() => last && recallOrder(last.order.id)}
+                    disabled={!last}
+                    className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 disabled:opacity-30"
+                    style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.75)" }}
+                    title={last ? `Recall #${last.order.number}` : "No recent orders"}>
+                    ↩{last ? ` #${last.order.number}` : " Recall"}
+                  </button>
+                );
+              })()}
+              <button
+                onClick={() => {
+                  const idx = visibleOrders.findIndex(o => o.id === focusedId);
+                  setFocus(visibleOrders[Math.min(idx + 1, visibleOrders.length - 1)]?.id ?? null);
+                }}
+                className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
+                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
+                title="Next order">▶</button>
             </div>
           )}
           <div className="flex-1" />

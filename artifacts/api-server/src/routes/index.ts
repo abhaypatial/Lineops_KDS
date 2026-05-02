@@ -10,6 +10,7 @@ import keysRouter         from "./keys";
 import webhooksRouter     from "./webhooks";
 import integrationsRouter from "./integrations";
 import testRouter         from "./test";
+import kdsConfigRouter    from "./kds-config";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(keysRouter);
 router.use(webhooksRouter);
 router.use(integrationsRouter);
 router.use(testRouter);
+router.use(kdsConfigRouter);
 
 export default router;
