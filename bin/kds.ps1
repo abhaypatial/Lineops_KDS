@@ -106,6 +106,13 @@ function Cmd-Help {
     Write-Host "    kds.ps1 stations            " -NoNewline -ForegroundColor Cyan; Write-Host "List kitchen stations"
     Write-Host "    kds.ps1 devices             " -NoNewline -ForegroundColor Cyan; Write-Host "List registered KDS displays"
     Write-Host ""
+    Write-Host "  Config Templates" -ForegroundColor White
+    Write-Host "    kds.ps1 templates           " -NoNewline -ForegroundColor Cyan; Write-Host "List saved display configs"
+    Write-Host "    kds.ps1 templates push [id] " -NoNewline -ForegroundColor Cyan; Write-Host "Broadcast config to all displays"
+    Write-Host "    kds.ps1 templates export <id>" -NoNewline -ForegroundColor Cyan; Write-Host " Print template JSON"
+    Write-Host "    kds.ps1 templates delete <id>" -NoNewline -ForegroundColor Cyan; Write-Host " Delete a saved template"
+    Write-Host "    kds.ps1 templates import <f> " -NoNewline -ForegroundColor Cyan; Write-Host " Import JSON file as template"
+    Write-Host ""
     Write-Host "  Integrations & API Access" -ForegroundColor White
     Write-Host "    kds.ps1 integrations        " -NoNewline -ForegroundColor Cyan; Write-Host "List POS integration status"
     Write-Host "    kds.ps1 integrations events " -NoNewline -ForegroundColor Cyan; Write-Host "Recent inbound webhook events"
@@ -374,6 +381,76 @@ function Cmd-Webhooks {
     Write-Host ""
 }
 
+function Cmd-Templates {
+    $resp = $null
+    try { $resp = Api GET /api/kds/templates } catch { Warn "Templates API unavailable at $KDS_HOST"; return }
+    $list = @($resp)
+
+    switch ($Sub) {
+        "push" {
+            if ($Arg1) {
+                $tpl = $list | Where-Object { $_.id -eq $Arg1 } | Select-Object -First 1
+                if (-not $tpl) { Die "Template '$Arg1' not found" }
+                $body = @{ name = $tpl.name; config = $tpl.config }
+                Api POST /api/kds/templates/active $body | Out-Null
+                Ok "Template '$($tpl.name)' broadcast to all displays"
+                Write-Host "  Machine-local settings (zoom, bump bar, keys) are preserved on each display." -ForegroundColor DarkGray
+            } else {
+                $active = $null
+                try { $active = Api GET /api/kds/templates/active } catch {}
+                if (-not $active) { Die "No active template. Use 'kds.ps1 templates push <id>'." }
+                $body = @{ name = $active.name; config = $active.config }
+                Api POST /api/kds/templates/active $body | Out-Null
+                Ok "Active template '$($active.name)' re-broadcast to all displays"
+            }
+        }
+        "export" {
+            if (-not $Arg1) { Die "Usage: kds.ps1 templates export <id>" }
+            $tpl = $list | Where-Object { $_.id -eq $Arg1 } | Select-Object -First 1
+            if (-not $tpl) { Die "Template '$Arg1' not found" }
+            $tpl.config | ConvertTo-Json -Depth 20
+        }
+        "delete" {
+            if (-not $Arg1) { Die "Usage: kds.ps1 templates delete <id>" }
+            Api DELETE "/api/kds/templates/$Arg1" | Out-Null
+            Ok "Template $Arg1 deleted"
+        }
+        "import" {
+            if (-not $Arg1) { Die "Usage: kds.ps1 templates import <file.json> [name]" }
+            if (-not (Test-Path $Arg1)) { Die "File not found: $Arg1" }
+            $json   = Get-Content $Arg1 -Raw | ConvertFrom-Json
+            $name   = if ($Arg2) { $Arg2 } else { [System.IO.Path]::GetFileNameWithoutExtension($Arg1) }
+            Api POST /api/kds/templates @{ name = $name; config = $json } | Out-Null
+            Ok "Template '$name' imported from $Arg1"
+        }
+        default {
+            if ($list.Count -eq 0) {
+                Info "No saved config templates."
+                Write-Host "  Save a template from Settings -> Config Templates in the KDS display." -ForegroundColor DarkGray
+                return
+            }
+            Write-Host ""
+            Hr
+            Write-Host ("  " + (Pad 38 "NAME") + (Pad 10 "ACTIVE") + "ID") -ForegroundColor White
+            Hr
+            foreach ($t in $list) {
+                $active = if ($t.isActive) { "● yes" } else { "  —" }
+                $color  = if ($t.isActive) { "Green" } else { "DarkGray" }
+                Write-Host ("  " + (Pad 38 $t.name)) -NoNewline
+                Write-Host (Pad 10 $active) -NoNewline -ForegroundColor $color
+                Write-Host $t.id -ForegroundColor DarkGray
+            }
+            Hr
+            Write-Host ""
+            Write-Host "  kds.ps1 templates push <id>     broadcast to all displays" -ForegroundColor DarkGray
+            Write-Host "  kds.ps1 templates export <id>   print config JSON" -ForegroundColor DarkGray
+            Write-Host "  kds.ps1 templates delete <id>   remove a template" -ForegroundColor DarkGray
+            Write-Host "  kds.ps1 templates import <file> import from JSON file" -ForegroundColor DarkGray
+            Write-Host ""
+        }
+    }
+}
+
 function Cmd-Inject {
     Info "Injecting a test order..."
     try {
@@ -410,6 +487,7 @@ switch ($Command.ToLower()) {
     "orders"       { Cmd-Orders }
     "stations"     { Cmd-Stations }
     "devices"      { Cmd-Devices }
+    "templates"    { Cmd-Templates }
     "integrations" { Cmd-Integrations }
     "keys"         { Cmd-Keys }
     "webhooks"     { Cmd-Webhooks }

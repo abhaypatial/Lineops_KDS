@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useQueryClient }          from "@tanstack/react-query";
 import { useListOrders, useListStations, useBumpOrder, useListStores } from "@workspace/api-client-react";
-import { useKdsWebSocket }                  from "@/hooks/use-kds-websocket";
+import { useKdsWebSocket, stripMachineLocal } from "@/hooks/use-kds-websocket";
 import { useOrderChime, type ChimeType }    from "@/hooks/use-order-chime";
 import { FlaskConical, Maximize2, Minimize2, Zap } from "lucide-react";
 import { toast as sonnerToast }             from "sonner";
@@ -1103,12 +1103,13 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
             <div className="flex gap-1.5 flex-wrap">
               <button
                 onClick={async () => {
+                  const shareable = stripMachineLocal(cfg as unknown as Record<string, unknown>);
                   await fetch("/api/kds/templates/active", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: "Broadcast", config: cfg }),
+                    body: JSON.stringify({ name: "Broadcast", config: shareable }),
                   });
-                  sonnerToast.success("Config pushed to all displays", { duration: 2500 });
+                  sonnerToast.success("Config pushed to all displays (machine settings preserved)", { duration: 3000 });
                 }}
                 className="flex-1 h-7 rounded-lg text-[9px] font-bold border transition-all"
                 style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.7)" }}>
@@ -1232,7 +1233,10 @@ export default function KdsDisplay() {
   }, [cfg]);
 
   // onNewOrder is handled by the allOrders effect below (has station info)
-  useKdsWebSocket(storeId, queryClient);
+  useKdsWebSocket(storeId, queryClient, undefined, (safeCfg) => {
+    setCfg(c => ({ ...c, ...(safeCfg as Partial<KdsConfig>) }));
+    sonnerToast.info("Display config updated from template", { id: "cfg-push", duration: 3000 });
+  });
 
   // Build a stationId → Station slug map from DB stations
   const stationSlugMap = new Map<string, Station>(

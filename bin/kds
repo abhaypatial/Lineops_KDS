@@ -85,8 +85,12 @@ cmd_help() {
   echo -e "  ${WHT}Devices${RST}"
   echo -e "    ${CYN}kds devices${RST}             List registered KDS displays"
   echo ""
-  echo -e "  ${WHT}Templates${RST}"
-  echo -e "    ${CYN}kds templates${RST}           List saved display templates"
+  echo -e "  ${WHT}Config Templates${RST}"
+  echo -e "    ${CYN}kds templates${RST}                   List saved display configs"
+  echo -e "    ${CYN}kds templates push${RST} [id]          Broadcast config to all displays"
+  echo -e "    ${CYN}kds templates export${RST} <id>        Print template JSON to stdout"
+  echo -e "    ${CYN}kds templates delete${RST} <id>        Delete a saved template"
+  echo -e "    ${CYN}kds templates import${RST} <file> [n]  Import a JSON file as a template"
   echo ""
   echo -e "  ${WHT}Integrations & API Access${RST}"
   echo -e "    ${CYN}kds integrations${RST}             List POS integration status"
@@ -356,12 +360,91 @@ cmd_devices() {
 
 cmd_templates() {
   require_jq
-  local resp
-  resp=$(api GET /api/templates 2>/dev/null) || { warn "Templates API not available yet."; return; }
-  echo "$resp" | jq -r '
-    .templates[] |
-    "  • " + .name + "  \u001b[2m(" + (.zones | length | tostring) + " zones)\u001b[0m"
-  '
+  local sub="${1:-}"; shift || true
+
+  case "$sub" in
+    push)
+      local id="${1:-}"
+      if [[ -n "$id" ]]; then
+        local tpl
+        tpl=$(api GET /api/kds/templates | jq ".[] | select(.id==\"$id\")")
+        [[ -z "$tpl" ]] && die "Template '$id' not found"
+        local name cfg
+        name=$(echo "$tpl" | jq -r '.name')
+        cfg=$(echo "$tpl"  | jq -c '.config')
+        api POST /api/kds/templates/active "{\"name\":\"${name}\",\"config\":${cfg}}" > /dev/null
+        ok "Template '${name}' broadcast to all displays"
+        echo -e "  ${DIM}Machine-local settings (zoom, bump bar, keys) are preserved on each display.${RST}"
+      else
+        local active
+        active=$(api GET /api/kds/templates/active 2>/dev/null || echo "null")
+        [[ "$active" == "null" || -z "$active" ]] && die "No active template. Use 'kds templates push <id>'."
+        local name cfg
+        name=$(echo "$active" | jq -r '.name')
+        cfg=$(echo "$active"  | jq -c '.config')
+        api POST /api/kds/templates/active "{\"name\":\"${name}\",\"config\":${cfg}}" > /dev/null
+        ok "Active template '${name}' re-broadcast to all displays"
+      fi
+      ;;
+
+    export)
+      local id="${1:-}"
+      [[ -z "$id" ]] && die "Usage: kds templates export <id>"
+      local tpl
+      tpl=$(api GET /api/kds/templates | jq ".[] | select(.id==\"$id\")")
+      [[ -z "$tpl" ]] && die "Template '$id' not found"
+      echo "$tpl" | jq '.config'
+      ;;
+
+    delete)
+      local id="${1:-}"
+      [[ -z "$id" ]] && die "Usage: kds templates delete <id>"
+      api DELETE "/api/kds/templates/${id}" > /dev/null
+      ok "Template $id deleted"
+      ;;
+
+    import)
+      local file="${1:-}" name="${2:-}"
+      [[ -z "$file" ]] && die "Usage: kds templates import <file.json> [name]"
+      [[ ! -f "$file" ]] && die "File not found: $file"
+      [[ -z "$name" ]] && name="$(basename "$file" .json)"
+      local cfg
+      cfg=$(cat "$file")
+      api POST /api/kds/templates "{\"name\":\"${name}\",\"config\":${cfg}}" > /dev/null
+      ok "Template '${name}' imported from $file"
+      ;;
+
+    ""|list)
+      local resp
+      resp=$(api GET /api/kds/templates 2>/dev/null) || { warn "Templates API unavailable at ${KDS_HOST}"; return; }
+      local count
+      count=$(echo "$resp" | jq 'length')
+      if [[ "$count" -eq 0 ]]; then
+        info "No saved config templates."
+        echo -e "  ${DIM}Save a template from Settings → Config Templates in the KDS display.${RST}"
+        return
+      fi
+      echo ""
+      hr
+      printf "  ${WHT}%-38s %-10s %s${RST}\n" "NAME" "ACTIVE" "ID"
+      hr
+      echo "$resp" | jq -r '.[] | [.name, (if .isActive then "● yes" else "  —" end), .id] | @tsv' \
+        | while IFS=$'\t' read -r name active id; do
+          local ac="$DIM"
+          [[ "$active" == *"yes"* ]] && ac="$GRN"
+          printf "  %-38s ${ac}%-10s${RST} ${DIM}%s${RST}\n" "$name" "$active" "$id"
+        done
+      hr
+      echo ""
+      echo -e "  ${DIM}kds templates push <id>     broadcast to all displays${RST}"
+      echo -e "  ${DIM}kds templates export <id>   print config JSON${RST}"
+      echo -e "  ${DIM}kds templates delete <id>   remove a template${RST}"
+      echo -e "  ${DIM}kds templates import <file> import from JSON file${RST}"
+      echo ""
+      ;;
+
+    *) die "Unknown templates subcommand: $sub  (push|export|delete|import)" ;;
+  esac
 }
 
 cmd_logs() {
@@ -397,7 +480,7 @@ main() {
     orders)    cmd_orders "$@" ;;
     stations)  cmd_stations ;;
     devices)   cmd_devices ;;
-    templates) cmd_templates ;;
+    templates) cmd_templates "$@" ;;
     logs)      cmd_logs "$@" ;;
     start)     cmd_start ;;
     stop)      cmd_stop ;;

@@ -13,16 +13,37 @@ interface WebSocketEvent {
   };
 }
 
+const MACHINE_LOCAL_KEYS = new Set([
+  "zoomOverride",
+  "bumpBarEnabled",
+  "bumpBarPreset",
+  "bumpKey",
+  "prevKey",
+  "nextKey",
+  "recallKey",
+  "showVirtualBumpBar",
+  "showFooter",
+]);
+
+export function stripMachineLocal(incoming: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(incoming).filter(([k]) => !MACHINE_LOCAL_KEYS.has(k)),
+  );
+}
+
 export function useKdsWebSocket(
   storeId: string | undefined,
   queryClient: QueryClient,
   onNewOrder?: (orderNumber: string) => void,
+  onConfigPush?: (safeConfig: Record<string, unknown>) => void,
 ) {
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
   const backoff = useRef(1000);
   const onNewOrderRef = useRef(onNewOrder);
   onNewOrderRef.current = onNewOrder;
+  const onConfigPushRef = useRef(onConfigPush);
+  onConfigPushRef.current = onConfigPush;
 
   useEffect(() => {
     if (!storeId) return;
@@ -61,6 +82,13 @@ export function useKdsWebSocket(
               queryClient.invalidateQueries({ queryKey: getGetRecentActivityQueryKey({ storeId }) });
               queryClient.invalidateQueries({ queryKey: getGetStationLoadQueryKey({ storeId }) });
               break;
+            case "kds_config_push": {
+              const incoming = data.payload.config as Record<string, unknown> | undefined;
+              if (incoming && onConfigPushRef.current) {
+                onConfigPushRef.current(stripMachineLocal(incoming));
+              }
+              break;
+            }
           }
         } catch (err) {
           console.error("Failed to parse WS message", err);

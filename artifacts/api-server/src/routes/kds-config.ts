@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, kdsConfigTemplatesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { broadcast } from "../lib/ws";
 
 const router = Router();
 
@@ -48,6 +49,9 @@ router.post("/kds/templates/active", async (req, res): Promise<void> => {
     .insert(kdsConfigTemplatesTable)
     .values({ id: randomUUID(), name: name ?? "Broadcast", config, isActive: true })
     .returning();
+
+  broadcast({ type: "kds_config_push", payload: { config } });
+
   res.json(row);
 });
 
