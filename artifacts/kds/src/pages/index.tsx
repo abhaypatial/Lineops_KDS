@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useQueryClient }                   from "@tanstack/react-query";
+import { useQuery, useQueryClient }          from "@tanstack/react-query";
 import { useListOrders, useListStations, useBumpOrder, useListStores } from "@workspace/api-client-react";
 import { useKdsWebSocket }                  from "@/hooks/use-kds-websocket";
 import { FlaskConical, Maximize2, Minimize2 } from "lucide-react";
@@ -573,6 +573,14 @@ export default function KdsDisplay() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [injecting, setInjecting] = useState(false);
 
+  // ── Feature flags ─────────────────────────────────────────────────────────
+  const { data: kdsConfig } = useQuery<{ testOrdersEnabled: boolean }>({
+    queryKey: ["/api/config"],
+    queryFn: () => fetch("/api/config").then(r => r.json()),
+    staleTime: 60_000,
+  });
+  const testOrdersEnabled = kdsConfig?.testOrdersEnabled !== false;
+
   // ── Data ──────────────────────────────────────────────────────────────────
   const { data: stores }   = useListStores();
   const { data: dbStations } = useListStations({ storeId }, { query: { enabled: !!storeId } });
@@ -741,13 +749,15 @@ export default function KdsDisplay() {
           </span>
 
           {/* Test inject */}
-          <button onClick={injectTestOrder} disabled={injecting || !storeId}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border border-white/[0.1] transition-all disabled:opacity-40"
-            style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.38)" }}
-            title="Inject a random test order">
-            <FlaskConical style={{ width: 12, height: 12 }} />
-            {injecting ? "…" : "Test"}
-          </button>
+          {testOrdersEnabled && (
+            <button onClick={injectTestOrder} disabled={injecting || !storeId}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border border-white/[0.1] transition-all disabled:opacity-40"
+              style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.38)" }}
+              title="Inject a random test order">
+              <FlaskConical style={{ width: 12, height: 12 }} />
+              {injecting ? "…" : "Test"}
+            </button>
+          )}
 
           {/* Fullscreen toggle */}
           <button onClick={isFullscreen ? exitFullscreen : enterFullscreen}
@@ -778,12 +788,14 @@ export default function KdsDisplay() {
             <div className="text-center flex flex-col items-center gap-3">
               <div className="text-4xl mb-1 text-white/10">✓</div>
               <p className="text-white/20 text-sm">All clear — kitchen idle</p>
-              <button onClick={injectTestOrder} disabled={injecting || !storeId}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/[0.1] text-xs font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.2] transition-all mt-1 disabled:opacity-40"
-                style={{ background: "rgba(255,255,255,0.03)" }}>
-                <FlaskConical style={{ width: 13, height: 13 }} />
-                {injecting ? "Injecting…" : "Inject a test order"}
-              </button>
+              {testOrdersEnabled && (
+                <button onClick={injectTestOrder} disabled={injecting || !storeId}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/[0.1] text-xs font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.2] transition-all mt-1 disabled:opacity-40"
+                  style={{ background: "rgba(255,255,255,0.03)" }}>
+                  <FlaskConical style={{ width: 13, height: 13 }} />
+                  {injecting ? "Injecting…" : "Inject a test order"}
+                </button>
+              )}
             </div>
           </div>
         ) : (

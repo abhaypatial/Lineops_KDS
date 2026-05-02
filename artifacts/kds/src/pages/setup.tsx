@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   useListEnterprises, useCreateEnterprise,
   useListStores, useCreateStore,
@@ -103,11 +103,12 @@ export default function SetupPage() {
       </div>
 
       <Tabs defaultValue="enterprises" className="w-full max-w-4xl">
-        <TabsList className="grid w-full grid-cols-4 mb-8 bg-muted rounded-md p-1">
+        <TabsList className="grid w-full grid-cols-5 mb-8 bg-muted rounded-md p-1">
           <TabsTrigger value="enterprises" className="font-bold uppercase tracking-wider text-xs">Enterprises</TabsTrigger>
           <TabsTrigger value="stores" className="font-bold uppercase tracking-wider text-xs">Stores</TabsTrigger>
           <TabsTrigger value="stations" className="font-bold uppercase tracking-wider text-xs">Stations</TabsTrigger>
           <TabsTrigger value="devices" className="font-bold uppercase tracking-wider text-xs">Devices</TabsTrigger>
+          <TabsTrigger value="production" className="font-bold uppercase tracking-wider text-xs">Production</TabsTrigger>
         </TabsList>
         
         <TabsContent value="enterprises" className="space-y-6 mt-0">
@@ -257,7 +258,174 @@ export default function SetupPage() {
             ))}
           </div>
         </TabsContent>
+
+        <TabsContent value="production" className="space-y-6 mt-0">
+          <ProductionSettings />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ── Production Settings tab ───────────────────────────────────────────────────
+
+const POS_IDS = [
+  { id: "square",     label: "Square" },
+  { id: "toast",      label: "Toast POS" },
+  { id: "clover",     label: "Clover" },
+  { id: "lightspeed", label: "Lightspeed K" },
+  { id: "volante",    label: "Volante VE POS" },
+  { id: "generic",    label: "Custom / Generic" },
+];
+
+function ProductionSettings() {
+  const { data: cfg, refetch } = useQuery<{
+    testOrdersEnabled: boolean;
+    hiddenIntegrations: string[];
+    authEnabled: boolean;
+  }>({
+    queryKey: ["/api/config"],
+    queryFn: () => fetch("/api/config").then(r => r.json()),
+    staleTime: 30_000,
+  });
+
+  const [saving, setSaving] = useState(false);
+
+  async function patchSettings(patch: Record<string, unknown>) {
+    setSaving(true);
+    try {
+      await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      await refetch();
+      toast.success("Settings updated");
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const testEnabled = cfg?.testOrdersEnabled ?? true;
+  const hidden      = cfg?.hiddenIntegrations ?? [];
+  const authEnabled = cfg?.authEnabled ?? false;
+
+  function toggleHidden(id: string) {
+    const next = hidden.includes(id)
+      ? hidden.filter(h => h !== id)
+      : [...hidden, id];
+    patchSettings({ hiddenIntegrations: next });
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Test orders */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold uppercase tracking-wider">Test Orders</CardTitle>
+          <CardDescription>
+            Controls the "Inject test order" button on the KDS display. Disable this on a live production system.
+            <br />
+            <span className="text-xs font-mono text-muted-foreground">
+              Env var: <code>ALLOW_TEST_ORDERS</code> — runtime change resets on server restart.
+            </span>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-semibold text-sm">
+                {testEnabled ? "Enabled — test button visible on KDS display" : "Disabled — test button hidden"}
+              </div>
+            </div>
+            <Button
+              variant={testEnabled ? "destructive" : "default"}
+              size="sm"
+              disabled={saving}
+              onClick={() => patchSettings({ testOrdersEnabled: !testEnabled })}
+              className="font-bold uppercase tracking-wider text-xs"
+            >
+              {testEnabled ? "Disable" : "Enable"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Hidden integrations */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold uppercase tracking-wider">Hidden Integrations</CardTitle>
+          <CardDescription>
+            Hide POS systems you don't use from the Integration Hub to reduce clutter.
+            <br />
+            <span className="text-xs font-mono text-muted-foreground">
+              Env var: <code>HIDDEN_INTEGRATIONS</code> — runtime change resets on server restart.
+            </span>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
+            {POS_IDS.map(p => (
+              <label key={p.id} className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hidden.includes(p.id)}
+                  disabled={saving}
+                  onChange={() => toggleHidden(p.id)}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span className="text-sm font-medium">{p.label}</span>
+                {hidden.includes(p.id) && (
+                  <Badge variant="secondary" className="text-[10px]">hidden</Badge>
+                )}
+              </label>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Security */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold uppercase tracking-wider">Admin Password</CardTitle>
+          <CardDescription>
+            Protects all management pages and API endpoints. The KDS display and POS webhooks remain public.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-border text-sm">
+            <div className={`w-2 h-2 rounded-full ${authEnabled ? "bg-green-500" : "bg-yellow-500"}`} />
+            <span>
+              {authEnabled
+                ? "Password protection is active."
+                : "No password set — management pages are open. Set ADMIN_PASSWORD in your .env file to enable protection."}
+            </span>
+          </div>
+
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p className="font-semibold text-foreground">To change the password:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>Edit <code className="font-mono bg-muted px-1 rounded text-xs">.env</code> and set <code className="font-mono bg-muted px-1 rounded text-xs">ADMIN_PASSWORD=your-new-password</code></li>
+              <li>Run <code className="font-mono bg-muted px-1 rounded text-xs">kds restart</code> for the change to take effect.</li>
+              <li>Log in again at <code className="font-mono bg-muted px-1 rounded text-xs">/login</code> with the new password.</li>
+            </ol>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-bold uppercase tracking-wider text-xs"
+            onClick={() => {
+              localStorage.removeItem("kds_admin_password");
+              window.location.href = "/login";
+            }}
+          >
+            Sign out
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -662,6 +662,15 @@ export default function IntegrationHubPage() {
   const [selectedPos, setSelected] = useState<string>("square");
   const [rightTab, setRightTab]    = useState<RightTab>("apikeys");
 
+  // ── Feature flags (hidden integrations) ───────────────────────────────────
+  const { data: kdsConfig } = useQuery<{ hiddenIntegrations: string[] }>({
+    queryKey: ["/api/config"],
+    queryFn: () => fetch("/api/config").then(r => r.json()),
+    staleTime: 60_000,
+  });
+  const hiddenIntegrations = kdsConfig?.hiddenIntegrations ?? [];
+  const visiblePos = POS_SYSTEMS.filter(p => !hiddenIntegrations.includes(p.id));
+
   // ── Store ─────────────────────────────────────────────────────────────────
   const { data: stores } = useListStores();
   const storeId = stores?.[0]?.id ?? "";
@@ -705,14 +714,14 @@ export default function IntegrationHubPage() {
 
   // ── Derive POS stats from real events ────────────────────────────────────
   const posStats = Object.fromEntries(
-    POS_SYSTEMS.map(p => [p.id, derivePosStatus(events, p.id)])
+    visiblePos.map(p => [p.id, derivePosStatus(events, p.id)])
   );
 
   const totalToday = Object.values(posStats).reduce((s, p) => s + p.ordersToday, 0);
   const connected  = Object.values(posStats).filter(p => p.status === "connected").length;
   const errors     = Object.values(posStats).filter(p => p.status === "error").length;
 
-  const pos = POS_SYSTEMS.find(p => p.id === selectedPos)!;
+  const pos = (visiblePos.find(p => p.id === selectedPos) ?? visiblePos[0])!;
 
   // ── Refresh clock for the ago display ────────────────────────────────────
   const [, setTick] = useState(0);
@@ -762,7 +771,7 @@ export default function IntegrationHubPage() {
           <div className="p-3 border-b border-white/[0.06] shrink-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/25 mb-2.5">POS Systems</p>
             <div className="flex flex-col gap-1.5">
-              {POS_SYSTEMS.map(p => {
+              {visiblePos.map(p => {
                 const stat = posStats[p.id];
                 return (
                   <PosCard key={p.id} pos={p}

@@ -104,41 +104,79 @@ cmd_help() {
 
 cmd_status() {
   require_jq
+
   local health
   health=$(api GET /api/health 2>/dev/null) || { warn "API unreachable at ${KDS_HOST}"; return; }
 
+  local db_status api_status uptime_raw uptime version env auth_enabled test_enabled
+  db_status=$(echo "$health"    | jq -r '.db          // "unknown"')
+  api_status=$(echo "$health"   | jq -r '.status      // "unknown"')
+  uptime_raw=$(echo "$health"   | jq -r '.uptime      // 0')
+  version=$(echo "$health"      | jq -r '.version     // "1.0.0"')
+  env=$(echo "$health"          | jq -r '.environment // "unknown"')
+  auth_enabled=$(echo "$health" | jq -r '.authEnabled // false')
+  test_enabled=$(echo "$health" | jq -r '.testOrdersEnabled // true')
+
+  # Format uptime as Xh Ym or Xs
+  local uptime_str
+  if [[ "$uptime_raw" -ge 3600 ]]; then
+    uptime_str="$(( uptime_raw / 3600 ))h $(( (uptime_raw % 3600) / 60 ))m"
+  elif [[ "$uptime_raw" -ge 60 ]]; then
+    uptime_str="$(( uptime_raw / 60 ))m $(( uptime_raw % 60 ))s"
+  else
+    uptime_str="${uptime_raw}s"
+  fi
+
   local orders
-  orders=$(api GET "/api/orders?status=pending" 2>/dev/null) || orders='{"orders":[]}'
+  orders=$(api GET "/api/orders?status=in_progress" 2>/dev/null) || orders='{"orders":[]}'
   local order_count pending_items
-  order_count=$(echo "$orders" | jq '.orders | length')
-  pending_items=$(echo "$orders" | jq '[.orders[].items[]] | map(select(.status=="pending")) | length' 2>/dev/null || echo "?")
+  order_count=$(echo "$orders" | jq '.orders | length' 2>/dev/null || echo "0")
+  pending_items=$(echo "$orders" | jq '[.orders[].items[]?] | map(select(.status=="pending")) | length' 2>/dev/null || echo "?")
 
   local devices
   devices=$(api GET /api/devices 2>/dev/null) || devices='{"devices":[]}'
   local device_total device_online
-  device_total=$(echo "$devices" | jq '.devices | length' 2>/dev/null || echo "0")
+  device_total=$(echo "$devices"  | jq '.devices | length'                          2>/dev/null || echo "0")
   device_online=$(echo "$devices" | jq '[.devices[] | select(.isOnline==true)] | length' 2>/dev/null || echo "0")
 
   local stations
   stations=$(api GET /api/stations 2>/dev/null) || stations='{"stations":[]}'
   local station_total station_active
-  station_total=$(echo "$stations" | jq '.stations | length' 2>/dev/null || echo "0")
+  station_total=$(echo "$stations"  | jq '.stations | length'                             2>/dev/null || echo "0")
   station_active=$(echo "$stations" | jq '[.stations[] | select(.isActive==true)] | length' 2>/dev/null || echo "0")
+
+  # Status colour
+  local status_colour="$GRN" status_label="● ONLINE"
+  [[ "$api_status" != "ok" ]] && { status_colour="$YLW"; status_label="⚠ DEGRADED"; }
+
+  local db_colour="$GRN" db_label="connected"
+  [[ "$db_status" != "connected" ]] && { db_colour="$RED"; db_label="$db_status"; }
+
+  local auth_label; auth_label=$( [[ "$auth_enabled" == "true" ]] && echo "enabled" || echo "disabled" )
+  local test_label; test_label=$( [[ "$test_enabled"  == "true" ]] && echo "on"      || echo "off" )
 
   echo ""
   hr
-  printf "  ${WHT}%-36s${RST}${GRN}● ONLINE${RST}\n" "KDS System Status"
+  printf "  ${WHT}%-34s${RST}${status_colour}%s${RST}\n" "LineOps KDS — System Status" "$status_label"
   hr
-  printf "  %-22s${WHT}%-8s${RST}  %-22s${WHT}%s${RST}\n" \
-    "Active Orders"    "$order_count" \
-    "Devices Online"   "${device_online}/${device_total}"
-  printf "  %-22s${WHT}%-8s${RST}  %-22s${WHT}%s${RST}\n" \
-    "Items Pending"    "$pending_items" \
-    "Stations Active"  "${station_active}/${station_total}"
-  printf "  %-22s${WHT}%-8s${RST}  %-22s${WHT}%s${RST}\n" \
-    "API Endpoint"     "${KDS_HOST}" \
-    "Version"          "$(echo "$health" | jq -r '.version // "1.0.0"' 2>/dev/null)"
+  printf "  %-22s${WHT}%-14s${RST}  %-22s${WHT}%s${RST}\n" \
+    "Version"         "$version" \
+    "Environment"     "$env"
+  printf "  %-22s${WHT}%-14s${RST}  %-22s${db_colour}%s${RST}\n" \
+    "Uptime"          "$uptime_str" \
+    "Database"        "$db_label"
+  printf "  %-22s${WHT}%-14s${RST}  %-22s${WHT}%s${RST}\n" \
+    "Auth"            "$auth_label" \
+    "Test Orders"     "$test_label"
   hr
+  printf "  %-22s${WHT}%-14s${RST}  %-22s${WHT}%s${RST}\n" \
+    "Active Orders"   "$order_count" \
+    "Devices Online"  "${device_online}/${device_total}"
+  printf "  %-22s${WHT}%-14s${RST}  %-22s${WHT}%s${RST}\n" \
+    "Items Pending"   "$pending_items" \
+    "Stations Active" "${station_active}/${station_total}"
+  hr
+  printf "  ${DIM}%s${RST}\n" "API: ${KDS_HOST}/api/health"
   echo ""
 }
 

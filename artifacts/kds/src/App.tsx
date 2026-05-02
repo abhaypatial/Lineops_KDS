@@ -5,14 +5,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout";
 import NotFound from "@/pages/not-found";
 
-import KdsDisplay       from "@/pages/index";
-import DashboardPage    from "@/pages/dashboard";
-import OrdersPage       from "@/pages/orders";
-import DevicesPage      from "@/pages/devices";
-import SetupPage        from "@/pages/setup";
-import LivePage         from "@/pages/live";
+import KdsDisplay           from "@/pages/index";
+import DashboardPage        from "@/pages/dashboard";
+import OrdersPage           from "@/pages/orders";
+import DevicesPage          from "@/pages/devices";
+import SetupPage            from "@/pages/setup";
+import LivePage             from "@/pages/live";
 import TemplateBuilderPage  from "@/pages/template-builder";
-import IntegrationHubPage  from "@/pages/integration-hub";
+import IntegrationHubPage   from "@/pages/integration-hub";
+import LoginPage            from "@/pages/login";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,9 @@ function Router() {
       <Route path="/integration-hub">
         <AppLayout><IntegrationHubPage /></AppLayout>
       </Route>
+
+      {/* Admin login */}
+      <Route path="/login" component={LoginPage} />
 
       <Route component={NotFound} />
     </Switch>

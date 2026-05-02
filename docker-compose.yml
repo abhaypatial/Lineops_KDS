@@ -28,10 +28,15 @@ services:
       dockerfile: docker/Dockerfile.api
     restart: unless-stopped
     environment:
-      NODE_ENV:       production
-      PORT:           "3000"
-      DATABASE_URL:   postgresql://kds:${DB_PASSWORD:-kds_local_secret}@db:5432/kds
-      SESSION_SECRET: ${SESSION_SECRET:-change_me_please_use_install_sh}
+      NODE_ENV:             production
+      PORT:                 "3000"
+      DATABASE_URL:         postgresql://kds:${DB_PASSWORD:-kds_local_secret}@db:5432/kds
+      SESSION_SECRET:       ${SESSION_SECRET:-change_me_please_use_install_sh}
+      # ── Admin & Feature Flags ─────────────────────────────────────────────
+      # Leave ADMIN_PASSWORD blank for open access on a trusted LAN.
+      ADMIN_PASSWORD:       ${ADMIN_PASSWORD:-}
+      ALLOW_TEST_ORDERS:    ${ALLOW_TEST_ORDERS:-true}
+      HIDDEN_INTEGRATIONS:  ${HIDDEN_INTEGRATIONS:-}
     depends_on:
       db:
         condition: service_healthy

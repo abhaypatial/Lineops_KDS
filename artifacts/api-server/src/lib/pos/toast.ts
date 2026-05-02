@@ -47,7 +47,7 @@ export function toastAdapter(
       items: selections.map((sel) => ({
         name:      String(sel.displayName ?? sel.itemDescription ?? "Item"),
         quantity:  Number(sel.quantity ?? 1),
-        stationId: mapStation(String(sel.menuGroup?.name ?? sel.displayName ?? ""), stationMap),
+        stationId: mapStation(String((sel.menuGroup as { name?: string } | undefined)?.name ?? sel.displayName ?? ""), stationMap),
         modifiers: ((sel.modifiers as { name?: string }[]) ?? []).map(m => m.name ?? "").filter(Boolean),
       })),
     },

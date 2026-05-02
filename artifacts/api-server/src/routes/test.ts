@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db, ordersTable, orderItemsTable, storesTable, stationsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { broadcast } from "../lib/ws";
+import { runtimeConfig } from "../lib/runtime-config";
 
 const router = Router();
 
@@ -32,8 +33,15 @@ const ORDER_NOTES = ["", "", "", "Allergy: nuts", "Birthday table — add candle
  * Injects a randomised realistic test order into the KDS.
  * Resolves the correct station IDs from the DB so items appear on the right station tabs.
  * If storeId is omitted, uses the first store in the database.
+ *
+ * Blocked by ALLOW_TEST_ORDERS=false env var (or runtime toggle via /api/admin/settings).
  */
 router.post("/test/inject-order", async (req, res): Promise<void> => {
+  if (!runtimeConfig.testOrdersEnabled) {
+    res.status(403).json({ error: "Test orders are disabled on this server." });
+    return;
+  }
+
   const requestedStoreId = req.query.storeId as string | undefined;
 
   const [store] = requestedStoreId
@@ -79,7 +87,6 @@ router.post("/test/inject-order", async (req, res): Promise<void> => {
     storeId:      store.id,
     orderNumber:  orderNum,
     customerName: customer,
-    tableRef:     `Table ${tableNum}`,
     priority,
     status:       "in_progress",
     notes:        orderNote,
