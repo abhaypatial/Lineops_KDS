@@ -59,9 +59,9 @@ All adapters live in `artifacts/api-server/src/lib/pos/`. Each returns `AdapterR
 | Lightspeed K-Series | Webhook POST | `lightspeed.ts` | `lightspeed/webhook` |
 | Generic / Custom | REST POST + API key | `generic.ts` | `orders` |
 
-### Volante VE — printer type → station mapping
+### Volante VE — station routing
 
-VE assigns a `printerTypeId` (UUID) to every kitchen chit. LineOps maps this UUID to a station ID via `VOLANTE_PRINTER_STATION_MAP` env var (JSON). Without it, `MenuItem.groupName` keyword heuristics are used as fallback. See `docs/integrations/VOLANTE.md`.
+VE sends a `pluginId` integer (the "KDS Terminal ID" from VE Back Office → Terminal group) in every kitchen job. LineOps maps this to a station ID via `VOLANTE_STATION_MAP` env var: `{"1":"grill","2":"cold"}`. Without it, `MenuItem.groupName` keyword heuristics are used as fallback. See `docs/integrations/VOLANTE.md`.
 
 ### Adding a new POS
 

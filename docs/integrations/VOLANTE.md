@@ -26,37 +26,38 @@ The response to `kitchen-jobs` is the same array back with `bestResult: "COMPLET
 
 ---
 
-## Printer Type → Station Mapping
+## KDS Terminal ID → Station Mapping
 
-This is the most important concept for a correct setup.
+This is the only configuration needed to route orders to the right kitchen station.
 
-In VE Back Office, each kitchen printer or display is assigned a **Printer Type** (a UUID). When VE fires a chit, the `KitchenChitJobEntity.printerTypeId` field tells LineOps which printer/station that chit is destined for.
-
-LineOps stores a mapping from VE's printer type UUIDs to LineOps station IDs:
+In VE Back Office, every **Terminal group** has a **KDS Terminal ID** field — a simple integer (1, 2, 3, …). VE sends this number in every kitchen job it fires. LineOps maps these integers to station IDs.
 
 ```
-VOLANTE_PRINTER_STATION_MAP='{"ve-uuid-of-grill-printer": "grill", "ve-uuid-of-cold-printer": "cold"}'
+VOLANTE_STATION_MAP='{"1":"grill","2":"cold","3":"fryer","4":"dessert"}'
 ```
 
-**Without this mapping**, LineOps falls back to keyword matching on `MenuItem.groupName` (e.g. "Hot Mains" → `grill`, "Cold Starters" → `cold`). This fallback works but is less precise.
+That's it. No UUIDs, no API calls — just the integers you can read directly from the VE Back Office screen.
 
-### Finding your VE printer type UUIDs
+### How to find your KDS Terminal IDs
 
-1. In VE Back Office, go to **Kitchen Display Setup → Printer Types**
-2. Note the UUID (or internal ID) of each printer type assigned to a kitchen display
-3. Match these UUIDs to your LineOps station IDs (visible in KDS **Setup → Stations**)
+1. In VE Back Office, go to **Kitchen Display Setup**
+2. For each **Terminal group**, note the **KDS Terminal ID** (integer on the right side of the terminal row)
+3. Match each integer to your LineOps station ID (visible in KDS **Setup → Stations**)
 
-### Example mapping
+### Example Back Office → LineOps mapping
+
+| VE Back Office Terminal group | KDS Terminal ID | LineOps Station ID |
+|---|---|---|
+| "Cecilias QSR — Grill" | 1 | `grill` |
+| "Cecilias QSR — Cold Side" | 2 | `cold` |
+| "Cecilias QSR — Fryer" | 3 | `fryer` |
+| "Cecilias QSR — Dessert" | 4 | `dessert` |
 
 ```bash
-# VE Printer Types → LineOps Station IDs
-VOLANTE_PRINTER_STATION_MAP='{
-  "11111111-aaaa-bbbb-cccc-ddddeeee0001": "grill",
-  "11111111-aaaa-bbbb-cccc-ddddeeee0002": "cold",
-  "11111111-aaaa-bbbb-cccc-ddddeeee0003": "fryer",
-  "11111111-aaaa-bbbb-cccc-ddddeeee0004": "dessert"
-}'
+VOLANTE_STATION_MAP='{"1":"grill","2":"cold","3":"fryer","4":"dessert"}'
 ```
+
+**Without this mapping**, LineOps falls back to keyword matching on `MenuItem.groupName` (e.g. "Hot Mains" → `grill`, "Cold Starters" → `cold`). This fallback works for basic installs but is less precise.
 
 ---
 
@@ -76,8 +77,10 @@ In your `.env`:
 # HMAC signing secret — set the same value in VE Back Office
 VOLANTE_WEBHOOK_SECRET=a-long-random-string
 
-# Printer type → station mapping (JSON)
-VOLANTE_PRINTER_STATION_MAP={"uuid1":"grill","uuid2":"cold"}
+# KDS Terminal ID → station mapping (JSON).
+# Keys = "KDS Terminal ID" integers from VE Back Office → Terminal group.
+# Values = LineOps station IDs from your Stations setup page.
+VOLANTE_STATION_MAP={"1":"grill","2":"cold","3":"fryer"}
 
 # Optional: pull mode credentials (LineOps calls VE API)
 VOLANTE_HOST=https://your-site.volantecloud.com

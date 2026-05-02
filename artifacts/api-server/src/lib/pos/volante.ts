@@ -122,42 +122,39 @@ export interface VeKitchenChitJob {
   masterTransId: number;              // POS check number
   storeId: string;
   terminalId: string;
-  /**
-   * VE printer type UUID — configured in VE Back Office under
-   * "Kitchen Display Setup → Printer Types".  Each printer type maps to one
-   * physical kitchen display / station.  LineOps stores the mapping as
-   * { [printerTypeId: UUID]: stationId } per installation.
-   * When present this overrides the groupName-based station heuristic.
-   */
-  printerTypeId?: string;
+  printerTypeId?: string;             // UUID of VE printer type (unused — use pluginId instead)
   itemIds?: number[];                 // transItemIds fired in this chit (unique)
   voidItemIds?: number[];             // transItemIds that were voided
   bestResult?: "UNKNOWN" | "QUEUED" | "SENT" | "COMPLETE";
   createTime: string;
   printTime?: string;
   configId?: string;
+  /**
+   * KDS Terminal ID — the integer you set in VE Back Office under
+   * Kitchen Display Setup → Terminal group → "KDS Terminal ID".
+   * This is the simplest, most reliable station routing key.
+   *
+   * In LineOps, map these to station IDs via VOLANTE_STATION_MAP:
+   *   VOLANTE_STATION_MAP='{"1":"grill","2":"cold","3":"fryer"}'
+   */
   pluginId?: number;
   primaryPrint?: unknown;             // raw VE print engine payload — not needed by KDS
 }
 
 /**
- * Maps VE printer type UUIDs to LineOps station IDs.
+ * Maps VE KDS Terminal ID integers to LineOps station IDs.
  *
- * Configured in VE Back Office: Kitchen Display Setup → Printer Types.
- * Every printer type that points to a KDS display should have a matching
- * entry here.  Without a match, groupName-based heuristics are used.
+ * The key is the "KDS Terminal ID" integer visible in VE Back Office under
+ * Kitchen Display Setup → Terminal group (e.g. "1", "2", "3").
+ * The value is the LineOps station ID from your Stations setup page.
  *
- * Example:
- *   {
- *     "aaaa-1111-...": "grill",
- *     "bbbb-2222-...": "cold",
- *     "cccc-3333-...": "fryer",
- *   }
+ * Set via environment variable as a JSON object (keys must be strings):
+ *   VOLANTE_STATION_MAP='{"1":"grill","2":"cold","3":"fryer","4":"dessert"}'
  *
- * Store this in your environment as JSON:
- *   VOLANTE_PRINTER_STATION_MAP='{"aaaa-1111":  "grill", ...}'
+ * When a chit's pluginId matches a key, all items in that chit go to that
+ * station.  Falls back to MenuItem.groupName keyword matching when absent.
  */
-export type VePrinterStationMap = Record<string, string>;
+export type VeStationMap = Record<string, string>;
 
 export interface VeMasterTransUpdateResult {
   success?: boolean;
@@ -300,16 +297,15 @@ export interface VeNormalisedOrder {
  * Process a batch of kitchen chit jobs against the cached transactions and
  * return normalised KDS orders ready to persist.
  *
- * @param jobs           KitchenChitJobEntity array from VE RPC push
- * @param printerMap     VE printerTypeId UUID → LineOps stationId  (from
- *                       VOLANTE_PRINTER_STATION_MAP env var or store config).
- *                       When a chit's printerTypeId has an entry here it
- *                       takes precedence over the groupName heuristic.
- * @param stationMap     Keyword → stationId fallback for groupName matching
+ * @param jobs         KitchenChitJobEntity array from VE RPC push
+ * @param veStationMap KDS Terminal ID → LineOps stationId (from VOLANTE_STATION_MAP).
+ *                     Keys are the "KDS Terminal ID" integers from VE Back Office,
+ *                     stored as strings (e.g. {"1":"grill","2":"cold"}).
+ * @param stationMap   Keyword → stationId fallback for groupName matching
  */
 export function processKitchenJobs(
   jobs: VeKitchenChitJob[],
-  printerMap?: VePrinterStationMap,
+  veStationMap?: VeStationMap,
   stationMap?: StationMap,
 ): { order: VeNormalisedOrder; jobId: string }[] {
   const results: { order: VeNormalisedOrder; jobId: string }[] = [];
@@ -327,9 +323,9 @@ export function processKitchenJobs(
     const customerName = tx?.serviceInfo?.customerName ?? undefined;
     const orderNotes   = tx?.serviceInfo?.orderNotes ?? "";
 
-    // Resolve station from printerTypeId (Back Office mapping) if available
-    const chitStation = job.printerTypeId && printerMap
-      ? printerMap[job.printerTypeId]
+    // Resolve station from pluginId (= "KDS Terminal ID" in VE Back Office — simplest mapping)
+    const chitStation = job.pluginId != null && veStationMap
+      ? veStationMap[String(job.pluginId)]
       : undefined;
 
     // Extract items — with tx we get full detail; without we get a stub
