@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useQueryClient }          from "@tanstack/react-query";
 import { useListOrders, useListStations, useBumpOrder, useListStores } from "@workspace/api-client-react";
 import { useKdsWebSocket }                  from "@/hooks/use-kds-websocket";
+import { useOrderChime, type ChimeType }    from "@/hooks/use-order-chime";
 import { FlaskConical, Maximize2, Minimize2 } from "lucide-react";
 import { toast as sonnerToast }             from "sonner";
 
@@ -11,9 +12,10 @@ type Allergen  = "nuts" | "gluten" | "dairy" | "shellfish" | "eggs" | "soy" | "s
 type Station   = "grill" | "fryer" | "cold" | "dessert" | "other";
 type Priority  = "normal" | "RUSH" | "VIP";
 type OrderType = "dine-in" | "takeout" | "bar" | "delivery";
-type KdsMode   = "multi" | "single" | "expo";
-type Density   = "compact" | "normal" | "comfortable";
-type FontSize  = "sm" | "md" | "lg";
+type KdsMode       = "multi" | "single" | "expo";
+type Density       = "compact" | "normal" | "comfortable";
+type FontSize      = "sm" | "md" | "lg";
+type BumpBarPreset = "keyboard" | "logic-controls" | "pos-x" | "mmf" | "custom";
 
 type DisplayItem = {
   id: string; qty: number; name: string;
@@ -33,6 +35,9 @@ type KdsConfig = {
   showOrderNumber: boolean; showCustomerName: boolean; showOrderType: boolean;
   showNotes: boolean; showAllergens: boolean; showStationColors: boolean;
   showModifierColors: boolean; showItemCompletion: boolean; showUrgencyBar: boolean;
+  soundEnabled: boolean; soundVolume: number; soundChime: ChimeType;
+  bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
+  bumpKey: string; prevKey: string; nextKey: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -78,6 +83,25 @@ const DEFAULT_CFG: KdsConfig = {
   showOrderNumber: true, showCustomerName: true, showOrderType: true,
   showNotes: true, showAllergens: true, showStationColors: true,
   showModifierColors: true, showItemCompletion: true, showUrgencyBar: true,
+  soundEnabled: true, soundVolume: 0.7, soundChime: "ding",
+  bumpBarEnabled: false, bumpBarPreset: "keyboard",
+  bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
+};
+
+// ─── Bump bar presets ─────────────────────────────────────────────────────────
+
+const BUMP_BAR_KEY_MAP: Record<Exclude<BumpBarPreset,"custom">, { bump: string; prev: string; next: string }> = {
+  "keyboard":       { bump: " ",  prev: "ArrowLeft", next: "ArrowRight" },
+  "logic-controls": { bump: "F1", prev: "F11",       next: "F12"        },
+  "pos-x":          { bump: "1",  prev: "-",         next: "+"          },
+  "mmf":            { bump: "F1", prev: "F7",        next: "F8"         },
+};
+const BUMP_BAR_PRESETS: Record<BumpBarPreset, { label: string; desc: string }> = {
+  "keyboard":       { label: "Keyboard (default)",    desc: "Space = bump  ·  ← → = navigate"         },
+  "logic-controls": { label: "Logic Controls BB2002", desc: "F1–F10 = bump  ·  F11 / F12 = navigate"  },
+  "pos-x":          { label: "POS-X BumpBar",         desc: "1–8 = bump  ·  − / + = navigate"         },
+  "mmf":            { label: "MMF Val-u Line",         desc: "F1–F6 = bump  ·  F7 / F8 = navigate"    },
+  "custom":         { label: "Custom",                 desc: "Record your own key bindings below"      },
 };
 
 // ─── Data helpers ─────────────────────────────────────────────────────────────
@@ -412,10 +436,41 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
   );
 }
 
+// ─── Key Recorder ─────────────────────────────────────────────────────────────
+
+function KeyRecorder({ label, value, onRecord }: {
+  label: string; value: string; onRecord: (k: string) => void;
+}) {
+  const [recording, setRecording] = useState(false);
+  useEffect(() => {
+    if (!recording) return;
+    function onKey(e: KeyboardEvent) {
+      e.preventDefault(); e.stopPropagation();
+      onRecord(e.key); setRecording(false);
+    }
+    window.addEventListener("keydown", onKey, { once: true, capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
+  }, [recording, onRecord]);
+  const display = value === " " ? "SPACE" : value.length > 3 ? value : value.toUpperCase();
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-white/40">{label}</span>
+      <button onClick={() => setRecording(true)}
+        className="h-6 px-2.5 rounded text-[10px] font-mono font-bold border transition-all min-w-[56px] text-center"
+        style={{ background: recording ? "rgba(245,158,11,0.18)" : "rgba(255,255,255,0.06)", borderColor: recording ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.1)", color: recording ? "#f59e0b" : "rgba(255,255,255,0.6)" }}>
+        {recording ? "press…" : display}
+      </button>
+    </div>
+  );
+}
+
 // ─── Settings Overlay ─────────────────────────────────────────────────────────
 
-function SettingsOverlay({ cfg, setCfg, onClose }: {
-  cfg: KdsConfig; setCfg: React.Dispatch<React.SetStateAction<KdsConfig>>; onClose: () => void;
+function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
+  cfg: KdsConfig;
+  setCfg: React.Dispatch<React.SetStateAction<KdsConfig>>;
+  onClose: () => void;
+  playChime: (type: ChimeType, vol: number) => void;
 }) {
   const set = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
   type ToggleItem = { label: string; key: keyof KdsConfig };
@@ -553,6 +608,89 @@ function SettingsOverlay({ cfg, setCfg, onClose }: {
               </button>
             ))}
           </div>
+
+          {/* Sound alerts */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Sound Alerts</p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/55">Alert on new order</span>
+              <button onClick={() => set("soundEnabled", !cfg.soundEnabled)}
+                className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+                style={{ background: cfg.soundEnabled ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+                <span className="w-3 h-3 rounded-full bg-white transition-all"
+                  style={{ transform: cfg.soundEnabled ? "translateX(16px)" : "translateX(0)" }} />
+              </button>
+            </div>
+            {cfg.soundEnabled && (<>
+              <div className="flex items-center justify-between pl-3 border-l border-white/[0.07]">
+                <span className="text-xs text-white/40">Chime</span>
+                <div className="flex gap-1">
+                  {(["ding", "bell", "blip"] as ChimeType[]).map(t => (
+                    <button key={t} onClick={() => { set("soundChime", t); playChime(t, cfg.soundVolume); }}
+                      className="h-6 px-2 rounded text-[9px] font-bold border capitalize transition-all"
+                      style={{ background: cfg.soundChime === t ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.soundChime === t ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.soundChime === t ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pl-3 border-l border-white/[0.07]">
+                <span className="text-[10px] text-white/40 shrink-0">Volume</span>
+                <input type="range" min={0} max={1} step={0.05}
+                  value={cfg.soundVolume}
+                  onChange={e => set("soundVolume", parseFloat(e.target.value))}
+                  onMouseUp={() => playChime(cfg.soundChime, cfg.soundVolume)}
+                  className="flex-1 h-1 cursor-pointer accent-amber-500" />
+                <span className="text-[10px] text-white/30 w-7 text-right">{Math.round(cfg.soundVolume * 100)}%</span>
+              </div>
+            </>)}
+          </div>
+
+          {/* Bump bar */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Bump Bar</p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/55">Physical bump bar</span>
+              <button onClick={() => set("bumpBarEnabled", !cfg.bumpBarEnabled)}
+                className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+                style={{ background: cfg.bumpBarEnabled ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+                <span className="w-3 h-3 rounded-full bg-white transition-all"
+                  style={{ transform: cfg.bumpBarEnabled ? "translateX(16px)" : "translateX(0)" }} />
+              </button>
+            </div>
+            {cfg.bumpBarEnabled && (<>
+              <div className="flex flex-col gap-1 pl-3 border-l border-white/[0.07]">
+                <span className="text-[10px] text-white/30 mb-0.5">Device preset</span>
+                {(Object.entries(BUMP_BAR_PRESETS) as [BumpBarPreset, { label: string; desc: string }][]).map(([id, preset]) => (
+                  <button key={id}
+                    onClick={() => {
+                      if (id !== "custom") {
+                        const keys = BUMP_BAR_KEY_MAP[id as Exclude<BumpBarPreset,"custom">];
+                        setCfg(c => ({ ...c, bumpBarPreset: id, bumpKey: keys.bump, prevKey: keys.prev, nextKey: keys.next }));
+                      } else {
+                        set("bumpBarPreset", "custom");
+                      }
+                    }}
+                    className="flex flex-col items-start px-2.5 py-1.5 rounded-lg border text-left transition-all"
+                    style={{ background: cfg.bumpBarPreset === id ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.03)", borderColor: cfg.bumpBarPreset === id ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.07)" }}>
+                    <span className="text-[10px] font-bold" style={{ color: cfg.bumpBarPreset === id ? "#f59e0b" : "rgba(255,255,255,0.5)" }}>{preset.label}</span>
+                    <span className="text-[9px] text-white/25 mt-0.5">{preset.desc}</span>
+                  </button>
+                ))}
+              </div>
+              {cfg.bumpBarPreset === "custom" && (
+                <div className="flex flex-col gap-1.5 pl-3 border-l border-white/[0.07] mt-0.5">
+                  <KeyRecorder label="Bump key"  value={cfg.bumpKey}  onRecord={k => set("bumpKey",  k)} />
+                  <KeyRecorder label="Prev order" value={cfg.prevKey} onRecord={k => set("prevKey", k)} />
+                  <KeyRecorder label="Next order" value={cfg.nextKey} onRecord={k => set("nextKey", k)} />
+                </div>
+              )}
+              <div className="px-2.5 py-2 rounded-lg border border-white/[0.06]" style={{ background: "rgba(255,255,255,0.02)" }}>
+                <p className="text-[9px] text-white/25 leading-relaxed">USB HID bump bars connect as keyboards — plug in and pick your model. For gamepad-protocol bars, button A = bump, L/R = navigate.</p>
+              </div>
+            </>)}
+          </div>
+
         </div>
       </div>
     </div>
@@ -564,7 +702,13 @@ function SettingsOverlay({ cfg, setCfg, onClose }: {
 export default function KdsDisplay() {
   const queryClient = useQueryClient();
   const [storeId, setStoreId] = useState<string>("");
-  const [cfg, setCfg]         = useState<KdsConfig>(DEFAULT_CFG);
+  const [cfg, setCfg]         = useState<KdsConfig>(() => {
+    try {
+      const saved = localStorage.getItem("kds_cfg");
+      if (saved) return { ...DEFAULT_CFG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_CFG;
+  });
   const [activeTab, setTab]   = useState<string>("All");  // "All" | DB station ID
   const [focusedId, setFocus] = useState<string | null>(null);
   const [doneItems, setDone]  = useState<Set<string>>(new Set());
@@ -572,6 +716,10 @@ export default function KdsDisplay() {
   const [bumpToast, setBumpToast] = useState<{ number: string } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [injecting, setInjecting] = useState(false);
+
+  const { playChime } = useOrderChime();
+  const cfgRef        = useRef(cfg);
+  cfgRef.current      = cfg;
 
   // ── Feature flags ─────────────────────────────────────────────────────────
   const { data: kdsConfig } = useQuery<{ testOrdersEnabled: boolean }>({
@@ -594,7 +742,16 @@ export default function KdsDisplay() {
     if (stores && stores.length > 0 && !storeId) setStoreId(stores[0].id);
   }, [stores, storeId]);
 
-  useKdsWebSocket(storeId, queryClient);
+  // Persist config to localStorage whenever it changes
+  useEffect(() => {
+    try { localStorage.setItem("kds_cfg", JSON.stringify(cfg)); } catch {}
+  }, [cfg]);
+
+  useKdsWebSocket(storeId, queryClient, () => {
+    if (cfgRef.current.soundEnabled) {
+      playChime(cfgRef.current.soundChime, cfgRef.current.soundVolume);
+    }
+  });
 
   // Build a stationId → Station slug map from DB stations
   const stationSlugMap = new Map<string, Station>(
@@ -655,18 +812,21 @@ export default function KdsDisplay() {
     return () => document.removeEventListener("fullscreenchange", h);
   }, []);
 
-  // ── Keyboard ──────────────────────────────────────────────────────────────
+  // ── Keyboard (+ physical bump bar via HID keyboard mode) ─────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "F4") { exitFullscreen(); return; }
       if (e.key === "Escape") { setShowSettings(false); return; }
       if (visibleOrders.length === 0) return;
       const idx = visibleOrders.findIndex(o => o.id === focusedId);
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      const nextKey = cfg.nextKey;
+      const prevKey = cfg.prevKey;
+      const bumpKey = cfg.bumpKey;
+      if (e.key === nextKey || e.key === "ArrowRight" || e.key === "ArrowDown") {
         setFocus(visibleOrders[Math.min(idx + 1, visibleOrders.length - 1)]?.id ?? null);
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      } else if (e.key === prevKey || e.key === "ArrowLeft" || e.key === "ArrowUp") {
         setFocus(visibleOrders[Math.max(idx - 1, 0)]?.id ?? null);
-      } else if ((e.key === " " || e.key === "Enter") && focusedOrder) {
+      } else if ((e.key === bumpKey || e.key === "Enter") && focusedOrder) {
         e.preventDefault(); bump(focusedOrder.id);
       } else if (e.key === "r" || e.key === "R") {
         queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
@@ -674,7 +834,37 @@ export default function KdsDisplay() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [visibleOrders, focusedId, focusedOrder, bump, exitFullscreen, queryClient]);
+  }, [visibleOrders, focusedId, focusedOrder, bump, exitFullscreen, queryClient, cfg.bumpKey, cfg.prevKey, cfg.nextKey]);
+
+  // ── Gamepad / bump bar (HID game-controller mode) ─────────────────────────
+  useEffect(() => {
+    if (!cfg.bumpBarEnabled) return;
+    let rafId: number;
+    const prevButtons = new Map<number, boolean[]>();
+    function poll() {
+      for (const pad of navigator.getGamepads()) {
+        if (!pad) continue;
+        const prev = prevButtons.get(pad.index) ?? new Array(pad.buttons.length).fill(false);
+        pad.buttons.forEach((btn, i) => {
+          if (btn.pressed && !prev[i]) {
+            if (i === 0 && focusedOrder) bump(focusedOrder.id);
+            else if ((i === 14 || i === 4) && visibleOrders.length) {
+              const idx = visibleOrders.findIndex(o => o.id === focusedId);
+              setFocus(visibleOrders[Math.max(idx - 1, 0)]?.id ?? null);
+            } else if ((i === 15 || i === 5) && visibleOrders.length) {
+              const idx = visibleOrders.findIndex(o => o.id === focusedId);
+              setFocus(visibleOrders[Math.min(idx + 1, visibleOrders.length - 1)]?.id ?? null);
+            }
+          }
+          prev[i] = btn.pressed;
+        });
+        prevButtons.set(pad.index, [...prev]);
+      }
+      rafId = requestAnimationFrame(poll);
+    }
+    rafId = requestAnimationFrame(poll);
+    return () => cancelAnimationFrame(rafId);
+  }, [cfg.bumpBarEnabled, focusedOrder, focusedId, visibleOrders, bump]);
 
   // ── Test order injection ──────────────────────────────────────────────────
   async function injectTestOrder() {
@@ -823,11 +1013,16 @@ export default function KdsDisplay() {
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       <footer className="h-9 border-t border-white/[0.07] bg-[#0d0d10] flex items-center px-4 shrink-0 gap-5">
-        {[
-          { keys: ["SPACE"], label: cfg.mode === "expo" ? "Fire" : "Bump" },
-          { keys: ["R"],     label: "Refresh" },
-          { keys: ["↑", "↓"], label: "Navigate" },
-        ].map(({ keys, label }) => (
+        {(() => {
+          const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
+          const pk = cfg.prevKey === "ArrowLeft"  ? "←" : cfg.prevKey;
+          const nk = cfg.nextKey === "ArrowRight" ? "→" : cfg.nextKey;
+          return [
+            { keys: [bk],     label: cfg.mode === "expo" ? "Fire" : "Bump" },
+            { keys: ["R"],    label: "Refresh" },
+            { keys: [pk, nk], label: "Navigate" },
+          ];
+        })().map(({ keys, label }) => (
           <div key={label} className="flex items-center gap-1.5">
             <div className="flex gap-1">
               {keys.map(k => (
@@ -850,7 +1045,7 @@ export default function KdsDisplay() {
       </footer>
 
       {/* ── Overlays ─────────────────────────────────────────────────────── */}
-      {showSettings && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} />}
+      {showSettings && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
       {bumpToast    && <BumpToast number={bumpToast.number} onDone={() => setBumpToast(null)} />}
 
       <style>{`

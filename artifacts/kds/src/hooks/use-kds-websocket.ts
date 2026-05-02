@@ -13,10 +13,16 @@ interface WebSocketEvent {
   };
 }
 
-export function useKdsWebSocket(storeId: string | undefined, queryClient: QueryClient) {
+export function useKdsWebSocket(
+  storeId: string | undefined,
+  queryClient: QueryClient,
+  onNewOrder?: (orderNumber: string) => void,
+) {
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
   const backoff = useRef(1000);
+  const onNewOrderRef = useRef(onNewOrder);
+  onNewOrderRef.current = onNewOrder;
 
   useEffect(() => {
     if (!storeId) return;
@@ -28,7 +34,6 @@ export function useKdsWebSocket(storeId: string | undefined, queryClient: QueryC
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log("KDS WebSocket connected");
         backoff.current = 1000;
         toast.success("Connected to LineOps KDS", { id: "ws-status", duration: 2000 });
       };
@@ -41,10 +46,15 @@ export function useKdsWebSocket(storeId: string | undefined, queryClient: QueryC
 
           switch (data.type) {
             case "order_created":
+              onNewOrderRef.current?.(data.payload.orderNumber ?? "");
+              queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey({ storeId }) });
+              queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey({ storeId }) });
+              queryClient.invalidateQueries({ queryKey: getGetRecentActivityQueryKey({ storeId }) });
+              queryClient.invalidateQueries({ queryKey: getGetStationLoadQueryKey({ storeId }) });
+              break;
             case "order_updated":
             case "order_bumped":
             case "item_status_updated":
-              // Invalidate relevant queries
               queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey({ storeId }) });
               queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey({ storeId }) });
               queryClient.invalidateQueries({ queryKey: getGetRecentActivityQueryKey({ storeId }) });
@@ -57,18 +67,14 @@ export function useKdsWebSocket(storeId: string | undefined, queryClient: QueryC
       };
 
       ws.current.onclose = () => {
-        console.log("KDS WebSocket disconnected");
-        toast.error("Disconnected from LineOps KDS. Reconnecting...", { id: "ws-status", duration: Infinity });
-        
-        // Exponential backoff
+        toast.error("Disconnected from LineOps KDS. Reconnecting…", { id: "ws-status", duration: Infinity });
         reconnectTimeout.current = setTimeout(() => {
           backoff.current = Math.min(backoff.current * 2, 30000);
           connect();
         }, backoff.current);
       };
 
-      ws.current.onerror = (error) => {
-        console.error("KDS WebSocket error", error);
+      ws.current.onerror = () => {
         ws.current?.close();
       };
     }
