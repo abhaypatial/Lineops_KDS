@@ -345,11 +345,23 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
   const effectiveSpan = cfg.featuredFirst && featured
     ? (cfg.featuredSpan ?? Math.max(cfg.numCols - 1, 1))
     : 1;
-  const itemCols  = featured && effectiveSpan >= 2 && order.items.length >= 3 ? 2 : 1;
 
   const visibleItems = cfg.mode === "single"
     ? order.items.filter(it => it.station === cfg.singleStation)
     : order.items;
+
+  // Long-order layout helpers
+  const MAX_VISIBLE_ITEMS = cfg.density === "compact" ? 14 : cfg.density === "comfortable" ? 10 : 12;
+  const clippedItems = visibleItems.slice(0, MAX_VISIBLE_ITEMS);
+  const overflowCount = visibleItems.length - clippedItems.length;
+  // Scale font for large item counts so content doesn't require scrolling
+  const itemScale = visibleItems.length >= 12 ? 0.75
+    : visibleItems.length >= 9  ? 0.84
+    : visibleItems.length >= 6  ? 0.92
+    : 1.0;
+  // Use 2-column items when: featured wide card, OR long orders in ≤3-col grid
+  const itemCols = (featured && effectiveSpan >= 2 && visibleItems.length >= 3)
+    || (!featured && visibleItems.length >= 6 && cfg.numCols <= 3) ? 2 : 1;
 
   if (cfg.mode === "single" && visibleItems.length === 0) return null;
 
@@ -453,14 +465,24 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
           </div>
         )}
 
-        {/* Item list */}
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${itemCols},1fr)`, gap: "10px 16px", flex: 1 }}>
-          {visibleItems.map((item, idx) => (
-            <div key={item.id}
-              style={{ borderTop: idx > 0 && itemCols === 1 ? "1px solid rgba(255,255,255,0.05)" : "none", paddingTop: idx > 0 && itemCols === 1 ? 8 : 0 }}>
-              <ItemRow item={item} done={doneItems.has(item.id)} onToggle={() => onToggleItem(item.id)} cfg={cfg} />
+        {/* Item list — scales font for long orders; 2-col for wide/dense cards */}
+        <div style={{ fontSize: `${itemScale}em` }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${itemCols},1fr)`, gap: "10px 16px" }}>
+            {clippedItems.map((item, idx) => (
+              <div key={item.id}
+                style={{ borderTop: idx > 0 && itemCols === 1 ? "1px solid rgba(255,255,255,0.05)" : "none", paddingTop: idx > 0 && itemCols === 1 ? 8 : 0 }}>
+                <ItemRow item={item} done={doneItems.has(item.id)} onToggle={() => onToggleItem(item.id)} cfg={cfg} />
+              </div>
+            ))}
+          </div>
+          {overflowCount > 0 && (
+            <div className="mt-2 px-2 py-1 rounded-md text-center"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>
+                +{overflowCount} more item{overflowCount > 1 ? "s" : ""}
+              </span>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Expo station readiness */}
@@ -1234,11 +1256,11 @@ export default function KdsDisplay() {
   });
   // ── Resolution-aware zoom ────────────────────────────────────────────────────
   // Auto-zoom relative to 1920 px baseline. Manual override saved in cfg.
-  const [autoZoom, setAutoZoom] = useState(() =>
-    Math.min(2.2, Math.max(0.40, window.innerWidth / 1920)));
+  const calcAutoZoom = () =>
+    Math.min(2.2, Math.max(0.40, Math.min(window.innerWidth / 1920, window.innerHeight / 1080)));
+  const [autoZoom, setAutoZoom] = useState(calcAutoZoom);
   useEffect(() => {
-    const onResize = () =>
-      setAutoZoom(Math.min(2.2, Math.max(0.40, window.innerWidth / 1920)));
+    const onResize = () => setAutoZoom(calcAutoZoom());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -1384,7 +1406,7 @@ export default function KdsDisplay() {
       if (e.key === "Escape") { setShowSettings(false); setShowQuickSettings(false); return; }
       // Ctrl+=/Ctrl+- : zoom in/out; Ctrl+0 : reset to auto
       if (e.ctrlKey && !e.altKey && !e.shiftKey && (e.key === "=" || e.key === "+" || e.key === "-" || e.key === "0")) {
-        const az = Math.min(2.2, Math.max(0.40, window.innerWidth / 1920));
+        const az = calcAutoZoom();
         const cur = cfgRef.current.zoomOverride ?? az;
         if (e.key === "=" || e.key === "+") setCfg(c => ({ ...c, zoomOverride: Math.min(2.50, Math.round((cur + 0.05) * 100) / 100) }));
         else if (e.key === "-")             setCfg(c => ({ ...c, zoomOverride: Math.max(0.40, Math.round((cur - 0.05) * 100) / 100) }));
@@ -1573,8 +1595,13 @@ export default function KdsDisplay() {
   function fmtSec(s: number) { const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; }
 
   return (
-    <div className="h-[100dvh] bg-[#0a0a0b] text-white flex flex-col select-none overflow-hidden relative"
-      style={{ fontFamily: "'Inter',system-ui,sans-serif", zoom: kdsZoom }}>
+    <div className="bg-[#0a0a0b] text-white flex flex-col select-none overflow-hidden relative"
+      style={{
+        fontFamily: "'Inter',system-ui,sans-serif",
+        zoom: kdsZoom,
+        height: `${(100 / kdsZoom).toFixed(3)}dvh`,
+        width: `${(100 / kdsZoom).toFixed(3)}vw`,
+      }}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="h-12 flex items-center justify-between px-4 border-b border-white/[0.07] shrink-0 bg-[#0d0d10]">
@@ -1650,7 +1677,7 @@ export default function KdsDisplay() {
       </header>
 
       {/* ── Order grid ──────────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto p-4">
+      <main className="flex-1 min-h-0 overflow-hidden p-4 flex flex-col">
         {visibleOrders.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center flex flex-col items-center gap-3">
@@ -1670,8 +1697,12 @@ export default function KdsDisplay() {
           <div style={{
             display: "grid",
             gridTemplateColumns: `repeat(${cfg.numCols},minmax(0,1fr))`,
+            gridAutoRows: "1fr",
             gap: DENSITY_GAP[cfg.density],
-            alignItems: "start",
+            alignItems: "stretch",
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
           }}>
             {visibleOrders.map(order => (
               <OrderCard

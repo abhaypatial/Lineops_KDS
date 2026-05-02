@@ -96,7 +96,8 @@ router.post("/test/inject-order", async (req, res): Promise<void> => {
     const pool  = stationFilter
       ? MENU_ITEMS.filter(it => it.station === stationFilter)
       : MENU_ITEMS;
-    const count = Math.floor(Math.random() * 3) + 2;
+    const requestedCount = req.query.count ? parseInt(req.query.count as string, 10) : 0;
+    const count = requestedCount > 0 ? requestedCount : Math.floor(Math.random() * 3) + 2;
     pickedItems = (pool.length > 0 ? pool : MENU_ITEMS)
       .sort(() => Math.random() - 0.5)
       .slice(0, count);
