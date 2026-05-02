@@ -230,8 +230,8 @@ function UrgencyBar({ sec, priority }: { sec: number; priority: Priority }) {
 function BumpToast({ number, onDone }: { number: string; onDone: () => void }) {
   useEffect(() => { const t = setTimeout(onDone, 2000); return () => clearTimeout(t); }, [onDone]);
   return (
-    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2"
-      style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)", color: "#86efac", boxShadow: "0 4px 24px rgba(0,0,0,0.4)", animation: "fadeSlideIn 0.2s ease" }}>
+    <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 pointer-events-none"
+      style={{ background: "rgba(17,17,22,0.92)", border: "1px solid rgba(34,197,94,0.4)", color: "#86efac", boxShadow: "0 2px 12px rgba(0,0,0,0.5)", animation: "fadeSlideIn 0.15s ease" }}>
       ✓ Bumped #{number}
     </div>
   );
@@ -413,8 +413,8 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
               )}
             </div>
             {cfg.showOrderNumber && (
-              <span className="font-black text-white leading-none tracking-tight"
-                style={{ fontSize: featured ? fs.featured : fs.num }}>
+              <span className="font-black leading-none tracking-tight"
+                style={{ fontSize: featured ? fs.featured : fs.num, color: "#fbbf24" }}>
                 #{order.number}
               </span>
             )}
