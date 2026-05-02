@@ -495,12 +495,35 @@ function KeyRecorder({ label, value, onRecord }: {
 
 // ─── Quick Settings Panel ─────────────────────────────────────────────────────
 
-function QuickSettingsPanel({ cfg, setCfg, onClose }: {
+function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
   cfg: KdsConfig;
   setCfg: React.Dispatch<React.SetStateAction<KdsConfig>>;
+  storeId: string;
+  onClearSuccess: () => void;
   onClose: () => void;
 }) {
+  const queryClient = useQueryClient();
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing]         = useState(false);
+
   const set = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
+
+  async function clearAllOrders() {
+    setClearing(true);
+    try {
+      const res  = await fetch(`/api/orders/clear-all?storeId=${storeId}`, { method: "POST" });
+      const json = await res.json() as { ok: boolean; cleared: number };
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        onClearSuccess();
+        onClose();
+        sonnerToast.success(`${json.cleared} order${json.cleared !== 1 ? "s" : ""} cleared`, { duration: 2500 });
+      } else {
+        sonnerToast.error("Failed to clear orders");
+      }
+    } catch { sonnerToast.error("Network error"); }
+    finally { setClearing(false); setConfirmClear(false); }
+  }
   return (
     <div className="absolute bottom-11 right-16 z-40 rounded-2xl overflow-hidden shadow-2xl border border-white/[0.12]"
       style={{ background: "#13131a", width: 232 }}>
@@ -570,6 +593,39 @@ function QuickSettingsPanel({ cfg, setCfg, onClose }: {
             <span className="w-3 h-3 rounded-full bg-white transition-all"
               style={{ transform: cfg.escalationEnabled ? "translateX(16px)" : "translateX(0)" }} />
           </button>
+        </div>
+
+        {/* Clear All — danger zone */}
+        <div className="pt-1 border-t border-white/[0.06]">
+          {!confirmClear ? (
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="w-full py-1.5 rounded-lg text-[9px] font-bold border transition-all"
+              style={{ background: "rgba(239,68,68,0.07)", borderColor: "rgba(239,68,68,0.22)", color: "rgba(239,68,68,0.65)" }}>
+              Clear All Active Orders
+            </button>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] text-white/35 text-center">
+                Remove all in-progress orders?
+              </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="flex-1 py-1.5 rounded-lg text-[9px] font-bold border border-white/[0.08] transition-all"
+                  style={{ color: "rgba(255,255,255,0.35)" }}>
+                  Cancel
+                </button>
+                <button
+                  onClick={clearAllOrders}
+                  disabled={clearing}
+                  className="flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all"
+                  style={{ background: "rgba(239,68,68,0.2)", color: clearing ? "rgba(248,113,113,0.4)" : "#f87171" }}>
+                  {clearing ? "Clearing…" : "Yes, Clear All"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -950,9 +1006,7 @@ export default function KdsDisplay() {
           setFocus(prev => prev === orderId ? (visibleOrders.find(o => o.id !== orderId)?.id ?? null) : prev);
           setDone(prev => { const next = new Set(prev); bumped.items.forEach(it => next.delete(it.id)); return next; });
           setBumpToast({ number: bumped.number });
-          if (cfgRef.current.mode === "expo") {
-            setNowServing(prev => [...prev, { order: bumped, firedAt: Date.now() }].slice(-6));
-          }
+          setNowServing(prev => [...prev, { order: bumped, firedAt: Date.now() }].slice(-8));
         },
       }
     );
@@ -961,6 +1015,22 @@ export default function KdsDisplay() {
   const toggleItem = (itemId: string) => setDone(prev => {
     const next = new Set(prev); next.has(itemId) ? next.delete(itemId) : next.add(itemId); return next;
   });
+
+  // ── Recall a bumped order (from Now Serving strip) ─────────────────────────
+  async function recallOrder(orderId: string) {
+    const entry = nowServingOrders.find(ns => ns.order.id === orderId);
+    if (!entry) return;
+    try {
+      const res = await fetch(`/api/orders/${orderId}/recall`, { method: "POST" });
+      if (res.ok) {
+        setNowServing(prev => prev.filter(ns => ns.order.id !== orderId));
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        sonnerToast.success(`Order #${entry.order.number} recalled`, { duration: 2000 });
+      } else {
+        sonnerToast.error("Could not recall order");
+      }
+    } catch { sonnerToast.error("Network error"); }
+  }
 
   // ── Fullscreen ────────────────────────────────────────────────────────────
   const enterFullscreen = useCallback(() => { document.documentElement.requestFullscreen?.().catch(() => {}); }, []);
@@ -980,8 +1050,17 @@ export default function KdsDisplay() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "F4") { exitFullscreen(); return; }
-      if (e.key === "Escape") { setShowSettings(false); return; }
+      if (e.key === "Escape") { setShowSettings(false); setShowQuickSettings(false); return; }
+      // Don't intercept when typing in an actual input
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (visibleOrders.length === 0) return;
+      // Digit keys 1–9: jump directly to nth order
+      if (/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = visibleOrders[parseInt(e.key) - 1];
+        if (target) { setFocus(target.id); e.preventDefault(); }
+        return;
+      }
       const idx = visibleOrders.findIndex(o => o.id === focusedId);
       const nextKey = cfg.nextKey;
       const prevKey = cfg.prevKey;
@@ -1257,8 +1336,8 @@ export default function KdsDisplay() {
         )}
       </main>
 
-      {/* ── Now Serving strip (expo mode) ────────────────────────────────── */}
-      {cfg.mode === "expo" && nowServingOrders.length > 0 && (
+      {/* ── Now Serving strip (all modes) ────────────────────────────────── */}
+      {nowServingOrders.length > 0 && (
         <div className="mx-4 mb-2 px-3 py-2 rounded-xl border flex items-center gap-3 shrink-0"
           style={{ borderColor: "rgba(34,197,94,0.25)", background: "rgba(34,197,94,0.05)" }}>
           <span className="text-[10px] font-black uppercase tracking-widest shrink-0"
@@ -1271,6 +1350,13 @@ export default function KdsDisplay() {
                 style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", color: "#86efac" }}>
                 #{ns.order.number}
                 <span className="text-white/25 font-normal text-[10px] ml-1">{ns.order.customer}</span>
+                <button
+                  onClick={() => recallOrder(ns.order.id)}
+                  className="ml-0.5 flex items-center justify-center w-4 h-4 rounded-full transition-all hover:bg-white/10"
+                  style={{ color: "rgba(134,239,172,0.6)", fontSize: 10 }}
+                  title="Recall order — bring it back to the display">
+                  ↩
+                </button>
               </div>
             ))}
           </div>
@@ -1312,7 +1398,7 @@ export default function KdsDisplay() {
 
       {/* ── Overlays ─────────────────────────────────────────────────────── */}
       {showSettings      && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
-      {showQuickSettings && <QuickSettingsPanel cfg={cfg} setCfg={setCfg} onClose={() => setShowQuickSettings(false)} />}
+      {showQuickSettings && <QuickSettingsPanel cfg={cfg} setCfg={setCfg} storeId={storeId} onClearSuccess={() => setNowServing([])} onClose={() => setShowQuickSettings(false)} />}
       {bumpToast         && <BumpToast number={bumpToast.number} onDone={() => setBumpToast(null)} />}
 
       {/* ── Quick Settings FAB ────────────────────────────────────────────── */}

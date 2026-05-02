@@ -134,6 +134,67 @@ router.post("/orders", async (req, res): Promise<void> => {
   res.status(201).json(result);
 });
 
+router.post("/orders/clear-all", async (req, res): Promise<void> => {
+  const storeId = req.query.storeId as string | undefined;
+
+  const conditions = [inArray(ordersTable.status, ["in_progress", "pending"] as const)];
+  if (storeId) conditions.push(eq(ordersTable.storeId, storeId));
+
+  const cleared = await db
+    .update(ordersTable)
+    .set({ status: "completed", completedAt: new Date() })
+    .where(and(...conditions))
+    .returning();
+
+  if (cleared.length > 0) {
+    await db
+      .update(orderItemsTable)
+      .set({ status: "ready" })
+      .where(
+        and(
+          inArray(orderItemsTable.orderId, cleared.map(o => o.id)),
+          eq(orderItemsTable.status, "pending"),
+        ),
+      );
+    broadcast({ type: "orders_cleared", payload: { count: cleared.length, storeId: storeId ?? "" } });
+  }
+
+  req.log.info({ count: cleared.length }, "All active orders cleared");
+  res.json({ ok: true, cleared: cleared.length });
+});
+
+router.post("/orders/:id/recall", async (req, res): Promise<void> => {
+  const [order] = await db
+    .select()
+    .from(ordersTable)
+    .where(eq(ordersTable.id, req.params.id));
+
+  if (!order) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const [recalled] = await db
+    .update(ordersTable)
+    .set({ status: "in_progress", completedAt: null, startedAt: new Date() })
+    .where(eq(ordersTable.id, req.params.id))
+    .returning();
+
+  await db
+    .update(orderItemsTable)
+    .set({ status: "pending" })
+    .where(eq(orderItemsTable.orderId, req.params.id));
+
+  const result = await getOrderWithItems(recalled.id);
+  broadcast({
+    type: "order_updated",
+    payload: { orderId: recalled.id, storeId: recalled.storeId, orderNumber: recalled.orderNumber },
+  });
+
+  req.log.info({ orderId: recalled.id, orderNumber: recalled.orderNumber }, "Order recalled");
+  res.json(result);
+});
+
 router.get("/orders/:id", async (req, res): Promise<void> => {
   const order = await getOrderWithItems(req.params.id);
   if (!order) {

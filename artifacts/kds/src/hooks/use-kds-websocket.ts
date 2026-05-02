@@ -55,6 +55,7 @@ export function useKdsWebSocket(
             case "order_updated":
             case "order_bumped":
             case "item_status_updated":
+            case "orders_cleared":
               queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey({ storeId }) });
               queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey({ storeId }) });
               queryClient.invalidateQueries({ queryKey: getGetRecentActivityQueryKey({ storeId }) });
