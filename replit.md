@@ -34,22 +34,27 @@ pnpm workspace monorepo with TypeScript throughout. Contract-first API via OpenA
 
 ## Database Schema
 
-Tables: `enterprises`, `stores`, `stations`, `devices`, `orders`, `order_items`, `kds_config_templates`, `kds_station_configs`
+Tables: `enterprises`, `stores`, `stations`, `devices`, `orders`, `order_items`, `kds_config_templates`, `kds_station_configs`, `device_health_events`
 
 Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (linked to stations)
+
+`device_health_events` records per-device online/offline/ping_reached/ping_timeout events with optional latencyMs.
 
 ## Key Features
 
 - **KDS Display** (`/`): Live order grid, station filtering tabs, keyboard bump bar (←→ navigate, SPACE/Enter bump), configurable recall key (default Backspace), physical bump bar presets (Logic Controls / POS-X / MMF / Custom), virtual bump bar (◄ BUMP ↩Recall ▶), elapsed-time color coding (yellow >10m, red >15m), rush/VIP order highlighting, resolution-aware auto-zoom, long-order font scaling + 2-col layout + overflow badge
+- **Ping Flash Overlay**: Full-screen green ring + badge when `kds_ping` WS event received — confirms display is wired correctly before service. 1.6s animated overlay with device ID.
 - **Now Serving strip** + **Recent/recall tray**: independent `showNowServing` and `showRecentBumped` toggles; recall any bumped order via keyboard, virtual bar, or Quick Actions panel
 - **Config Templates**: save/apply/delete named configs per store; push-to-all via WebSocket broadcast; export/import JSON — `kds_config_templates` DB table + REST API
 - **Station Config Management** (`/station-configs`): assign a named template config to each kitchen station; push to all displays at that station over WS; copy configs between stations — `kds_station_configs` DB table + REST endpoints (`PUT/GET /api/stations/:id/config`, `POST /api/stations/:id/push-config`, `POST /api/stations/copy-config`)
-- **Per-device config push** (`POST /api/devices/:id/push-config`): targeted WS push to a single display by device ID; CLI `kds devices push <deviceId> <templateId>`; machine-local settings (zoom, bump bar, keys) always preserved
-- **Live device registry**: displays auto-register via WS on connect (`{ type: "register", deviceId }`); `GET /api/devices/online` returns live device IDs; server maintains `Map<deviceId, WebSocket>`
+- **Per-device config push** (`POST /api/devices/:id/push-config`): targeted WS push to a single display by device ID; machine-local settings (zoom, bump bar, keys) always preserved
+- **Per-device Ping** (`POST /api/devices/:id/ping`): sends `kds_ping` WS event to specific display; records `ping_reached`/`ping_timeout` health event; display shows 1.6s flash overlay
+- **Device Health History** (`GET /api/devices/:id/health`): per-device timeline of online/offline/ping events stored in `device_health_events`; collapsible panel in Devices page; auto-refreshes after ping
+- **Live device registry**: displays auto-register via WS on connect (`{ type: "register", deviceId }`); `GET /api/devices/online` returns live device IDs; server maintains `Map<deviceId, WebSocket>`; status column updated to online/offline in DB on connect/disconnect
 - **Quick Actions panel** (⚡ FAB): bump focused order, recall last, recall list (expandable), footer bar toggle
 - **Manager Dashboard** (`/dashboard`): Active orders summary, avg ticket time, rush count, online devices, per-station load bars, real-time activity feed
 - **Orders Page** (`/orders`): Tabular order history with bump/status management
-- **Devices Page** (`/devices`): Device status monitoring (online/idle/offline) with per-device Push Config dropdown
+- **Devices Page** (`/devices`): Device status monitoring (online/idle/offline) with per-device Push Config dropdown, Ping button, and collapsible Health History panel
 - **Setup Page** (`/setup`): Hierarchical config — enterprises, stores, stations, devices
 
 ## POS Integration Layer
@@ -127,6 +132,14 @@ kds start / stop / restart / update
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate hooks/schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 
+## AI Agent Documentation
+
+| File | For |
+|---|---|
+| `CLAUDE.md` | Claude / Anthropic — comprehensive guide, all conventions |
+| `GEMINI.md` | Gemini / Google — Gemini-specific tips + architecture summary |
+| `CHATGPT.md` | ChatGPT / OpenAI — quick-start + key files table |
+
 ## Documentation
 
 | File | Purpose |
@@ -148,3 +161,6 @@ kds start / stop / restart / update
 - Zod import: always `from "zod"`, never `from "zod/v4"` — esbuild cannot resolve the v4 subpath
 - Logging: use `req.log` in route handlers, `logger` singleton elsewhere — never `console.log` in server code
 - Volante VE uses RPC push (PUT), not a single POST webhook — see `docs/integrations/VOLANTE.md`
+- `vite.config.ts` must not throw when `PORT`/`BASE_PATH` are unset — Docker build stages run without them; use defaults instead
+- CORS: `app.use(cors())` is wide-open by default. For locked-down deployments, set `CORS_ORIGIN` env var to restrict origins
+- Device status (`online`/`offline`) is now kept in sync in the DB automatically on every WS connect/disconnect

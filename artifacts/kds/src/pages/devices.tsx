@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useListStores, useListDevices } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Wifi, WifiOff, Clock, Send, ChevronDown, CheckCircle2, AlertCircle, Radio } from "lucide-react";
+import { Monitor, Wifi, WifiOff, Clock, Send, ChevronDown, CheckCircle2, AlertCircle, Radio, ChevronUp, Activity } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -26,6 +26,21 @@ interface PushResult {
   status: "success" | "offline" | "error";
 }
 
+interface HealthEvent {
+  id: string;
+  deviceId: string;
+  eventType: "online" | "offline" | "ping_reached" | "ping_timeout";
+  latencyMs: number | null;
+  createdAt: string;
+}
+
+const HEALTH_EVENT_META: Record<HealthEvent["eventType"], { label: string; color: string; dot: string }> = {
+  online:        { label: "Online",        color: "#4ade80", dot: "#22c55e" },
+  offline:       { label: "Offline",       color: "#f87171", dot: "#ef4444" },
+  ping_reached:  { label: "Ping OK",       color: "#60a5fa", dot: "#3b82f6" },
+  ping_timeout:  { label: "Ping Timeout",  color: "#fbbf24", dot: "#f59e0b" },
+};
+
 export default function DevicesPage() {
   const [storeId, setStoreId] = useState<string>("");
   const [templates, setTemplates] = useState<KdsTemplate[]>([]);
@@ -33,6 +48,9 @@ export default function DevicesPage() {
   const [pushing, setPushing] = useState<string | null>(null);
   const [pinging, setPinging] = useState<Record<string, boolean>>({});
   const [pingResults, setPingResults] = useState<Record<string, "reached" | "offline">>({});
+  const [healthExpanded, setHealthExpanded] = useState<Record<string, boolean>>({});
+  const [healthData, setHealthData] = useState<Record<string, HealthEvent[]>>({});
+  const [healthLoading, setHealthLoading] = useState<Record<string, boolean>>({});
 
   const { data: stores } = useListStores();
 
@@ -52,6 +70,27 @@ export default function DevicesPage() {
       .catch(() => {});
   }, []);
 
+  const fetchHealth = useCallback(async (deviceId: string) => {
+    setHealthLoading((p) => ({ ...p, [deviceId]: true }));
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/health?limit=20`);
+      const data = await res.json() as HealthEvent[];
+      setHealthData((p) => ({ ...p, [deviceId]: Array.isArray(data) ? data : [] }));
+    } catch {
+      setHealthData((p) => ({ ...p, [deviceId]: [] }));
+    } finally {
+      setHealthLoading((p) => ({ ...p, [deviceId]: false }));
+    }
+  }, []);
+
+  function toggleHealth(deviceId: string) {
+    const next = !healthExpanded[deviceId];
+    setHealthExpanded((p) => ({ ...p, [deviceId]: next }));
+    if (next && !healthData[deviceId]) {
+      fetchHealth(deviceId);
+    }
+  }
+
   async function pingDevice(deviceId: string, deviceName: string) {
     setPinging((p) => ({ ...p, [deviceId]: true }));
     setPingResults((p) => { const n = { ...p }; delete n[deviceId]; return n; });
@@ -64,6 +103,9 @@ export default function DevicesPage() {
       } else {
         setPingResults((p) => ({ ...p, [deviceId]: "offline" }));
         toast.warning(`${deviceName} is offline`);
+      }
+      if (healthExpanded[deviceId]) {
+        setTimeout(() => fetchHealth(deviceId), 600);
       }
     } catch {
       toast.error("Ping failed");
@@ -112,6 +154,9 @@ export default function DevicesPage() {
         {devices?.map((device) => {
           const result = pushResults[device.id];
           const isPushing = pushing === device.id;
+          const isExpanded = healthExpanded[device.id] ?? false;
+          const events = healthData[device.id] ?? [];
+          const isLoadingHealth = healthLoading[device.id] ?? false;
           return (
             <Card key={device.id} className="bg-card border-border flex flex-col">
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -206,6 +251,62 @@ export default function DevicesPage() {
                         </div>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  )}
+                </div>
+
+                {/* ── Health History ── */}
+                <div className="space-y-2">
+                  <button
+                    className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => toggleHealth(device.id)}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Activity className="h-3 w-3" />
+                      Health History
+                    </span>
+                    {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="rounded-md border border-border/50 bg-muted/20 overflow-hidden">
+                      {isLoadingHealth ? (
+                        <div className="px-3 py-4 text-center text-xs text-muted-foreground animate-pulse">
+                          Loading…
+                        </div>
+                      ) : events.length === 0 ? (
+                        <div className="px-3 py-4 text-center text-xs text-muted-foreground italic">
+                          No events recorded yet
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-border/30">
+                          {events.map((ev) => {
+                            const meta = HEALTH_EVENT_META[ev.eventType];
+                            return (
+                              <div key={ev.id} className="flex items-center gap-2 px-3 py-1.5">
+                                <span className="shrink-0 h-1.5 w-1.5 rounded-full" style={{ background: meta.dot }} />
+                                <span className="text-[11px] font-semibold flex-1 truncate" style={{ color: meta.color }}>
+                                  {meta.label}
+                                </span>
+                                {ev.latencyMs != null && (
+                                  <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                                    {ev.latencyMs}ms
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                  {formatDistanceToNow(new Date(ev.createdAt), { addSuffix: true })}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <button
+                        className="w-full py-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors border-t border-border/30"
+                        onClick={() => fetchHealth(device.id)}
+                      >
+                        Refresh
+                      </button>
+                    </div>
                   )}
                 </div>
 

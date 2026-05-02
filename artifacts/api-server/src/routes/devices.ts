@@ -1,13 +1,13 @@
 import { Router } from "express";
-import { db, devicesTable, kdsConfigTemplatesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, devicesTable, kdsConfigTemplatesTable, deviceHealthEventsTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 import {
   CreateDeviceBody,
   UpdateDeviceBody,
   ListDevicesQueryParams,
 } from "@workspace/api-zod";
 import { randomUUID } from "crypto";
-import { broadcastToDevice, stripMachineLocal, getRegisteredDeviceIds } from "../lib/ws";
+import { broadcastToDevice, stripMachineLocal, getRegisteredDeviceIds, recordHealthEvent } from "../lib/ws";
 
 const router = Router();
 
@@ -43,6 +43,18 @@ router.post("/devices", async (req, res): Promise<void> => {
 router.get("/devices/online", async (req, res): Promise<void> => {
   const ids = getRegisteredDeviceIds();
   res.json({ deviceIds: ids, count: ids.length });
+});
+
+router.get("/devices/:id/health", async (req, res): Promise<void> => {
+  const limitParam = Number(req.query.limit) || 40;
+  const limit = Math.min(limitParam, 200);
+  const events = await db
+    .select()
+    .from(deviceHealthEventsTable)
+    .where(eq(deviceHealthEventsTable.deviceId, req.params.id))
+    .orderBy(desc(deviceHealthEventsTable.createdAt))
+    .limit(limit);
+  res.json(events);
 });
 
 router.get("/devices/:id", async (req, res): Promise<void> => {
@@ -121,6 +133,7 @@ router.post("/devices/:id/ping", async (req, res): Promise<void> => {
     type: "kds_ping",
     payload: { deviceId: device.id, deviceName: device.name },
   });
+  recordHealthEvent(device.id, reached ? "ping_reached" : "ping_timeout").catch(() => {});
   res.json({ ok: true, reached, deviceName: device.name });
 });
 
