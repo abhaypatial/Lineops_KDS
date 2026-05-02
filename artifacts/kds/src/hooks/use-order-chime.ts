@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 
-export type ChimeType = "ding" | "bell" | "blip";
+export type ChimeType = "ding" | "bell" | "blip" | "chime";
 
 export function useOrderChime() {
   const ctxRef = useRef<AudioContext | null>(null);
@@ -56,6 +56,20 @@ export function useOrderChime() {
         gain.gain.linearRampToValueAtTime(volume * 0.45, now + 0.01);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
         osc.start(now); osc.stop(now + 0.18);
+
+      } else if (type === "chime") {
+        // Soothing two-note bell: perfect fourth interval, long sine decay
+        [[523.25, 0], [698.46, 0.22]].forEach(([freq, delay]) => {
+          const osc  = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + delay);
+          gain.gain.setValueAtTime(0, now + delay);
+          gain.gain.linearRampToValueAtTime(volume * 0.38, now + delay + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 2.2);
+          osc.start(now + delay); osc.stop(now + delay + 2.2);
+        });
       }
     } catch {
       // AudioContext not available (e.g. SSR or blocked)

@@ -40,6 +40,10 @@ type KdsConfig = {
   soundEnabled: boolean; soundVolume: number; soundChime: ChimeType;
   stationChimes: Record<Station, StationChime>;
   escalationEnabled: boolean;
+  escalationWarnChime: ChimeType;
+  escalationAlertChime: ChimeType;
+  showStats: boolean;
+  showFooter: boolean;
   expoSendMode: ExpoSendMode;
   bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
   bumpKey: string; prevKey: string; nextKey: string;
@@ -91,6 +95,10 @@ const DEFAULT_CFG: KdsConfig = {
   soundEnabled: true, soundVolume: 0.7, soundChime: "ding",
   stationChimes: { grill: "ding", fryer: "blip", cold: "bell", dessert: "bell", other: "ding" },
   escalationEnabled: true,
+  escalationWarnChime: "chime" as ChimeType,
+  escalationAlertChime: "chime" as ChimeType,
+  showStats: false,
+  showFooter: true,
   expoSendMode: "expo_bump" as ExpoSendMode,
   bumpBarEnabled: false, bumpBarPreset: "keyboard",
   bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
@@ -595,6 +603,25 @@ function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
           </button>
         </div>
 
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Stats Strip</span>
+          <button onClick={() => set("showStats", !cfg.showStats)}
+            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+            style={{ background: cfg.showStats ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+            <span className="w-3 h-3 rounded-full bg-white transition-all"
+              style={{ transform: cfg.showStats ? "translateX(16px)" : "translateX(0)" }} />
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Footer Bar</span>
+          <button onClick={() => set("showFooter", !cfg.showFooter)}
+            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+            style={{ background: cfg.showFooter ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+            <span className="w-3 h-3 rounded-full bg-white transition-all"
+              style={{ transform: cfg.showFooter ? "translateX(16px)" : "translateX(0)" }} />
+          </button>
+        </div>
+
         {/* Clear All — danger zone */}
         <div className="pt-1 border-t border-white/[0.06]">
           {!confirmClear ? (
@@ -807,8 +834,40 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
               </button>
             </div>
             {cfg.escalationEnabled && (
-              <div className="text-[9px] text-white/25 pl-3 border-l border-white/[0.07] leading-relaxed">
-                Bell chime at 9 min · Triple blip at 15 min · Border flash throughout
+              <div className="flex flex-col gap-2 pl-3 border-l border-white/[0.07]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-white/40">9 min chime</span>
+                  <div className="flex gap-0.5">
+                    {(["chime", "ding", "bell", "blip"] as ChimeType[]).map(t => {
+                      const active = cfg.escalationWarnChime === t;
+                      return (
+                        <button key={t}
+                          onClick={() => { set("escalationWarnChime", t); playChime(t, cfg.soundVolume); }}
+                          className="h-5 px-1.5 rounded text-[8px] font-bold border capitalize transition-all"
+                          style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.04)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.07)", color: active ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+                          {t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-white/40">15 min chime</span>
+                  <div className="flex gap-0.5">
+                    {(["chime", "ding", "bell", "blip"] as ChimeType[]).map(t => {
+                      const active = cfg.escalationAlertChime === t;
+                      return (
+                        <button key={t}
+                          onClick={() => { set("escalationAlertChime", t); playChime(t, cfg.soundVolume); }}
+                          className="h-5 px-1.5 rounded text-[8px] font-bold border capitalize transition-all"
+                          style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.04)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.07)", color: active ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+                          {t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className="text-[9px] text-white/20 leading-relaxed">Border flash shows throughout · "chime" = soft soothing bell</span>
               </div>
             )}
             <div className="flex items-center justify-between">
@@ -1006,7 +1065,10 @@ export default function KdsDisplay() {
           setFocus(prev => prev === orderId ? (visibleOrders.find(o => o.id !== orderId)?.id ?? null) : prev);
           setDone(prev => { const next = new Set(prev); bumped.items.forEach(it => next.delete(it.id)); return next; });
           setBumpToast({ number: bumped.number });
-          setNowServing(prev => [...prev, { order: bumped, firedAt: Date.now() }].slice(-8));
+          setNowServing(prev => {
+            const without = prev.filter(ns => ns.order.id !== bumped.id);
+            return [...without, { order: bumped, firedAt: Date.now() }].slice(-8);
+          });
         },
       }
     );
@@ -1146,9 +1208,9 @@ export default function KdsDisplay() {
           escalatedOrdersRef.current.set(order.id, newLevel);
           if (cfgRef.current.soundEnabled) {
             if (newLevel === 2) {
-              [0, 220, 440].forEach(d => setTimeout(() => playChime("blip", cfgRef.current.soundVolume), d));
+              [0, 350].forEach(d => setTimeout(() => playChime(cfgRef.current.escalationAlertChime, cfgRef.current.soundVolume), d));
             } else {
-              playChime("bell", cfgRef.current.soundVolume);
+              playChime(cfgRef.current.escalationWarnChime, cfgRef.current.soundVolume);
             }
           }
         }
@@ -1214,6 +1276,14 @@ export default function KdsDisplay() {
       color: STATION_META[stationNameToSlug(s.name)].color,
     })),
   ];
+
+  // ── Order age stats ───────────────────────────────────────────────────────
+  const warnCount  = allOrders.filter(o => o.elapsedSec >= WARN_SEC && o.elapsedSec < ALERT_SEC).length;
+  const alertCount = allOrders.filter(o => o.elapsedSec >= ALERT_SEC).length;
+  const statsMin   = allOrders.length ? Math.min(...allOrders.map(o => o.elapsedSec)) : 0;
+  const statsMax   = allOrders.length ? Math.max(...allOrders.map(o => o.elapsedSec)) : 0;
+  const statsAvg   = allOrders.length ? Math.round(allOrders.reduce((a, o) => a + o.elapsedSec, 0) / allOrders.length) : 0;
+  function fmtSec(s: number) { const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; }
 
   return (
     <div className="h-[100dvh] bg-[#0a0a0b] text-white flex flex-col select-none overflow-hidden relative"
@@ -1336,6 +1406,47 @@ export default function KdsDisplay() {
         )}
       </main>
 
+      {/* ── Stats strip ─────────────────────────────────────────────────── */}
+      {cfg.showStats && allOrders.length > 0 && (
+        <div className="mx-4 mb-2 px-3 py-1.5 rounded-xl border flex items-center gap-3 shrink-0 flex-wrap"
+          style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
+          <span className="text-[9px] text-white/25 uppercase tracking-widest shrink-0">Stats</span>
+          <div className="flex gap-4 flex-wrap">
+            <span className="text-[10px]">
+              <span className="text-white/28">Min </span>
+              <span className="font-mono text-white/55">{fmtSec(statsMin)}</span>
+            </span>
+            <span className="text-[10px]">
+              <span className="text-white/28">Avg </span>
+              <span className="font-mono text-white/55">{fmtSec(statsAvg)}</span>
+            </span>
+            <span className="text-[10px]">
+              <span className="text-white/28">Max </span>
+              <span className="font-mono font-bold"
+                style={{ color: statsMax >= ALERT_SEC ? "#f87171" : statsMax >= WARN_SEC ? "#f59e0b" : "rgba(255,255,255,0.55)" }}>
+                {fmtSec(statsMax)}
+              </span>
+            </span>
+          </div>
+          {(warnCount > 0 || alertCount > 0) && (
+            <div className="flex items-center gap-3 ml-1">
+              {warnCount > 0 && (
+                <span className="flex items-center gap-1 text-[10px]" style={{ color: "#f59e0b" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                  {warnCount} late
+                </span>
+              )}
+              {alertCount > 0 && (
+                <span className="flex items-center gap-1 text-[10px]" style={{ color: "#f87171" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                  {alertCount} critical
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Now Serving strip (all modes) ────────────────────────────────── */}
       {nowServingOrders.length > 0 && (
         <div className="mx-4 mb-2 px-3 py-2 rounded-xl border flex items-center gap-3 shrink-0"
@@ -1364,37 +1475,59 @@ export default function KdsDisplay() {
       )}
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
-      <footer className="h-9 border-t border-white/[0.07] bg-[#0d0d10] flex items-center px-4 shrink-0 gap-5">
-        {(() => {
-          const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
-          const pk = cfg.prevKey === "ArrowLeft"  ? "←" : cfg.prevKey;
-          const nk = cfg.nextKey === "ArrowRight" ? "→" : cfg.nextKey;
-          return [
-            { keys: [bk],     label: cfg.mode === "expo" ? "Fire" : "Bump" },
-            { keys: ["R"],    label: "Refresh" },
-            { keys: [pk, nk], label: "Navigate" },
-          ];
-        })().map(({ keys, label }) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div className="flex gap-1">
-              {keys.map(k => (
-                <kbd key={k} className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.13] bg-white/[0.06] text-white/50">{k}</kbd>
-              ))}
+      {cfg.showFooter && (
+        <footer className="h-9 border-t border-white/[0.07] bg-[#0d0d10] flex items-center px-4 shrink-0 gap-5">
+          {(() => {
+            const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
+            const pk = cfg.prevKey === "ArrowLeft"  ? "←" : cfg.prevKey;
+            const nk = cfg.nextKey === "ArrowRight" ? "→" : cfg.nextKey;
+            return [
+              { keys: [bk],     label: cfg.mode === "expo" ? "Fire" : "Bump" },
+              { keys: ["R"],    label: "Refresh" },
+              { keys: [pk, nk], label: "Navigate" },
+            ];
+          })().map(({ keys, label }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <div className="flex gap-1">
+                {keys.map(k => (
+                  <kbd key={k} className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.13] bg-white/[0.06] text-white/50">{k}</kbd>
+                ))}
+              </div>
+              <span className="text-[10px] text-white/28 uppercase tracking-wider">{label}</span>
             </div>
-            <span className="text-[10px] text-white/28 uppercase tracking-wider">{label}</span>
-          </div>
-        ))}
-        {doneTotal > 0 && (
-          <span className="text-[10px] text-white/22">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
-        )}
-        <div className="flex-1" />
-        {isFullscreen && (
-          <div className="flex items-center gap-1.5">
-            <kbd className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.13] bg-white/[0.06] text-white/50">F4</kbd>
-            <span className="text-[10px] text-white/28 uppercase tracking-wider">Exit Kiosk</span>
-          </div>
-        )}
-      </footer>
+          ))}
+          {doneTotal > 0 && (
+            <span className="text-[10px] text-white/22">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
+          )}
+          {/* Kitchen health indicator */}
+          {allOrders.length > 0 && (
+            <div className="flex items-center gap-2">
+              {alertCount > 0 && (
+                <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "#f87171", animation: "pulse 1s ease-in-out infinite" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                  {alertCount} crit
+                </span>
+              )}
+              {warnCount > 0 && (
+                <span className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: "#f59e0b" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                  {warnCount} late
+                </span>
+              )}
+              {alertCount === 0 && warnCount === 0 && (
+                <span className="text-[10px] font-medium" style={{ color: "rgba(74,222,128,0.55)" }}>✓ On time</span>
+              )}
+            </div>
+          )}
+          <div className="flex-1" />
+          {isFullscreen && (
+            <div className="flex items-center gap-1.5">
+              <kbd className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.13] bg-white/[0.06] text-white/50">F4</kbd>
+              <span className="text-[10px] text-white/28 uppercase tracking-wider">Exit Kiosk</span>
+            </div>
+          )}
+        </footer>
+      )}
 
       {/* ── Overlays ─────────────────────────────────────────────────────── */}
       {showSettings      && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
@@ -1404,8 +1537,10 @@ export default function KdsDisplay() {
       {/* ── Quick Settings FAB ────────────────────────────────────────────── */}
       <button
         onClick={() => { setShowQuickSettings(s => !s); setShowSettings(false); }}
-        className="absolute bottom-11 right-16 z-30 w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-all"
+        className="absolute z-30 w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-all"
         style={{
+          bottom: cfg.showFooter ? 44 : 16,
+          right: 64,
           background: showQuickSettings ? "rgba(245,158,11,0.18)" : "rgba(13,13,16,0.92)",
           borderColor: showQuickSettings ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.12)",
           color: showQuickSettings ? "#f59e0b" : "rgba(255,255,255,0.38)",
