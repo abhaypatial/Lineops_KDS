@@ -1050,6 +1050,7 @@ export default function KdsDisplay() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [injecting, setInjecting]   = useState(false);
   const [nowServingOrders, setNowServing] = useState<{ order: DisplayOrder; firedAt: number }[]>([]);
+  const [recentBumped,    setRecentBumped] = useState<{ order: DisplayOrder; bumpedAt: number }[]>([]);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
 
   const { playChime } = useOrderChime();
@@ -1129,6 +1130,10 @@ export default function KdsDisplay() {
             const without = prev.filter(ns => ns.order.id !== bumped.id);
             return [...without, { order: bumped, firedAt: Date.now() }].slice(-8);
           });
+          setRecentBumped(prev => {
+            const without = prev.filter(r => r.order.id !== bumped.id);
+            return [{ order: bumped, bumpedAt: Date.now() }, ...without].slice(0, 10);
+          });
         },
       }
     );
@@ -1138,16 +1143,19 @@ export default function KdsDisplay() {
     const next = new Set(prev); next.has(itemId) ? next.delete(itemId) : next.add(itemId); return next;
   });
 
-  // ── Recall a bumped order (from Now Serving strip) ─────────────────────────
+  // ── Recall a bumped order (Now Serving strip OR recent list) ───────────────
   async function recallOrder(orderId: string) {
-    const entry = nowServingOrders.find(ns => ns.order.id === orderId);
-    if (!entry) return;
+    const nsEntry = nowServingOrders.find(ns => ns.order.id === orderId);
+    const rcEntry = recentBumped.find(r => r.order.id === orderId);
+    const entry = nsEntry ?? rcEntry;
+    const orderNum = entry?.order.number ?? orderId;
     try {
       const res = await fetch(`/api/orders/${orderId}/recall`, { method: "POST" });
       if (res.ok) {
         setNowServing(prev => prev.filter(ns => ns.order.id !== orderId));
+        setRecentBumped(prev => prev.filter(r => r.order.id !== orderId));
         queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-        sonnerToast.success(`Order #${entry.order.number} recalled`, { duration: 2000 });
+        sonnerToast.success(`Order #${orderNum} recalled`, { duration: 2000 });
       } else {
         sonnerToast.error("Could not recall order");
       }
@@ -1546,11 +1554,11 @@ export default function KdsDisplay() {
                     {/* Countdown bar */}
                     <div className="absolute bottom-0 left-0 h-[2px]"
                       style={{ width: `${(1 - pct) * 100}%`, background: barClr, transition: "width 1s linear,background 1s linear" }} />
-                    <span className="text-[13px] font-black tabular-nums" style={{ color: "#86efac" }}>
+                    <span className="text-[13px] font-black tabular-nums" style={{ color: "#ffffff" }}>
                       #{ns.order.number}
                     </span>
                     {ns.order.customer && (
-                      <span className="text-[9px] font-medium" style={{ color: "rgba(134,239,172,0.45)" }}>
+                      <span className="text-[9px] font-semibold" style={{ color: "#86efac" }}>
                         {ns.order.customer}
                       </span>
                     )}
@@ -1575,6 +1583,50 @@ export default function KdsDisplay() {
           </div>
         </div>
       )}
+
+      {/* ── Recent bumped (recall tray) ──────────────────────────────────── */}
+      {(() => {
+        const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
+        const recallable = recentBumped.filter(r => !activeIds.has(r.order.id));
+        if (recallable.length === 0) return null;
+        return (
+          <div className="mx-3 mb-2 rounded-xl overflow-hidden shrink-0"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="flex items-center gap-3 px-3 py-2">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.28)" }}>Recent</span>
+              </div>
+              <div className="w-px self-stretch bg-white/[0.05] shrink-0" />
+              <div className="flex-1 flex gap-1.5 flex-wrap items-center min-w-0">
+                {recallable.map(r => (
+                  <div key={r.order.id}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-[12px] font-black tabular-nums" style={{ color: "rgba(255,255,255,0.55)" }}>
+                      #{r.order.number}
+                    </span>
+                    {r.order.customer && (
+                      <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.28)" }}>
+                        {r.order.customer}
+                      </span>
+                    )}
+                    <button onClick={() => recallOrder(r.order.id)}
+                      className="flex items-center justify-center w-4 h-4 rounded transition-all hover:bg-white/10"
+                      style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                      title="Recall this order">↩</button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setRecentBumped([])}
+                className="shrink-0 h-6 px-2 rounded-lg text-[9px] font-bold border transition-all hover:bg-white/[0.04]"
+                style={{ borderColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.18)" }}
+                title="Clear recent">
+                ✕
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       {cfg.showFooter && (
