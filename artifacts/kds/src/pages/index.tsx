@@ -45,10 +45,11 @@ type KdsConfig = {
   showStats: boolean;
   showFooter: boolean;
   showNowServing: boolean;
+  showRecentBumped: boolean;
   nowServingExpirySec: number;
   expoSendMode: ExpoSendMode;
   bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
-  bumpKey: string; prevKey: string; nextKey: string;
+  bumpKey: string; prevKey: string; nextKey: string; recallKey: string;
   zoomOverride: number | null;
   showVirtualBumpBar: boolean;
 };
@@ -104,28 +105,29 @@ const DEFAULT_CFG: KdsConfig = {
   showStats: false,
   showFooter: true,
   showNowServing: true,
+  showRecentBumped: true,
   nowServingExpirySec: 45,
   expoSendMode: "expo_bump" as ExpoSendMode,
   bumpBarEnabled: false, bumpBarPreset: "keyboard",
-  bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
+  bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight", recallKey: "Backspace",
   zoomOverride: null,
   showVirtualBumpBar: true,
 };
 
 // ─── Bump bar presets ─────────────────────────────────────────────────────────
 
-const BUMP_BAR_KEY_MAP: Record<Exclude<BumpBarPreset,"custom">, { bump: string; prev: string; next: string }> = {
-  "keyboard":       { bump: " ",  prev: "ArrowLeft", next: "ArrowRight" },
-  "logic-controls": { bump: "F1", prev: "F11",       next: "F12"        },
-  "pos-x":          { bump: "1",  prev: "-",         next: "+"          },
-  "mmf":            { bump: "F1", prev: "F7",        next: "F8"         },
+const BUMP_BAR_KEY_MAP: Record<Exclude<BumpBarPreset,"custom">, { bump: string; prev: string; next: string; recall: string }> = {
+  "keyboard":       { bump: " ",  prev: "ArrowLeft", next: "ArrowRight", recall: "Backspace" },
+  "logic-controls": { bump: "F1", prev: "F11",       next: "F12",        recall: "F9"        },
+  "pos-x":          { bump: "1",  prev: "-",         next: "+",          recall: "0"         },
+  "mmf":            { bump: "F1", prev: "F7",        next: "F8",         recall: "F9"        },
 };
 const BUMP_BAR_PRESETS: Record<BumpBarPreset, { label: string; desc: string }> = {
-  "keyboard":       { label: "Keyboard (default)",    desc: "Space = bump  ·  ← → = navigate"         },
-  "logic-controls": { label: "Logic Controls BB2002", desc: "F1–F10 = bump  ·  F11 / F12 = navigate"  },
-  "pos-x":          { label: "POS-X BumpBar",         desc: "1–8 = bump  ·  − / + = navigate"         },
-  "mmf":            { label: "MMF Val-u Line",         desc: "F1–F6 = bump  ·  F7 / F8 = navigate"    },
-  "custom":         { label: "Custom",                 desc: "Record your own key bindings below"      },
+  "keyboard":       { label: "Keyboard (default)",    desc: "Space = bump  ·  ← → = nav  ·  Backspace = recall" },
+  "logic-controls": { label: "Logic Controls BB2002", desc: "F1 = bump  ·  F11/F12 = nav  ·  F9 = recall"       },
+  "pos-x":          { label: "POS-X BumpBar",         desc: "1 = bump  ·  −/+ = nav  ·  0 = recall"             },
+  "mmf":            { label: "MMF Val-u Line",         desc: "F1 = bump  ·  F7/F8 = nav  ·  F9 = recall"         },
+  "custom":         { label: "Custom",                 desc: "Record your own key bindings below"                },
 };
 
 // ─── Data helpers ─────────────────────────────────────────────────────────────
@@ -405,7 +407,7 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap mb-1">
               {cfg.showCustomerName && (
-                <span className="text-white/45 font-semibold tracking-wide truncate" style={{ fontSize: fs.meta }}>
+                <span className="font-semibold tracking-wide truncate" style={{ fontSize: fs.meta, color: "rgba(255,255,255,0.80)" }}>
                   {order.customer}
                 </span>
               )}
@@ -533,196 +535,96 @@ function KeyRecorder({ label, value, onRecord }: {
 
 // ─── Quick Settings Panel ─────────────────────────────────────────────────────
 
-function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
+function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused, recentBumped, nowServingOrders, recallOrder }: {
   cfg: KdsConfig;
   setCfg: React.Dispatch<React.SetStateAction<KdsConfig>>;
-  storeId: string;
-  onClearSuccess: () => void;
   onClose: () => void;
+  focusedOrder: DisplayOrder | null;
+  onBumpFocused: () => void;
+  recentBumped: { order: DisplayOrder; bumpedAt: number }[];
+  nowServingOrders: { order: DisplayOrder; firedAt: number }[];
+  recallOrder: (id: string) => void;
 }) {
-  const queryClient = useQueryClient();
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [clearing, setClearing]         = useState(false);
+  const [showRecallList, setShowRecallList] = useState(false);
+  const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
+  const recallable = recentBumped.filter(r => !activeIds.has(r.order.id));
+  const lastRecallable = recallable[0] ?? null;
 
-  const set = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
-  const autoZoomVal = Math.min(2.2, Math.max(0.40, window.innerWidth / 1920));
-  const curZ = cfg.zoomOverride ?? autoZoomVal;
+  function bumpAndClose() { onBumpFocused(); onClose(); }
+  function recallAndClose(id: string) { recallOrder(id); onClose(); }
+  const toggle = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
 
-  async function clearAllOrders() {
-    setClearing(true);
-    try {
-      const res  = await fetch(`/api/orders/clear-all?storeId=${storeId}`, { method: "POST" });
-      const json = await res.json() as { ok: boolean; cleared: number };
-      if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-        onClearSuccess();
-        onClose();
-        sonnerToast.success(`${json.cleared} order${json.cleared !== 1 ? "s" : ""} cleared`, { duration: 2500 });
-      } else {
-        sonnerToast.error("Failed to clear orders");
-      }
-    } catch { sonnerToast.error("Network error"); }
-    finally { setClearing(false); setConfirmClear(false); }
-  }
   return (
     <div className="absolute bottom-11 right-16 z-40 rounded-2xl overflow-hidden shadow-2xl border border-white/[0.12]"
-      style={{ background: "#13131a", width: 232 }}>
+      style={{ background: "#13131a", width: 240 }}>
       <div className="px-3 py-2.5 border-b border-white/[0.07] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap style={{ width: 11, height: 11, color: "#f59e0b" }} />
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">Quick Settings</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">Quick Actions</span>
         </div>
         <button onClick={onClose} className="text-white/30 hover:text-white/60 text-base leading-none">×</button>
       </div>
-      <div className="p-3 flex flex-col gap-3">
+      <div className="p-3 flex flex-col gap-2">
+
+        {/* Bump (clear) focused order */}
+        <button
+          onClick={bumpAndClose}
+          disabled={!focusedOrder}
+          className="w-full py-2 rounded-xl text-[10px] font-bold border transition-all disabled:opacity-30 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          style={{ background: focusedOrder ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)", borderColor: focusedOrder ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.07)", color: focusedOrder ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+          <span style={{ fontSize: 12 }}>✓</span>
+          {focusedOrder ? `Bump #${focusedOrder.number}` : "No order focused"}
+        </button>
+
+        {/* Recall last */}
+        <button
+          onClick={() => lastRecallable && recallAndClose(lastRecallable.order.id)}
+          disabled={!lastRecallable}
+          className="w-full py-2 rounded-xl text-[10px] font-bold border transition-all disabled:opacity-30 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: lastRecallable ? "rgba(74,222,128,0.85)" : "rgba(255,255,255,0.3)" }}>
+          <span>↩</span>
+          {lastRecallable ? `Recall #${lastRecallable.order.number}` : "Nothing to recall"}
+        </button>
+
+        {/* Recall list */}
         <div>
-          <span className="text-[9px] text-white/30 uppercase tracking-wider block mb-1">Mode</span>
-          <div className="grid grid-cols-3 gap-1">
-            {(["multi", "single", "expo"] as KdsMode[]).map(id => (
-              <button key={id} onClick={() => set("mode", id)}
-                className="py-1 rounded text-[9px] font-bold border capitalize transition-all"
-                style={{ background: cfg.mode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.mode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.mode === id ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
-                {id}
-              </button>
-            ))}
-          </div>
-        </div>
-        {cfg.mode === "expo" && (
-          <div>
-            <span className="text-[9px] text-white/30 uppercase tracking-wider block mb-1">Fire order when</span>
-            <div className="grid grid-cols-2 gap-1">
-              {([
-                ["expo_bump", "Expo fires"],
-                ["all_stations", "All stations done"],
-              ] as [ExpoSendMode, string][]).map(([id, label]) => (
-                <button key={id} onClick={() => set("expoSendMode", id)}
-                  className="py-1.5 px-2 rounded-lg text-[8px] font-bold border text-center leading-tight transition-all"
-                  style={{ background: cfg.expoSendMode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.expoSendMode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.expoSendMode === id ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
-                  {label}
+          <button
+            onClick={() => setShowRecallList(v => !v)}
+            disabled={recallable.length === 0}
+            className="w-full py-2 rounded-xl text-[10px] font-bold border transition-all disabled:opacity-30 flex items-center justify-between px-3 active:scale-[0.98]"
+            style={{ background: showRecallList ? "rgba(74,222,128,0.08)" : "rgba(255,255,255,0.04)", borderColor: showRecallList ? "rgba(74,222,128,0.25)" : "rgba(255,255,255,0.07)", color: recallable.length > 0 ? (showRecallList ? "rgba(74,222,128,0.8)" : "rgba(255,255,255,0.4)") : "rgba(255,255,255,0.2)" }}>
+            <span>↩↩ Recall list</span>
+            {recallable.length > 0 && (
+              <span className="tabular-nums text-[9px] opacity-60">{recallable.length}</span>
+            )}
+          </button>
+          {showRecallList && recallable.length > 0 && (
+            <div className="mt-1.5 flex flex-col gap-1 pl-1">
+              {recallable.map(r => (
+                <button key={r.order.id}
+                  onClick={() => recallAndClose(r.order.id)}
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all hover:bg-white/[0.05] active:scale-[0.98]"
+                  style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black tabular-nums text-[11px]" style={{ color: "rgba(255,255,255,0.6)" }}>#{r.order.number}</span>
+                    {r.order.customer && <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.3)" }}>{r.order.customer}</span>}
+                  </div>
+                  <span style={{ color: "rgba(74,222,128,0.6)", fontSize: 12 }}>↩</span>
                 </button>
               ))}
             </div>
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Columns</span>
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5, 6].map(n => (
-              <button key={n} onClick={() => set("numCols", n)}
-                className="w-6 h-6 rounded text-[10px] font-bold border transition-all"
-                style={{ background: cfg.numCols === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.numCols === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.numCols === n ? "#f59e0b" : "rgba(255,255,255,0.45)" }}>
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">UI Scale</span>
-          <div className="flex items-center gap-1">
-            <button onClick={() => set("zoomOverride", Math.max(0.40, Math.round((curZ - 0.05) * 100) / 100))}
-              className="w-6 h-6 rounded border text-[11px] font-bold transition-all hover:bg-white/10"
-              style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>−</button>
-            <span className="text-[10px] tabular-nums w-9 text-center"
-              style={{ color: cfg.zoomOverride !== null ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
-              {Math.round(curZ * 100)}%
-            </span>
-            <button onClick={() => set("zoomOverride", Math.min(2.50, Math.round((curZ + 0.05) * 100) / 100))}
-              className="w-6 h-6 rounded border text-[11px] font-bold transition-all hover:bg-white/10"
-              style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>+</button>
-            <button onClick={() => set("zoomOverride", null)}
-              className="h-6 px-1.5 rounded border text-[9px] font-bold transition-all ml-0.5"
-              style={{ background: cfg.zoomOverride === null ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.zoomOverride === null ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.zoomOverride === null ? "#f59e0b" : "rgba(255,255,255,0.25)" }}>
-              Auto
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Sound</span>
-          <button onClick={() => set("soundEnabled", !cfg.soundEnabled)}
-            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
-            style={{ background: cfg.soundEnabled ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
-            <span className="w-3 h-3 rounded-full bg-white transition-all"
-              style={{ transform: cfg.soundEnabled ? "translateX(16px)" : "translateX(0)" }} />
-          </button>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Age Escalation</span>
-          <button onClick={() => set("escalationEnabled", !cfg.escalationEnabled)}
-            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
-            style={{ background: cfg.escalationEnabled ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
-            <span className="w-3 h-3 rounded-full bg-white transition-all"
-              style={{ transform: cfg.escalationEnabled ? "translateX(16px)" : "translateX(0)" }} />
-          </button>
+          )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Now Serving</span>
-          <button onClick={() => set("showNowServing", !cfg.showNowServing)}
-            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
-            style={{ background: cfg.showNowServing ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
-            <span className="w-3 h-3 rounded-full bg-white transition-all"
-              style={{ transform: cfg.showNowServing ? "translateX(16px)" : "translateX(0)" }} />
-          </button>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Stats Strip</span>
-          <button onClick={() => set("showStats", !cfg.showStats)}
-            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
-            style={{ background: cfg.showStats ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
-            <span className="w-3 h-3 rounded-full bg-white transition-all"
-              style={{ transform: cfg.showStats ? "translateX(16px)" : "translateX(0)" }} />
-          </button>
-        </div>
-        <div className="flex items-center justify-between">
+        {/* Footer bar toggle */}
+        <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between">
           <span className="text-[9px] text-white/30 uppercase tracking-wider">Footer Bar</span>
-          <button onClick={() => set("showFooter", !cfg.showFooter)}
+          <button onClick={() => toggle("showFooter", !cfg.showFooter)}
             className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
             style={{ background: cfg.showFooter ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
             <span className="w-3 h-3 rounded-full bg-white transition-all"
               style={{ transform: cfg.showFooter ? "translateX(16px)" : "translateX(0)" }} />
           </button>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Virtual Bump Bar</span>
-          <button onClick={() => set("showVirtualBumpBar", !cfg.showVirtualBumpBar)}
-            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
-            style={{ background: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
-            <span className="w-3 h-3 rounded-full bg-white transition-all"
-              style={{ transform: cfg.showVirtualBumpBar ? "translateX(16px)" : "translateX(0)" }} />
-          </button>
-        </div>
-
-        {/* Clear All — danger zone */}
-        <div className="pt-1 border-t border-white/[0.06]">
-          {!confirmClear ? (
-            <button
-              onClick={() => setConfirmClear(true)}
-              className="w-full py-1.5 rounded-lg text-[9px] font-bold border transition-all"
-              style={{ background: "rgba(239,68,68,0.07)", borderColor: "rgba(239,68,68,0.22)", color: "rgba(239,68,68,0.65)" }}>
-              Clear All Active Orders
-            </button>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] text-white/35 text-center">
-                Remove all in-progress orders?
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setConfirmClear(false)}
-                  className="flex-1 py-1.5 rounded-lg text-[9px] font-bold border border-white/[0.08] transition-all"
-                  style={{ color: "rgba(255,255,255,0.35)" }}>
-                  Cancel
-                </button>
-                <button
-                  onClick={clearAllOrders}
-                  disabled={clearing}
-                  className="flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all"
-                  style={{ background: "rgba(239,68,68,0.2)", color: clearing ? "rgba(248,113,113,0.4)" : "#f87171" }}>
-                  {clearing ? "Clearing…" : "Yes, Clear All"}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -935,6 +837,15 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 <span className="text-[10px] text-white/30 w-8 text-right shrink-0">{cfg.nowServingExpirySec}s</span>
               </div>
             )}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/55">Recent / recall tray</span>
+              <button onClick={() => set("showRecentBumped", !cfg.showRecentBumped)}
+                className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+                style={{ background: cfg.showRecentBumped ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+                <span className="w-3 h-3 rounded-full bg-white transition-all"
+                  style={{ transform: cfg.showRecentBumped ? "translateX(16px)" : "translateX(0)" }} />
+              </button>
+            </div>
           </div>
 
           {/* Content toggles */}
@@ -1071,7 +982,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                     onClick={() => {
                       if (id !== "custom") {
                         const keys = BUMP_BAR_KEY_MAP[id as Exclude<BumpBarPreset,"custom">];
-                        setCfg(c => ({ ...c, bumpBarPreset: id, bumpKey: keys.bump, prevKey: keys.prev, nextKey: keys.next }));
+                        setCfg(c => ({ ...c, bumpBarPreset: id, bumpKey: keys.bump, prevKey: keys.prev, nextKey: keys.next, recallKey: keys.recall }));
                       } else {
                         set("bumpBarPreset", "custom");
                       }
@@ -1085,9 +996,10 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
               </div>
               {cfg.bumpBarPreset === "custom" && (
                 <div className="flex flex-col gap-1.5 pl-3 border-l border-white/[0.07] mt-0.5">
-                  <KeyRecorder label="Bump key"  value={cfg.bumpKey}  onRecord={k => set("bumpKey",  k)} />
-                  <KeyRecorder label="Prev order" value={cfg.prevKey} onRecord={k => set("prevKey", k)} />
-                  <KeyRecorder label="Next order" value={cfg.nextKey} onRecord={k => set("nextKey", k)} />
+                  <KeyRecorder label="Bump key"    value={cfg.bumpKey}   onRecord={k => set("bumpKey",   k)} />
+                  <KeyRecorder label="Prev order"  value={cfg.prevKey}   onRecord={k => set("prevKey",  k)} />
+                  <KeyRecorder label="Next order"  value={cfg.nextKey}   onRecord={k => set("nextKey",  k)} />
+                  <KeyRecorder label="Recall key"  value={cfg.recallKey} onRecord={k => set("recallKey", k)} />
                 </div>
               )}
               <div className="px-2.5 py-2 rounded-lg border border-white/[0.06]" style={{ background: "rgba(255,255,255,0.02)" }}>
@@ -1101,6 +1013,15 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 style={{ background: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
                 <span className="w-3 h-3 rounded-full bg-white transition-all"
                   style={{ transform: cfg.showVirtualBumpBar ? "translateX(16px)" : "translateX(0)" }} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/55">Footer bar</span>
+              <button onClick={() => set("showFooter", !cfg.showFooter)}
+                className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+                style={{ background: cfg.showFooter ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+                <span className="w-3 h-3 rounded-full bg-white transition-all"
+                  style={{ transform: cfg.showFooter ? "translateX(16px)" : "translateX(0)" }} />
               </button>
             </div>
           </div>
@@ -1437,13 +1358,17 @@ export default function KdsDisplay() {
         setFocus(visibleOrders[Math.max(idx - 1, 0)]?.id ?? null);
       } else if ((e.key === bumpKey || e.key === "Enter") && focusedOrder) {
         e.preventDefault(); bump(focusedOrder.id);
+      } else if (e.key === cfg.recallKey && cfg.recallKey) {
+        const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
+        const last = recentBumped.find(r => !activeIds.has(r.order.id));
+        if (last) { recallOrder(last.order.id); e.preventDefault(); }
       } else if (e.key === "r" || e.key === "R") {
         queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [visibleOrders, focusedId, focusedOrder, bump, exitFullscreen, queryClient, cfg.bumpKey, cfg.prevKey, cfg.nextKey]);
+  }, [visibleOrders, focusedId, focusedOrder, bump, exitFullscreen, queryClient, cfg.bumpKey, cfg.prevKey, cfg.nextKey, cfg.recallKey, nowServingOrders, recentBumped, recallOrder]);
 
   // ── Gamepad / bump bar (HID game-controller mode) ─────────────────────────
   useEffect(() => {
@@ -1829,7 +1754,7 @@ export default function KdsDisplay() {
       {(() => {
         const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
         const recallable = recentBumped.filter(r => !activeIds.has(r.order.id));
-        if (recallable.length === 0) return null;
+        if (!cfg.showRecentBumped || recallable.length === 0) return null;
         return (
           <div className="mx-3 mb-2 rounded-xl overflow-hidden shrink-0"
             style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -1955,6 +1880,11 @@ export default function KdsDisplay() {
                 className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
                 style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
                 title="Next order">▶</button>
+              <button
+                onClick={() => setCfg(c => ({ ...c, showVirtualBumpBar: false }))}
+                className="h-7 px-1.5 rounded-lg text-[10px] border transition-all active:scale-95 ml-0.5"
+                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.22)" }}
+                title="Hide virtual bump bar">×</button>
             </div>
           )}
           <div className="flex-1" />
@@ -1964,12 +1894,17 @@ export default function KdsDisplay() {
               <span className="text-[10px] text-white/28 uppercase tracking-wider">Exit Kiosk</span>
             </div>
           )}
+          <button
+            onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
+            className="h-6 px-1.5 rounded text-[11px] border transition-all hover:bg-white/[0.06] ml-1"
+            style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.2)" }}
+            title="Hide footer bar">×</button>
         </footer>
       )}
 
       {/* ── Overlays ─────────────────────────────────────────────────────── */}
       {showSettings      && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
-      {showQuickSettings && <QuickSettingsPanel cfg={cfg} setCfg={setCfg} storeId={storeId} onClearSuccess={() => setNowServing([])} onClose={() => setShowQuickSettings(false)} />}
+      {showQuickSettings && <QuickSettingsPanel cfg={cfg} setCfg={setCfg} onClose={() => setShowQuickSettings(false)} focusedOrder={focusedOrder} onBumpFocused={() => focusedOrder && bump(focusedOrder.id)} recentBumped={recentBumped} nowServingOrders={nowServingOrders} recallOrder={recallOrder} />}
       {bumpToast         && <BumpToast number={bumpToast.number} onDone={() => setBumpToast(null)} />}
 
       {/* ── Quick Settings FAB ────────────────────────────────────────────── */}
