@@ -52,6 +52,47 @@ Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (li
 - `/api` → API server REST routes (port 8080)
 - `/ws` → WebSocket server (port 8080, same process as API)
 
+## Docker / Linux Deployment
+
+The full stack can be self-hosted on any Linux machine via Docker Compose.
+
+### Files
+| File | Purpose |
+|---|---|
+| `docker-compose.yml` | Orchestrates postgres + api + web + nginx proxy |
+| `docker/Dockerfile.api` | Multi-stage build for the API server |
+| `docker/Dockerfile.web` | Vite build + nginx for the KDS frontend |
+| `docker/nginx.conf` | Reverse proxy: routes `/api`, `/ws`, and `/` |
+| `bin/kds` | Bash CLI — terminal commands for order/device management |
+| `install.sh` | One-liner Linux installer (Docker, Compose, CLI, .env) |
+| `.env.example` | Environment variable reference |
+
+### Network Architecture
+- **nginx proxy** listens on `:80` — this is the public port KDS tablets connect to
+- **api** container only exposes `127.0.0.1:3000` (CLI access only)
+- **db** has no public ports (internal only)
+- KDS displays on the LAN connect to `http://<server-ip>/`
+
+### One-liner Install (Linux)
+```bash
+sudo bash install.sh
+```
+
+### CLI Commands
+```bash
+kds status              # Live system overview
+kds orders              # List active orders
+kds orders bump 101     # Bump order #101
+kds orders recall 101   # Recall a bumped order
+kds orders add          # Add a test order
+kds stations            # List stations
+kds devices             # List registered KDS displays
+kds templates           # List saved display templates
+kds logs [api|web|db]   # Tail logs
+kds ip                  # Show LAN IP and URLs
+kds start / stop / restart / update
+```
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages

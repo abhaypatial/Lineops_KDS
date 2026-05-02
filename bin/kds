@@ -1,0 +1,363 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+#  kds — Kitchen Display System CLI
+#  Manages the KDS backend and provides quick order/station/device commands.
+#
+#  Usage:  kds <command> [args]
+#
+#  Server discovery:  set KDS_HOST to override (default: http://localhost:3000)
+# ─────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+KDS_HOST="${KDS_HOST:-http://localhost:3000}"
+KDS_DIR="${KDS_DIR:-/opt/kds}"
+
+# ── Colours ───────────────────────────────────────────────────────────────────
+if [ -t 1 ]; then
+  RED='\033[0;31m'; GRN='\033[0;32m'; YLW='\033[0;33m'
+  BLU='\033[0;34m'; MAG='\033[0;35m'; CYN='\033[0;36m'
+  WHT='\033[1;37m'; DIM='\033[2m';    RST='\033[0m'
+else
+  RED=''; GRN=''; YLW=''; BLU=''; MAG=''; CYN=''; WHT=''; DIM=''; RST=''
+fi
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+die()  { echo -e "${RED}error:${RST} $*" >&2; exit 1; }
+info() { echo -e "${CYN}→${RST} $*"; }
+ok()   { echo -e "${GRN}✓${RST} $*"; }
+warn() { echo -e "${YLW}⚠${RST} $*"; }
+hr()   { printf "${DIM}%*s${RST}\n" 72 '' | tr ' ' '─'; }
+
+api() {
+  local method="${1:-GET}" path="${2:-/api/health}" body="${3:-}"
+  local url="${KDS_HOST}${path}"
+  if [[ -n "$body" ]]; then
+    curl -sf -X "$method" -H "Content-Type: application/json" \
+         -d "$body" "$url" 2>/dev/null || die "API request failed: $method $path"
+  else
+    curl -sf -X "$method" "$url" 2>/dev/null || die "API request failed: $method $path"
+  fi
+}
+
+require_jq() {
+  command -v jq &>/dev/null || die "jq is required. Install: apt install jq / brew install jq"
+}
+
+require_docker_compose() {
+  command -v docker &>/dev/null || die "Docker is required. Run install.sh first."
+  if ! docker compose version &>/dev/null 2>&1; then
+    die "Docker Compose v2 is required. Run install.sh first."
+  fi
+}
+
+dc() {
+  require_docker_compose
+  docker compose -f "${KDS_DIR}/docker-compose.yml" --project-name kds "$@"
+}
+
+pad() { printf "%-${1}s" "$2"; }
+
+# ── Commands ──────────────────────────────────────────────────────────────────
+
+cmd_help() {
+  echo ""
+  echo -e "  ${WHT}kds${RST} — Kitchen Display System CLI"
+  echo ""
+  echo -e "  ${WHT}System${RST}"
+  echo -e "    ${CYN}kds status${RST}              Show live system overview"
+  echo -e "    ${CYN}kds start${RST}               Start all KDS services"
+  echo -e "    ${CYN}kds stop${RST}                Stop all KDS services"
+  echo -e "    ${CYN}kds restart${RST}             Restart all services"
+  echo -e "    ${CYN}kds logs${RST} [service]      Tail logs (api|web|db|proxy)"
+  echo -e "    ${CYN}kds ip${RST}                  Show LAN IP for KDS devices"
+  echo -e "    ${CYN}kds update${RST}              Pull latest images and restart"
+  echo ""
+  echo -e "  ${WHT}Orders${RST}"
+  echo -e "    ${CYN}kds orders${RST}              List active orders"
+  echo -e "    ${CYN}kds orders bump${RST} <num>   Bump order by order number"
+  echo -e "    ${CYN}kds orders recall${RST} <num> Recall a bumped order"
+  echo -e "    ${CYN}kds orders add${RST}          Add a test order (interactive)"
+  echo ""
+  echo -e "  ${WHT}Stations${RST}"
+  echo -e "    ${CYN}kds stations${RST}            List all stations"
+  echo ""
+  echo -e "  ${WHT}Devices${RST}"
+  echo -e "    ${CYN}kds devices${RST}             List registered KDS displays"
+  echo ""
+  echo -e "  ${WHT}Templates${RST}"
+  echo -e "    ${CYN}kds templates${RST}           List saved display templates"
+  echo ""
+  echo -e "  ${DIM}KDS_HOST=${KDS_HOST}   KDS_DIR=${KDS_DIR}${RST}"
+  echo ""
+}
+
+cmd_status() {
+  require_jq
+  local health
+  health=$(api GET /api/health 2>/dev/null) || { warn "API unreachable at ${KDS_HOST}"; return; }
+
+  local orders
+  orders=$(api GET "/api/orders?status=pending" 2>/dev/null) || orders='{"orders":[]}'
+  local order_count pending_items
+  order_count=$(echo "$orders" | jq '.orders | length')
+  pending_items=$(echo "$orders" | jq '[.orders[].items[]] | map(select(.status=="pending")) | length' 2>/dev/null || echo "?")
+
+  local devices
+  devices=$(api GET /api/devices 2>/dev/null) || devices='{"devices":[]}'
+  local device_total device_online
+  device_total=$(echo "$devices" | jq '.devices | length' 2>/dev/null || echo "0")
+  device_online=$(echo "$devices" | jq '[.devices[] | select(.isOnline==true)] | length' 2>/dev/null || echo "0")
+
+  local stations
+  stations=$(api GET /api/stations 2>/dev/null) || stations='{"stations":[]}'
+  local station_total station_active
+  station_total=$(echo "$stations" | jq '.stations | length' 2>/dev/null || echo "0")
+  station_active=$(echo "$stations" | jq '[.stations[] | select(.isActive==true)] | length' 2>/dev/null || echo "0")
+
+  echo ""
+  hr
+  printf "  ${WHT}%-36s${RST}${GRN}● ONLINE${RST}\n" "KDS System Status"
+  hr
+  printf "  %-22s${WHT}%-8s${RST}  %-22s${WHT}%s${RST}\n" \
+    "Active Orders"    "$order_count" \
+    "Devices Online"   "${device_online}/${device_total}"
+  printf "  %-22s${WHT}%-8s${RST}  %-22s${WHT}%s${RST}\n" \
+    "Items Pending"    "$pending_items" \
+    "Stations Active"  "${station_active}/${station_total}"
+  printf "  %-22s${WHT}%-8s${RST}  %-22s${WHT}%s${RST}\n" \
+    "API Endpoint"     "${KDS_HOST}" \
+    "Version"          "$(echo "$health" | jq -r '.version // "1.0.0"' 2>/dev/null)"
+  hr
+  echo ""
+}
+
+cmd_ip() {
+  echo ""
+  local ip
+  ip=$(ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1 2>/dev/null) || \
+  ip=$(hostname -I 2>/dev/null | awk '{print $1}') || \
+  ip="<unknown>"
+  echo -e "  ${WHT}LAN IP:${RST}     ${GRN}${ip}${RST}"
+  echo -e "  ${WHT}KDS Display:${RST} ${CYN}http://${ip}/${RST}"
+  echo -e "  ${WHT}Admin:${RST}      ${CYN}http://${ip}/admin${RST}"
+  echo -e "  ${WHT}API:${RST}        ${CYN}http://${ip}/api/health${RST}"
+  echo ""
+  echo -e "  ${DIM}Point your KDS tablets and displays at the URL above.${RST}"
+  echo ""
+}
+
+cmd_orders() {
+  require_jq
+  local sub="${1:-}"
+
+  case "$sub" in
+    bump)
+      local num="${2:-}" ; [[ -z "$num" ]] && die "Usage: kds orders bump <order-number>"
+      local orders order_id
+      orders=$(api GET "/api/orders?status=pending")
+      order_id=$(echo "$orders" | jq -r ".orders[] | select(.orderNumber==\"$num\") | .id" | head -1)
+      [[ -z "$order_id" ]] && die "Order #${num} not found or already completed"
+      api PATCH "/api/orders/${order_id}" '{"status":"completed"}' > /dev/null
+      ok "Order #${num} bumped — marked complete"
+      ;;
+
+    recall)
+      local num="${2:-}"; [[ -z "$num" ]] && die "Usage: kds orders recall <order-number>"
+      local orders order_id
+      orders=$(api GET "/api/orders?status=completed")
+      order_id=$(echo "$orders" | jq -r ".orders[] | select(.orderNumber==\"$num\") | .id" | head -1)
+      [[ -z "$order_id" ]] && die "Order #${num} not found in completed orders"
+      api PATCH "/api/orders/${order_id}" '{"status":"in_progress"}' > /dev/null
+      ok "Order #${num} recalled — back to in_progress"
+      ;;
+
+    add)
+      info "Adding a test order..."
+      local store_id
+      store_id=$(api GET /api/stores | jq -r '.stores[0].id // empty' 2>/dev/null)
+      [[ -z "$store_id" ]] && die "No stores found — run the seed or create a store first"
+      local body
+      body=$(cat <<EOF
+{
+  "storeId": "$store_id",
+  "orderNumber": "T$(( RANDOM % 900 + 100 ))",
+  "customerName": "Test Customer",
+  "priority": "normal",
+  "items": [
+    { "stationId": "grill", "name": "Test Burger", "quantity": 1, "modifiers": ["No onions"] },
+    { "stationId": "fryer", "name": "Test Fries",  "quantity": 1, "modifiers": [] }
+  ]
+}
+EOF
+)
+      local result
+      result=$(api POST /api/orders "$body")
+      local order_num
+      order_num=$(echo "$result" | jq -r '.order.orderNumber // "?"' 2>/dev/null || echo "?")
+      ok "Test order #${order_num} created"
+      ;;
+
+    "")
+      # List active orders
+      local orders
+      orders=$(api GET "/api/orders?status=pending")
+      local count
+      count=$(echo "$orders" | jq '.orders | length')
+
+      if [[ "$count" -eq 0 ]]; then
+        info "No active orders — kitchen is idle ✓"
+        return
+      fi
+
+      echo ""
+      hr
+      printf "  ${WHT}%-5s %-6s %-18s %-12s %-8s %-8s %s${RST}\n" \
+        "#" "NUM" "CUSTOMER" "TYPE" "ITEMS" "TIME" "PRIORITY"
+      hr
+      echo "$orders" | jq -r '
+        .orders[] |
+        [
+          "·",
+          .orderNumber,
+          (.customerName // "—"),
+          .orderType,
+          ((.items | length) | tostring) + " items",
+          (if .elapsedSeconds then
+            ( (.elapsedSeconds / 60 | floor | tostring) + ":" + ((.elapsedSeconds % 60) | tostring | if length == 1 then "0" + . else . end) )
+          else "—" end),
+          (if .priority == "rush" then "RUSH ⚡" elif .priority == "vip" then "VIP ★" else "" end)
+        ] | @tsv
+      ' | while IFS=$'\t' read -r dot num customer type items time prio; do
+        local prio_color="$RST"
+        [[ "$prio" == *"RUSH"* ]] && prio_color="$RED"
+        [[ "$prio" == *"VIP"* ]]  && prio_color="$YLW"
+        printf "  %-5s ${WHT}%-6s${RST} %-18s %-12s %-8s ${CYN}%-8s${RST} ${prio_color}%s${RST}\n" \
+          "$dot" "$num" "$customer" "$type" "$items" "$time" "$prio"
+      done
+      hr
+      echo ""
+      ;;
+
+    *) die "Unknown orders subcommand: $sub  (bump|recall|add)" ;;
+  esac
+}
+
+cmd_stations() {
+  require_jq
+  local stations
+  stations=$(api GET /api/stations)
+  local count
+  count=$(echo "$stations" | jq '.stations | length')
+
+  echo ""
+  hr
+  printf "  ${WHT}%-20s %-12s %-10s %s${RST}\n" "STATION" "ID" "STATUS" "DISPLAY"
+  hr
+  echo "$stations" | jq -r '
+    .stations[] |
+    [.name, .id, (if .isActive then "● active" else "○ off" end), (.displayName // .name)]
+    | @tsv
+  ' | while IFS=$'\t' read -r name id status display; do
+    local status_color="$DIM"
+    [[ "$status" == *"active"* ]] && status_color="$GRN"
+    printf "  %-20s ${DIM}%-12s${RST} ${status_color}%-10s${RST} %s\n" \
+      "$name" "$id" "$status" "$display"
+  done
+  hr
+  echo ""
+}
+
+cmd_devices() {
+  require_jq
+  local devices
+  devices=$(api GET /api/devices)
+  local count
+  count=$(echo "$devices" | jq '.devices | length')
+
+  if [[ "$count" -eq 0 ]]; then
+    info "No devices registered yet."
+    echo "  → Devices auto-register when a KDS display first connects."
+    echo ""
+    return
+  fi
+
+  echo ""
+  hr
+  printf "  ${WHT}%-20s %-16s %-10s %-20s %s${RST}\n" \
+    "DEVICE" "IP" "STATUS" "TEMPLATE" "LAST SEEN"
+  hr
+  echo "$devices" | jq -r '
+    .devices[] |
+    [
+      (.name // "Unnamed"),
+      (.ipAddress // "—"),
+      (if .isOnline then "● online" else "○ offline" end),
+      (.templateName // "—"),
+      (.lastSeenAt // "—")
+    ] | @tsv
+  ' | while IFS=$'\t' read -r name ip status template last; do
+    local status_color="$DIM"
+    [[ "$status" == *"online"* ]] && status_color="$GRN"
+    printf "  %-20s ${CYN}%-16s${RST} ${status_color}%-10s${RST} %-20s ${DIM}%s${RST}\n" \
+      "$name" "$ip" "$status" "$template" "$last"
+  done
+  hr
+  echo ""
+}
+
+cmd_templates() {
+  require_jq
+  local resp
+  resp=$(api GET /api/templates 2>/dev/null) || { warn "Templates API not available yet."; return; }
+  echo "$resp" | jq -r '
+    .templates[] |
+    "  • " + .name + "  \u001b[2m(" + (.zones | length | tostring) + " zones)\u001b[0m"
+  '
+}
+
+cmd_logs() {
+  local svc="${1:-}"
+  if [[ -n "$svc" ]]; then
+    dc logs -f --tail=100 "kds-${svc}"
+  else
+    dc logs -f --tail=50
+  fi
+}
+
+cmd_start()   { dc up -d --remove-orphans;  ok "KDS services started"; cmd_ip; }
+cmd_stop()    { dc stop;                    ok "KDS services stopped"; }
+cmd_restart() { dc restart;                 ok "KDS services restarted"; }
+
+cmd_update() {
+  info "Pulling latest images..."
+  dc pull
+  info "Rebuilding and restarting..."
+  dc up -d --build --remove-orphans
+  ok "KDS updated and restarted"
+  cmd_status
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+main() {
+  local cmd="${1:-help}"
+  shift || true
+
+  case "$cmd" in
+    status)    cmd_status ;;
+    ip)        cmd_ip ;;
+    orders)    cmd_orders "$@" ;;
+    stations)  cmd_stations ;;
+    devices)   cmd_devices ;;
+    templates) cmd_templates ;;
+    logs)      cmd_logs "$@" ;;
+    start)     cmd_start ;;
+    stop)      cmd_stop ;;
+    restart)   cmd_restart ;;
+    update)    cmd_update ;;
+    help|--help|-h) cmd_help ;;
+    *) die "Unknown command: $cmd  —  run 'kds help'" ;;
+  esac
+}
+
+main "$@"
