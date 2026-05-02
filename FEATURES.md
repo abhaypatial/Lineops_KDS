@@ -31,6 +31,16 @@ Complete overview of every feature in the system, how to enable/disable it, and 
 
 **Runtime toggle (no restart):** Go to **Setup → Production tab** and flip the "Test order injection" switch. Takes effect immediately.
 
+### Station-Aware Injection
+
+The Test button is **station-aware** — it injects items relevant to whatever you're currently viewing:
+
+| Current view | Injected order |
+|---|---|
+| A specific station tab (e.g. Grill) | Items from that station only |
+| All-stations tab (Multi mode) | Mixed items from multiple stations |
+| Expo mode | Multi-station order (2–3 stations) to test cross-station expo flow |
+
 ---
 
 ## 3. Admin Password Protection
@@ -75,7 +85,22 @@ Complete overview of every feature in the system, how to enable/disable it, and 
 | **Single** | One station only (Grill, Fryer, Cold, Dessert, Other) |
 | **Expo** | Expediter view — sees all orders, bump button labelled "Fire" |
 
-**How to switch:** Open the ⚙ Settings panel (top-right gear icon) → **KDS Mode**.
+**How to switch:** Open the ⚙ Settings panel (top-right gear icon) → **KDS Mode**, or use the ⚡ Quick Settings FAB (bottom-right).
+
+### Expo Mode Enhancements
+
+**Spotlight** — the focused/first order is always featured with an expanded card in Expo mode (independent of the "featured first" toggle).
+
+**Now Serving strip** — when the expo bumps (fires) an order, it moves to a green "NOW SERVING" bar above the footer showing order number and customer name. Entries auto-expire after 45 seconds.
+
+**Send mode** — controls when an order is considered ready to fire:
+
+| Mode | Behaviour |
+|------|-----------|
+| **Expo fires manually** _(default)_ | Expo presses the Fire / bump button themselves |
+| **All stations done** | Order fires automatically the moment every item on every station is checked off |
+
+Configure in ⚙ Settings → KDS Mode → "Fire order when", or in the ⚡ Quick Settings panel.
 
 ---
 
@@ -105,6 +130,21 @@ Toggle any of these on/off per-device:
 **Activate:** Open ⚙ Settings → **Sound Alerts** → toggle "Alert on new order" on.
 
 **Deactivate:** Toggle "Alert on new order" off.
+
+### Age Escalation Alerts
+
+**What it does:** Automatically alerts staff when an order has been waiting too long.
+
+| Threshold | Sound | Visual |
+|-----------|-------|--------|
+| 9 minutes (WARN) | Bell chime (single) | Amber pulsing border glow |
+| 15 minutes (ALERT) | Triple rapid blip | Red flashing border glow |
+
+The visual border animation runs continuously from the moment a threshold is crossed until the order is bumped. Sound fires once per threshold crossing.
+
+**Activate/Deactivate:** Open ⚙ Settings → **Sound Alerts** → "Age escalation alerts" toggle. Also available in the ⚡ Quick Settings FAB.
+
+**Default:** On.
 
 ### Options
 | Setting | Values | Default |
@@ -258,6 +298,28 @@ No configuration needed — applied automatically to every response.
 
 ---
 
+## 17. Quick Settings FAB
+
+**What it does:** A floating ⚡ button in the bottom-right corner of the KDS gives instant access to the most-changed settings without opening the full settings overlay.
+
+**How to open:** Click the ⚡ lightning bolt button above the footer (bottom-right, above the Settings gear).
+
+**Closes:** Click ⚡ again, or click ×.
+
+### Settings available in the Quick panel
+
+| Setting | Description |
+|---------|-------------|
+| Mode | Switch between Multi / Single / Expo instantly |
+| Fire order when | (Expo only) Toggle between "Expo fires manually" and "All stations done" |
+| Columns | 1 / 2 / 3 / 4 grid columns |
+| Sound | On / Off toggle |
+| Age Escalation | On / Off toggle |
+
+All changes take effect immediately and persist to `localStorage`.
+
+---
+
 ## Environment Variable Reference
 
 | Variable | Default | Description |
@@ -272,4 +334,4 @@ No configuration needed — applied automatically to every response.
 
 ---
 
-*Last updated: 2026-05-02 — added per-station audio chimes.*
+*Last updated: 2026-05-02 — added age escalation alerts, expo Now Serving strip, expo send mode, expo spotlight, station-aware test inject, Quick Settings FAB.*

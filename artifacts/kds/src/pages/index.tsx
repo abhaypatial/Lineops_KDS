@@ -3,7 +3,7 @@ import { useQuery, useQueryClient }          from "@tanstack/react-query";
 import { useListOrders, useListStations, useBumpOrder, useListStores } from "@workspace/api-client-react";
 import { useKdsWebSocket }                  from "@/hooks/use-kds-websocket";
 import { useOrderChime, type ChimeType }    from "@/hooks/use-order-chime";
-import { FlaskConical, Maximize2, Minimize2 } from "lucide-react";
+import { FlaskConical, Maximize2, Minimize2, Zap } from "lucide-react";
 import { toast as sonnerToast }             from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -15,8 +15,9 @@ type OrderType = "dine-in" | "takeout" | "bar" | "delivery";
 type KdsMode       = "multi" | "single" | "expo";
 type Density       = "compact" | "normal" | "comfortable";
 type FontSize      = "sm" | "md" | "lg";
-type BumpBarPreset = "keyboard" | "logic-controls" | "pos-x" | "mmf" | "custom";
-type StationChime  = ChimeType | "none";
+type BumpBarPreset  = "keyboard" | "logic-controls" | "pos-x" | "mmf" | "custom";
+type StationChime   = ChimeType | "none";
+type ExpoSendMode   = "expo_bump" | "all_stations";
 
 type DisplayItem = {
   id: string; qty: number; name: string;
@@ -38,6 +39,8 @@ type KdsConfig = {
   showModifierColors: boolean; showItemCompletion: boolean; showUrgencyBar: boolean;
   soundEnabled: boolean; soundVolume: number; soundChime: ChimeType;
   stationChimes: Record<Station, StationChime>;
+  escalationEnabled: boolean;
+  expoSendMode: ExpoSendMode;
   bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
   bumpKey: string; prevKey: string; nextKey: string;
 };
@@ -87,6 +90,8 @@ const DEFAULT_CFG: KdsConfig = {
   showModifierColors: true, showItemCompletion: true, showUrgencyBar: true,
   soundEnabled: true, soundVolume: 0.7, soundChime: "ding",
   stationChimes: { grill: "ding", fryer: "blip", cold: "bell", dessert: "bell", other: "ding" },
+  escalationEnabled: true,
+  expoSendMode: "expo_bump" as ExpoSendMode,
   bumpBarEnabled: false, bumpBarPreset: "keyboard",
   bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
 };
@@ -316,7 +321,10 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
   const typeMeta = ORDER_TYPE_META[order.type];
   const doneCount = order.items.filter(it => doneItems.has(it.id)).length;
   const allDone   = doneCount === order.items.length;
-  const isNew     = elapsed < NEW_SEC;
+  const isNew          = elapsed < NEW_SEC;
+  const escalationLevel = cfg.escalationEnabled
+    ? (elapsed >= ALERT_SEC ? 2 : elapsed >= WARN_SEC ? 1 : 0)
+    : 0;
   const fs        = FONT_SZ[cfg.fontSize];
   const effectiveSpan = cfg.featuredFirst && featured
     ? (cfg.featuredSpan ?? Math.max(cfg.numCols - 1, 1))
@@ -329,15 +337,33 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
 
   if (cfg.mode === "single" && visibleItems.length === 0) return null;
 
+  const borderC = escalationLevel === 2
+    ? "rgba(239,68,68,0.7)"
+    : escalationLevel === 1
+      ? "rgba(245,158,11,0.55)"
+      : featured
+        ? (hasPrio ? `${pColor}66` : "rgba(255,255,255,0.18)")
+        : (hasPrio ? `${pColor}33` : "rgba(255,255,255,0.06)");
+  const shadowC = escalationLevel === 2
+    ? "0 0 22px rgba(239,68,68,0.28)"
+    : escalationLevel === 1
+      ? "0 0 16px rgba(245,158,11,0.2)"
+      : (featured && hasPrio ? `0 0 28px ${pColor}18` : "none");
+  const escalAnim = escalationLevel === 2
+    ? "alertFlash 0.7s ease-in-out infinite"
+    : escalationLevel === 1
+      ? "warnPulse 2.5s ease-in-out infinite"
+      : "none";
+
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden border cursor-pointer transition-all"
+    <div className="flex flex-col rounded-xl overflow-hidden border cursor-pointer"
       style={{
         gridColumn: `span ${effectiveSpan}`,
         background: "#111116",
-        borderColor: featured
-          ? (hasPrio ? `${pColor}66` : "rgba(255,255,255,0.18)")
-          : (hasPrio ? `${pColor}33` : "rgba(255,255,255,0.06)"),
-        boxShadow: featured && hasPrio ? `0 0 28px ${pColor}18` : "none",
+        borderColor: borderC,
+        boxShadow: shadowC,
+        animation: escalAnim,
+        transition: "border-color 0.3s",
       }}
       onClick={onFocus}>
       {/* Priority accent bar */}
@@ -467,6 +493,89 @@ function KeyRecorder({ label, value, onRecord }: {
   );
 }
 
+// ─── Quick Settings Panel ─────────────────────────────────────────────────────
+
+function QuickSettingsPanel({ cfg, setCfg, onClose }: {
+  cfg: KdsConfig;
+  setCfg: React.Dispatch<React.SetStateAction<KdsConfig>>;
+  onClose: () => void;
+}) {
+  const set = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
+  return (
+    <div className="absolute bottom-11 right-16 z-40 rounded-2xl overflow-hidden shadow-2xl border border-white/[0.12]"
+      style={{ background: "#13131a", width: 232 }}>
+      <div className="px-3 py-2.5 border-b border-white/[0.07] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Zap style={{ width: 11, height: 11, color: "#f59e0b" }} />
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">Quick Settings</span>
+        </div>
+        <button onClick={onClose} className="text-white/30 hover:text-white/60 text-base leading-none">×</button>
+      </div>
+      <div className="p-3 flex flex-col gap-3">
+        <div>
+          <span className="text-[9px] text-white/30 uppercase tracking-wider block mb-1">Mode</span>
+          <div className="grid grid-cols-3 gap-1">
+            {(["multi", "single", "expo"] as KdsMode[]).map(id => (
+              <button key={id} onClick={() => set("mode", id)}
+                className="py-1 rounded text-[9px] font-bold border capitalize transition-all"
+                style={{ background: cfg.mode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.mode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.mode === id ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
+                {id}
+              </button>
+            ))}
+          </div>
+        </div>
+        {cfg.mode === "expo" && (
+          <div>
+            <span className="text-[9px] text-white/30 uppercase tracking-wider block mb-1">Fire order when</span>
+            <div className="grid grid-cols-2 gap-1">
+              {([
+                ["expo_bump", "Expo fires"],
+                ["all_stations", "All stations done"],
+              ] as [ExpoSendMode, string][]).map(([id, label]) => (
+                <button key={id} onClick={() => set("expoSendMode", id)}
+                  className="py-1.5 px-2 rounded-lg text-[8px] font-bold border text-center leading-tight transition-all"
+                  style={{ background: cfg.expoSendMode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.expoSendMode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.expoSendMode === id ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Columns</span>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4].map(n => (
+              <button key={n} onClick={() => set("numCols", n)}
+                className="w-6 h-6 rounded text-[10px] font-bold border transition-all"
+                style={{ background: cfg.numCols === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.numCols === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.numCols === n ? "#f59e0b" : "rgba(255,255,255,0.45)" }}>
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Sound</span>
+          <button onClick={() => set("soundEnabled", !cfg.soundEnabled)}
+            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+            style={{ background: cfg.soundEnabled ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+            <span className="w-3 h-3 rounded-full bg-white transition-all"
+              style={{ transform: cfg.soundEnabled ? "translateX(16px)" : "translateX(0)" }} />
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Age Escalation</span>
+          <button onClick={() => set("escalationEnabled", !cfg.escalationEnabled)}
+            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+            style={{ background: cfg.escalationEnabled ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+            <span className="w-3 h-3 rounded-full bg-white transition-all"
+              style={{ transform: cfg.escalationEnabled ? "translateX(16px)" : "translateX(0)" }} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Settings Overlay ─────────────────────────────────────────────────────────
 
 function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
@@ -523,6 +632,23 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                     </button>
                   );
                 })}
+              </div>
+            )}
+            {cfg.mode === "expo" && (
+              <div className="mt-1">
+                <span className="text-[9px] text-white/30 block mb-1 pl-0.5">Fire order when</span>
+                <div className="grid grid-cols-2 gap-1">
+                  {([
+                    ["expo_bump",     "Expo fires manually"],
+                    ["all_stations",  "All stations done"],
+                  ] as [ExpoSendMode, string][]).map(([id, label]) => (
+                    <button key={id} onClick={() => set("expoSendMode", id)}
+                      className="py-1.5 px-2 rounded-lg text-[8px] font-bold border text-center leading-tight transition-all"
+                      style={{ background: cfg.expoSendMode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.expoSendMode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.expoSendMode === id ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -615,6 +741,20 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
           {/* Sound alerts */}
           <div className="flex flex-col gap-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Sound Alerts</p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/55">Age escalation alerts</span>
+              <button onClick={() => set("escalationEnabled", !cfg.escalationEnabled)}
+                className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+                style={{ background: cfg.escalationEnabled ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+                <span className="w-3 h-3 rounded-full bg-white transition-all"
+                  style={{ transform: cfg.escalationEnabled ? "translateX(16px)" : "translateX(0)" }} />
+              </button>
+            </div>
+            {cfg.escalationEnabled && (
+              <div className="text-[9px] text-white/25 pl-3 border-l border-white/[0.07] leading-relaxed">
+                Bell chime at 9 min · Triple blip at 15 min · Border flash throughout
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/55">Alert on new order</span>
               <button onClick={() => set("soundEnabled", !cfg.soundEnabled)}
@@ -731,15 +871,19 @@ export default function KdsDisplay() {
   const [focusedId, setFocus] = useState<string | null>(null);
   const [doneItems, setDone]  = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);
-  const [bumpToast, setBumpToast] = useState<{ number: string } | null>(null);
+  const [bumpToast, setBumpToast]   = useState<{ number: string } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [injecting, setInjecting] = useState(false);
+  const [injecting, setInjecting]   = useState(false);
+  const [nowServingOrders, setNowServing] = useState<{ order: DisplayOrder; firedAt: number }[]>([]);
+  const [showQuickSettings, setShowQuickSettings] = useState(false);
 
   const { playChime } = useOrderChime();
   const cfgRef           = useRef(cfg);
   cfgRef.current         = cfg;
-  const prevOrderIdsRef  = useRef<Set<string>>(new Set());
-  const isInitialLoadRef = useRef(true);
+  const prevOrderIdsRef    = useRef<Set<string>>(new Set());
+  const isInitialLoadRef   = useRef(true);
+  const escalatedOrdersRef = useRef<Map<string, number>>(new Map());
+  const autoBumpedRef      = useRef<Set<string>>(new Set());
 
   // ── Feature flags ─────────────────────────────────────────────────────────
   const { data: kdsConfig } = useQuery<{ testOrdersEnabled: boolean }>({
@@ -806,6 +950,9 @@ export default function KdsDisplay() {
           setFocus(prev => prev === orderId ? (visibleOrders.find(o => o.id !== orderId)?.id ?? null) : prev);
           setDone(prev => { const next = new Set(prev); bumped.items.forEach(it => next.delete(it.id)); return next; });
           setBumpToast({ number: bumped.number });
+          if (cfgRef.current.mode === "expo") {
+            setNowServing(prev => [...prev, { order: bumped, firedAt: Date.now() }].slice(-6));
+          }
         },
       }
     );
@@ -883,7 +1030,7 @@ export default function KdsDisplay() {
     return () => cancelAnimationFrame(rafId);
   }, [cfg.bumpBarEnabled, focusedOrder, focusedId, visibleOrders, bump]);
 
-  // ── Per-station sound alerts ───────────────────────────────────────────────
+  // ── Per-station chimes + age escalation ───────────────────────────────────
   useEffect(() => {
     const currentIds = new Set(allOrders.map(o => o.id));
 
@@ -893,34 +1040,80 @@ export default function KdsDisplay() {
       return;
     }
 
+    // New order chimes
     const newOrders = allOrders.filter(o => !prevOrderIdsRef.current.has(o.id));
     prevOrderIdsRef.current = currentIds;
 
-    if (newOrders.length === 0 || !cfgRef.current.soundEnabled) return;
-
-    const stations = new Set(newOrders.flatMap(o => o.items.map(it => it.station)));
-
-    const chimesPlayed = new Set<string>();
-    const toPlay: ChimeType[] = [];
-
-    for (const station of STATION_ORDER) {
-      if (!stations.has(station as Station)) continue;
-      const chime = cfgRef.current.stationChimes[station as Station];
-      if (chime === "none") continue;
-      if (!chimesPlayed.has(chime)) { toPlay.push(chime); chimesPlayed.add(chime); }
+    if (newOrders.length > 0 && cfgRef.current.soundEnabled) {
+      const stations = new Set(newOrders.flatMap(o => o.items.map(it => it.station)));
+      const chimesPlayed = new Set<string>();
+      const toPlay: ChimeType[] = [];
+      for (const station of STATION_ORDER) {
+        if (!stations.has(station as Station)) continue;
+        const chime = cfgRef.current.stationChimes[station as Station];
+        if (chime === "none") continue;
+        if (!chimesPlayed.has(chime)) { toPlay.push(chime); chimesPlayed.add(chime); }
+      }
+      if (toPlay.length === 0) toPlay.push(cfgRef.current.soundChime);
+      toPlay.forEach((chime, i) => setTimeout(() => playChime(chime, cfgRef.current.soundVolume), i * 350));
     }
 
-    if (toPlay.length === 0) toPlay.push(cfgRef.current.soundChime);
+    // Age escalation — fires when order crosses WARN_SEC (9 min) or ALERT_SEC (15 min)
+    if (cfgRef.current.escalationEnabled) {
+      for (const order of allOrders) {
+        const prevLevel = escalatedOrdersRef.current.get(order.id) ?? 0;
+        const newLevel  = order.elapsedSec >= ALERT_SEC ? 2 : order.elapsedSec >= WARN_SEC ? 1 : 0;
+        if (newLevel > prevLevel) {
+          escalatedOrdersRef.current.set(order.id, newLevel);
+          if (cfgRef.current.soundEnabled) {
+            if (newLevel === 2) {
+              [0, 220, 440].forEach(d => setTimeout(() => playChime("blip", cfgRef.current.soundVolume), d));
+            } else {
+              playChime("bell", cfgRef.current.soundVolume);
+            }
+          }
+        }
+      }
+    }
 
-    toPlay.forEach((chime, i) => setTimeout(() => playChime(chime, cfgRef.current.soundVolume), i * 350));
+    // Clean up escalation tracking for completed orders
+    for (const id of escalatedOrdersRef.current.keys()) {
+      if (!currentIds.has(id)) escalatedOrdersRef.current.delete(id);
+    }
   }, [allOrders, playChime]);
+
+  // ── Auto-bump when all stations done (expo all_stations mode) ─────────────
+  useEffect(() => {
+    if (cfgRef.current.expoSendMode !== "all_stations" || cfgRef.current.mode !== "expo") return;
+    for (const order of allOrders) {
+      if (autoBumpedRef.current.has(order.id)) continue;
+      if (order.items.length > 0 && order.items.every(it => doneItems.has(it.id))) {
+        autoBumpedRef.current.add(order.id);
+        bump(order.id);
+      }
+    }
+  }, [doneItems, allOrders, bump]);
+
+  // ── Now Serving auto-expire ────────────────────────────────────────────────
+  useEffect(() => {
+    if (nowServingOrders.length === 0) return;
+    const t = setInterval(() => setNowServing(prev => prev.filter(ns => Date.now() - ns.firedAt < 45_000)), 2000);
+    return () => clearInterval(t);
+  }, [nowServingOrders.length]);
 
   // ── Test order injection ──────────────────────────────────────────────────
   async function injectTestOrder() {
     if (!storeId || injecting) return;
     setInjecting(true);
     try {
-      const res  = await fetch(`/api/test/inject-order?storeId=${storeId}`, { method: "POST" });
+      let url = `/api/test/inject-order?storeId=${storeId}`;
+      if (cfg.mode === "expo" || activeTab === "All") {
+        url += "&multiStation=true";
+      } else {
+        const st = (dbStations ?? []).find(s => s.id === activeTab);
+        if (st) url += `&station=${stationNameToSlug(st.name)}`;
+      }
+      const res  = await fetch(url, { method: "POST" });
       const json = await res.json() as { ok: boolean; order?: { orderNumber: string } };
       if (res.ok && json.ok) {
         sonnerToast.success(`Test order #${json.order?.orderNumber} fired!`, { duration: 2500 });
@@ -1048,7 +1241,11 @@ export default function KdsDisplay() {
               <OrderCard
                 key={order.id}
                 order={order}
-                featured={cfg.featuredFirst && order.id === focusedOrder?.id}
+                featured={
+                  cfg.mode === "expo"
+                    ? order.id === focusedOrder?.id
+                    : cfg.featuredFirst && order.id === focusedOrder?.id
+                }
                 doneItems={doneItems}
                 onToggleItem={toggleItem}
                 onBump={() => bump(order.id)}
@@ -1059,6 +1256,26 @@ export default function KdsDisplay() {
           </div>
         )}
       </main>
+
+      {/* ── Now Serving strip (expo mode) ────────────────────────────────── */}
+      {cfg.mode === "expo" && nowServingOrders.length > 0 && (
+        <div className="mx-4 mb-2 px-3 py-2 rounded-xl border flex items-center gap-3 shrink-0"
+          style={{ borderColor: "rgba(34,197,94,0.25)", background: "rgba(34,197,94,0.05)" }}>
+          <span className="text-[10px] font-black uppercase tracking-widest shrink-0"
+            style={{ color: "#4ade80", animation: "pulse 1.5s ease-in-out infinite" }}>
+            NOW SERVING
+          </span>
+          <div className="flex gap-2 flex-wrap">
+            {nowServingOrders.map(ns => (
+              <div key={ns.order.id} className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", color: "#86efac" }}>
+                #{ns.order.number}
+                <span className="text-white/25 font-normal text-[10px] ml-1">{ns.order.customer}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       <footer className="h-9 border-t border-white/[0.07] bg-[#0d0d10] flex items-center px-4 shrink-0 gap-5">
@@ -1094,12 +1311,28 @@ export default function KdsDisplay() {
       </footer>
 
       {/* ── Overlays ─────────────────────────────────────────────────────── */}
-      {showSettings && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
-      {bumpToast    && <BumpToast number={bumpToast.number} onDone={() => setBumpToast(null)} />}
+      {showSettings      && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
+      {showQuickSettings && <QuickSettingsPanel cfg={cfg} setCfg={setCfg} onClose={() => setShowQuickSettings(false)} />}
+      {bumpToast         && <BumpToast number={bumpToast.number} onDone={() => setBumpToast(null)} />}
+
+      {/* ── Quick Settings FAB ────────────────────────────────────────────── */}
+      <button
+        onClick={() => { setShowQuickSettings(s => !s); setShowSettings(false); }}
+        className="absolute bottom-11 right-16 z-30 w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-all"
+        style={{
+          background: showQuickSettings ? "rgba(245,158,11,0.18)" : "rgba(13,13,16,0.92)",
+          borderColor: showQuickSettings ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.12)",
+          color: showQuickSettings ? "#f59e0b" : "rgba(255,255,255,0.38)",
+        }}
+        title="Quick Settings">
+        <Zap style={{ width: 12, height: 12 }} />
+      </button>
 
       <style>{`
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes pulse       { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes fadeSlideIn { from{opacity:0;transform:translateX(-50%) translateY(6px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        @keyframes warnPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 22px 6px rgba(245,158,11,0.32)} }
+        @keyframes alertFlash  { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} 50%{box-shadow:0 0 28px 8px rgba(239,68,68,0.45)} }
       `}</style>
     </div>
   );

@@ -74,11 +74,33 @@ router.post("/test/inject-order", async (req, res): Promise<void> => {
   const priority   = PRIORITIES[Math.floor(Math.random() * PRIORITIES.length)];
   const customer   = NAMES[Math.floor(Math.random() * NAMES.length)];
   const orderNote  = ORDER_NOTES[Math.floor(Math.random() * ORDER_NOTES.length)];
-  const count      = Math.floor(Math.random() * 3) + 2;
 
-  const pickedItems = [...MENU_ITEMS]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, count);
+  const stationFilter = req.query.station as string | undefined;
+  const multiStation  = req.query.multiStation === "true";
+
+  let pickedItems: typeof MENU_ITEMS;
+  if (multiStation) {
+    // Build items from 2–3 distinct stations so expo can test cross-station flow
+    const byStation = new Map<string, typeof MENU_ITEMS>();
+    for (const item of MENU_ITEMS) {
+      if (!byStation.has(item.station)) byStation.set(item.station, []);
+      byStation.get(item.station)!.push(item);
+    }
+    const groups = [...byStation.values()]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2 + Math.floor(Math.random() * 2));
+    pickedItems = groups.flatMap(g =>
+      g.sort(() => Math.random() - 0.5).slice(0, 1 + Math.floor(Math.random() * 2))
+    );
+  } else {
+    const pool  = stationFilter
+      ? MENU_ITEMS.filter(it => it.station === stationFilter)
+      : MENU_ITEMS;
+    const count = Math.floor(Math.random() * 3) + 2;
+    pickedItems = (pool.length > 0 ? pool : MENU_ITEMS)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, count);
+  }
 
   const orderId = randomUUID();
 
