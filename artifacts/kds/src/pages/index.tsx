@@ -49,6 +49,7 @@ type KdsConfig = {
   expoSendMode: ExpoSendMode;
   bumpBarEnabled: boolean; bumpBarPreset: BumpBarPreset;
   bumpKey: string; prevKey: string; nextKey: string;
+  zoomOverride: number | null;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -106,6 +107,7 @@ const DEFAULT_CFG: KdsConfig = {
   expoSendMode: "expo_bump" as ExpoSendMode,
   bumpBarEnabled: false, bumpBarPreset: "keyboard",
   bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight",
+  zoomOverride: null,
 };
 
 // ─── Bump bar presets ─────────────────────────────────────────────────────────
@@ -519,6 +521,8 @@ function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
   const [clearing, setClearing]         = useState(false);
 
   const set = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
+  const autoZoomVal = Math.min(2.2, Math.max(0.40, window.innerWidth / 1920));
+  const curZ = cfg.zoomOverride ?? autoZoomVal;
 
   async function clearAllOrders() {
     setClearing(true);
@@ -586,6 +590,26 @@ function QuickSettingsPanel({ cfg, setCfg, storeId, onClearSuccess, onClose }: {
                 {n}
               </button>
             ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">UI Scale</span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => set("zoomOverride", Math.max(0.40, Math.round((curZ - 0.05) * 100) / 100))}
+              className="w-6 h-6 rounded border text-[11px] font-bold transition-all hover:bg-white/10"
+              style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>−</button>
+            <span className="text-[10px] tabular-nums w-9 text-center"
+              style={{ color: cfg.zoomOverride !== null ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+              {Math.round(curZ * 100)}%
+            </span>
+            <button onClick={() => set("zoomOverride", Math.min(2.50, Math.round((curZ + 0.05) * 100) / 100))}
+              className="w-6 h-6 rounded border text-[11px] font-bold transition-all hover:bg-white/10"
+              style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>+</button>
+            <button onClick={() => set("zoomOverride", null)}
+              className="h-6 px-1.5 rounded border text-[9px] font-bold transition-all ml-0.5"
+              style={{ background: cfg.zoomOverride === null ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.zoomOverride === null ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.zoomOverride === null ? "#f59e0b" : "rgba(255,255,255,0.25)" }}>
+              Auto
+            </button>
           </div>
         </div>
         <div className="flex items-center justify-between">
@@ -681,6 +705,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
   playChime: (type: ChimeType, vol: number) => void;
 }) {
   const set = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
+  const autoZoomVal = Math.min(2.2, Math.max(0.40, window.innerWidth / 1920));
+  const curZ = cfg.zoomOverride ?? autoZoomVal;
   type ToggleItem = { label: string; key: keyof KdsConfig };
   const toggles: ToggleItem[] = [
     { label: "Order number",     key: "showOrderNumber"   },
@@ -814,6 +840,26 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                     {id}
                   </button>
                 ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/55">UI scale</span>
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => set("zoomOverride", Math.max(0.40, Math.round((curZ - 0.05) * 100) / 100))}
+                  className="w-6 h-6 rounded border text-[11px] font-bold transition-all hover:bg-white/10"
+                  style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>−</button>
+                <span className="text-[10px] tabular-nums w-9 text-center"
+                  style={{ color: cfg.zoomOverride !== null ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+                  {Math.round(curZ * 100)}%
+                </span>
+                <button onClick={() => set("zoomOverride", Math.min(2.50, Math.round((curZ + 0.05) * 100) / 100))}
+                  className="w-6 h-6 rounded border text-[11px] font-bold transition-all hover:bg-white/10"
+                  style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>+</button>
+                <button onClick={() => set("zoomOverride", null)}
+                  className="h-6 px-2 rounded border text-[9px] font-bold transition-all"
+                  style={{ background: cfg.zoomOverride === null ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.zoomOverride === null ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.zoomOverride === null ? "#f59e0b" : "rgba(255,255,255,0.25)" }}>
+                  Auto
+                </button>
               </div>
             </div>
           </div>
@@ -1032,16 +1078,16 @@ export default function KdsDisplay() {
     return DEFAULT_CFG;
   });
   // ── Resolution-aware zoom ────────────────────────────────────────────────────
-  // Scale the entire UI relative to a 1920 px baseline so the KDS looks
-  // correct on 1280 p displays, 4K monitors, and everything in between.
-  const [kdsZoom, setKdsZoom] = useState(() =>
-    Math.min(2.2, Math.max(0.55, window.innerWidth / 1920)));
+  // Auto-zoom relative to 1920 px baseline. Manual override saved in cfg.
+  const [autoZoom, setAutoZoom] = useState(() =>
+    Math.min(2.2, Math.max(0.40, window.innerWidth / 1920)));
   useEffect(() => {
     const onResize = () =>
-      setKdsZoom(Math.min(2.2, Math.max(0.55, window.innerWidth / 1920)));
+      setAutoZoom(Math.min(2.2, Math.max(0.40, window.innerWidth / 1920)));
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+  const kdsZoom = cfg.zoomOverride ?? autoZoom;
   const [activeTab, setTab]   = useState<string>("All");  // "All" | DB station ID
   const [focusedId, setFocus] = useState<string | null>(null);
   const [doneItems, setDone]  = useState<Set<string>>(new Set());
@@ -1181,6 +1227,15 @@ export default function KdsDisplay() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "F4") { exitFullscreen(); return; }
       if (e.key === "Escape") { setShowSettings(false); setShowQuickSettings(false); return; }
+      // Ctrl+=/Ctrl+- : zoom in/out; Ctrl+0 : reset to auto
+      if (e.ctrlKey && !e.altKey && !e.shiftKey && (e.key === "=" || e.key === "+" || e.key === "-" || e.key === "0")) {
+        const az = Math.min(2.2, Math.max(0.40, window.innerWidth / 1920));
+        const cur = cfgRef.current.zoomOverride ?? az;
+        if (e.key === "=" || e.key === "+") setCfg(c => ({ ...c, zoomOverride: Math.min(2.50, Math.round((cur + 0.05) * 100) / 100) }));
+        else if (e.key === "-")             setCfg(c => ({ ...c, zoomOverride: Math.max(0.40, Math.round((cur - 0.05) * 100) / 100) }));
+        else                                setCfg(c => ({ ...c, zoomOverride: null }));
+        e.preventDefault(); return;
+      }
       // Don't intercept when typing in an actual input
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
