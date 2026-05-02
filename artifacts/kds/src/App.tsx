@@ -12,8 +12,9 @@ import DevicesPage          from "@/pages/devices";
 import SetupPage            from "@/pages/setup";
 import LivePage             from "@/pages/live";
 import TemplateBuilderPage  from "@/pages/template-builder";
-import IntegrationHubPage   from "@/pages/integration-hub";
-import StationConfigsPage   from "@/pages/station-configs";
+import IntegrationHubPage      from "@/pages/integration-hub";
+import IntegrationsHealthPage  from "@/pages/integrations-health";
+import StationConfigsPage      from "@/pages/station-configs";
 import LoginPage            from "@/pages/login";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,11 @@ function Router() {
       {/* Integration Hub — POS connections, API keys, webhooks */}
       <Route path="/integration-hub">
         <AppLayout><IntegrationHubPage /></AppLayout>
+      </Route>
+
+      {/* Integration Health — per-source monitoring, success rates, test fire */}
+      <Route path="/integrations-health">
+        <AppLayout><IntegrationsHealthPage /></AppLayout>
       </Route>
 
       {/* Station Configs — per-station display config management */}

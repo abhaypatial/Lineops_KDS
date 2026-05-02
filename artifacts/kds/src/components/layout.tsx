@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, MonitorSpeaker, Settings, Monitor, ListOrdered, Activity, LayoutTemplate, Plug2, Layers } from "lucide-react";
+import { LayoutDashboard, MonitorSpeaker, Settings, Monitor, ListOrdered, Activity, LayoutTemplate, Plug2, Layers, HeartPulse } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,7 +21,8 @@ const navItems = [
   { title: "Devices",           href: "/devices",            icon: Monitor         },
   { title: "Template Builder",  href: "/template-builder",   icon: LayoutTemplate  },
   { title: "Station Configs",   href: "/station-configs",    icon: Layers          },
-  { title: "Integration Hub",   href: "/integration-hub",    icon: Plug2           },
+  { title: "Integration Hub",    href: "/integration-hub",     icon: Plug2           },
+  { title: "Integr. Health",    href: "/integrations-health", icon: HeartPulse      },
   { title: "Setup",             href: "/setup",              icon: Settings        },
   { title: "Live Monitor",      href: "/live",               icon: Activity        },
 ];

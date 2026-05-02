@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { db, ordersTable, orderItemsTable, integrationEventsTable, storesTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gte } from "drizzle-orm";
 import { broadcast } from "../lib/ws";
 import { fireWebhooks } from "../lib/outboundWebhook";
 import { requireApiKey, type AuthedRequest } from "../lib/apiKey";
@@ -350,6 +350,44 @@ router.post("/integrations/orders", requireApiKey, async (req: AuthedRequest, re
     const msg = err instanceof Error ? err.message : String(err);
     res.status(400).json({ error: msg });
   }
+});
+
+// Per-source health stats (last 24 h)
+router.get("/integrations/health", async (req, res): Promise<void> => {
+  const storeId = req.query.storeId as string | undefined;
+  const since   = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const rows = storeId
+    ? await db.select().from(integrationEventsTable)
+        .where(and(eq(integrationEventsTable.storeId, storeId), gte(integrationEventsTable.createdAt, since)))
+        .orderBy(desc(integrationEventsTable.createdAt))
+    : await db.select().from(integrationEventsTable)
+        .where(gte(integrationEventsTable.createdAt, since))
+        .orderBy(desc(integrationEventsTable.createdAt));
+
+  type SourceStat = { total: number; success: number; errors: number; ignored: number; lastEventAt: string | null };
+  const bySource = new Map<string, SourceStat>();
+
+  for (const row of rows) {
+    if (!bySource.has(row.source)) {
+      bySource.set(row.source, { total: 0, success: 0, errors: 0, ignored: 0, lastEventAt: null });
+    }
+    const s = bySource.get(row.source)!;
+    s.total++;
+    if (!s.lastEventAt) s.lastEventAt = row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt);
+    if (row.error)         { s.errors++; }
+    else if (row.processed){ s.success++; }
+    else                   { s.ignored++; }
+  }
+
+  const sources = Object.fromEntries(
+    [...bySource.entries()].map(([source, stat]) => [
+      source,
+      { ...stat, successRate: stat.total > 0 ? Math.round((stat.success / stat.total) * 100) : null },
+    ])
+  );
+
+  res.json({ sources, windowHours: 24 });
 });
 
 // Recent integration events (admin view)
