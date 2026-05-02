@@ -11,6 +11,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-05-02
+
+### Added
+
+#### KDS Display — Bump Bar
+- **Physical bump bar recall key** — every preset now includes a dedicated recall key: keyboard = `Backspace`, Logic Controls = `F9`, POS-X = `0`, MMF = `F9`; pressing it pulls back the last bumped order without touching the screen
+- **Custom key recording** — "Custom" preset now exposes a fourth recorder row for the recall key alongside bump / prev / next
+- **Virtual bump bar** — on-screen ◄ BUMP ↩Recall ▶ buttons in the footer, selectable toggle in Settings → Bump Bar and Quick Actions
+- **Self-hide × buttons** — footer bar and virtual bump bar both have a one-tap × button that hides them without opening Settings
+
+#### KDS Display — UI & Layout
+- **Resolution-aware auto-zoom** — auto-zoom formula now uses `Math.min(w/1920, h/1080)` so the display fills any screen without blank bottom/right edges regardless of aspect ratio; fixes blank-space-at-bottom bug on non-1920-wide screens
+- **Long-order grid fix** — grid uses `gridAutoRows: 1fr` + `alignItems: stretch` so all rows have equal height and nothing overflows; removed scroll from the main area entirely
+- **Per-card font scaling** — cards automatically reduce font size as item count grows (0.92× at 6 items, 0.84× at 9, 0.75× at 12+)
+- **Two-column item layout** — cards with 6+ items in a ≤3-column grid switch to two-column item rendering to maximise vertical space
+- **"+N more" overflow badge** — when a card would exceed 10–14 items (density-dependent), a compact badge replaces the overflow rather than cutting content silently
+- **Customer name visibility** — customer name colour raised from 45% to 80% white for clear readability at kitchen distances
+- **UI brightness pass** — BUMP ↵ button (38% → 62%), 0/N completion counter (25% → 50%), footer key hints (28% → 45%), ◄ ▶ nav buttons (40% → 62%), session item counter (22% → 40%), "All ready" message (22% → 45%) all brightened
+
+#### KDS Display — Now Serving & Recall
+- **Now Serving strip toggle** — independent `showNowServing` toggle in Settings → Now Serving Strip
+- **Recent / recall tray toggle** — new `showRecentBumped` config field with independent toggle; hides the grey recent-bumped row without affecting the Now Serving strip
+
+#### KDS Display — Quick Actions Panel
+- Redesigned ⚡ FAB panel; now contains exactly four focused actions:
+  1. **Bump focused order** — completes the currently highlighted order and closes the panel
+  2. **Recall last** — recalls the most recently bumped order
+  3. **Recall list** — expands an inline list of all recallable orders for one-tap recall
+  4. **Footer bar toggle** — show/hide the footer without opening full Settings
+
+#### Config Templates
+- `kds_config_templates` database table for per-store saved configurations
+- REST API: `GET/POST /api/kds/templates`, `DELETE /api/kds/templates/:id`, `GET /api/kds/templates/active`
+- Settings → Config Templates section: save current config as named template, apply, delete, push-to-all (broadcasts to every connected display via WebSocket), export JSON, import JSON
+
+### Fixed
+- Blank space at bottom/right when `zoom` CSS property scaled the root div down but did not compensate the element's own reported height/width — resolved by setting `height: ${100/zoom}dvh` / `width: ${100/zoom}dvw` on the root element
+- Auto-zoom ignored screen height — fixed by switching from `w/1920` to `Math.min(w/1920, h/1080)`
+
+---
+
 ## [1.0.0] - 2026-05-02
 
 Initial production release of LineOps KDS — a real-time, multi-tenant Kitchen Display System
@@ -107,5 +148,6 @@ for commercial kitchens.
 
 ---
 
-[Unreleased]: https://github.com/your-org/lineops-kds/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/your-org/lineops-kds/releases/tag/v1.0.0
+[Unreleased]: https://github.com/abhaypatial/Lineops_KDS/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/abhaypatial/Lineops_KDS/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/abhaypatial/Lineops_KDS/releases/tag/v1.0.0

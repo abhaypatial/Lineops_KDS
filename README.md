@@ -9,8 +9,15 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 - **Instant order display** — orders appear on every kitchen screen within a second of being fired from the POS
 - **Per-station views** — each screen only shows the items for its station (Grill, Cold Prep, Fryer, Dessert, etc.)
 - **Kiosk mode** — launches full-screen automatically; no browser bars or buttons visible; press F4 to exit
-- **Bump bar** — use keyboard arrows to navigate orders and Space/Enter to bump, without touching the screen
+- **Bump bar** — keyboard (Space/Enter to bump, ← → to navigate), physical USB bump bars (Logic Controls, POS-X, MMF presets + custom key recording), and on-screen virtual bump buttons; configurable **Recall key** (default Backspace) pulls back the last bumped order
 - **RUSH & VIP badges** — priority orders are highlighted in red/gold with a visible label and urgent timer colour
+- **Now Serving strip** — bumped orders flash in a green "Now Serving" strip for pickup callout; independent toggle for the strip and the recent-recall tray below it
+- **Order recall** — recall any recently bumped order from the Quick Actions panel, virtual bump bar, or by pressing the recall key on a physical bump bar
+- **Config Templates** — save the current KDS layout as a named template; one-click push to every connected display; export/import JSON for cross-site backup
+- **Resolution-aware auto-zoom** — display automatically scales to fill any screen size without blank edges; manual override with Ctrl +/−/0
+- **Long-order handling** — cards with many items automatically reduce font size, switch to a two-column item layout, and show a "+N more" badge; no card ever requires scrolling
+- **Quick Actions panel** — single-tap: bump focused order, recall last order, open recall list, toggle footer bar; accessible from the ⚡ FAB
+- **Flexible UI controls** — toggle the footer bar, virtual bump bar, Now Serving strip, and recent-recall tray independently; each has a self-hide × button for one-tap dismissal without opening Settings
 - **Test order button** — fire a test order to any station instantly, straight from the KDS screen or CLI
 - **Manager dashboard** — active orders, average ticket time, rush count, online screens, and per-station workload at a glance
 - **Order history** — full log of every order with bump, recall, and status controls

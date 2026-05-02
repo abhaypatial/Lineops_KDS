@@ -40,7 +40,10 @@ Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (li
 
 ## Key Features
 
-- **KDS Display** (`/`): Live order grid, station filtering tabs, keyboard bump bar (←→ navigate, SPACE/Enter bump), elapsed-time color coding (yellow >10m, red >15m), rush/VIP order highlighting
+- **KDS Display** (`/`): Live order grid, station filtering tabs, keyboard bump bar (←→ navigate, SPACE/Enter bump), configurable recall key (default Backspace), physical bump bar presets (Logic Controls / POS-X / MMF / Custom), virtual bump bar (◄ BUMP ↩Recall ▶), elapsed-time color coding (yellow >10m, red >15m), rush/VIP order highlighting, resolution-aware auto-zoom, long-order font scaling + 2-col layout + overflow badge
+- **Now Serving strip** + **Recent/recall tray**: independent `showNowServing` and `showRecentBumped` toggles; recall any bumped order via keyboard, virtual bar, or Quick Actions panel
+- **Config Templates**: save/apply/delete named configs per store; push-to-all via WebSocket broadcast; export/import JSON — `kds_config_templates` DB table + REST API
+- **Quick Actions panel** (⚡ FAB): bump focused order, recall last, recall list (expandable), footer bar toggle
 - **Manager Dashboard** (`/dashboard`): Active orders summary, avg ticket time, rush count, online devices, per-station load bars, real-time activity feed
 - **Orders Page** (`/orders`): Tabular order history with bump/status management
 - **Devices Page** (`/devices`): Device status monitoring (online/idle/offline)
