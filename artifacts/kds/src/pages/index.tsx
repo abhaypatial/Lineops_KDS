@@ -697,8 +697,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
             <div className="grid grid-cols-3 gap-1">
               {(["multi", "single", "expo"] as KdsMode[]).map(id => (
                 <button key={id} onClick={() => set("mode", id)}
-                  className="py-1.5 rounded-lg text-[10px] font-bold border transition-all capitalize"
-                  style={{ background: cfg.mode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.mode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.mode === id ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
+                  className="py-2 rounded-lg text-[11px] font-bold border transition-all capitalize"
+                  style={{ background: cfg.mode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.06)", borderColor: cfg.mode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.12)", color: cfg.mode === id ? "#f59e0b" : "rgba(255,255,255,0.85)" }}>
                   {id}
                 </button>
               ))}
@@ -709,8 +709,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                   const sm = STATION_META[s]; const active = cfg.singleStation === s;
                   return (
                     <button key={s} onClick={() => set("singleStation", s)}
-                      className="py-1 rounded text-[9px] font-bold border transition-all"
-                      style={{ background: active ? `${sm.color}22` : "rgba(255,255,255,0.03)", borderColor: active ? `${sm.color}55` : "rgba(255,255,255,0.07)", color: active ? sm.color : "rgba(255,255,255,0.35)" }}>
+                      className="py-1.5 rounded text-[10px] font-bold border transition-all"
+                      style={{ background: active ? `${sm.color}22` : "rgba(255,255,255,0.05)", borderColor: active ? `${sm.color}55` : "rgba(255,255,255,0.12)", color: active ? sm.color : "rgba(255,255,255,0.85)" }}>
                       {sm.label}
                     </button>
                   );
@@ -726,8 +726,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                     ["all_stations",  "All stations done"],
                   ] as [ExpoSendMode, string][]).map(([id, label]) => (
                     <button key={id} onClick={() => set("expoSendMode", id)}
-                      className="py-1.5 px-2 rounded-lg text-[8px] font-bold border text-center leading-tight transition-all"
-                      style={{ background: cfg.expoSendMode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.expoSendMode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.expoSendMode === id ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
+                      className="py-2 px-2 rounded-lg text-[9px] font-bold border text-center leading-tight transition-all"
+                      style={{ background: cfg.expoSendMode === id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.06)", borderColor: cfg.expoSendMode === id ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.12)", color: cfg.expoSendMode === id ? "#f59e0b" : "rgba(255,255,255,0.85)" }}>
                       {label}
                     </button>
                   ))}
@@ -744,8 +744,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5, 6].map(n => (
                   <button key={n} onClick={() => set("numCols", n)}
-                    className="w-7 h-7 rounded text-xs font-bold border transition-all"
-                    style={{ background: cfg.numCols === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.numCols === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.numCols === n ? "#f59e0b" : "rgba(255,255,255,0.45)" }}>
+                    className="w-8 h-8 rounded text-xs font-bold border transition-all"
+                    style={{ background: cfg.numCols === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", borderColor: cfg.numCols === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.12)", color: cfg.numCols === n ? "#f59e0b" : "rgba(255,255,255,0.85)" }}>
                     {n}
                   </button>
                 ))}
@@ -765,14 +765,14 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 <span className="text-xs text-white/40">Featured span</span>
                 <div className="flex gap-1">
                   <button onClick={() => set("featuredSpan", null)}
-                    className="h-6 px-2 rounded text-[10px] font-bold border transition-all"
-                    style={{ background: cfg.featuredSpan === null ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.featuredSpan === null ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.featuredSpan === null ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+                    className="h-7 px-2.5 rounded text-[10px] font-bold border transition-all"
+                    style={{ background: cfg.featuredSpan === null ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", borderColor: cfg.featuredSpan === null ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.12)", color: cfg.featuredSpan === null ? "#f59e0b" : "rgba(255,255,255,0.85)" }}>
                     Auto
                   </button>
                   {[1, 2, 3, 4].filter(n => n <= cfg.numCols).map(n => (
                     <button key={n} onClick={() => set("featuredSpan", n)}
-                      className="w-6 h-6 rounded text-[10px] font-bold border transition-all"
-                      style={{ background: cfg.featuredSpan === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.featuredSpan === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.featuredSpan === n ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+                      className="w-7 h-7 rounded text-[10px] font-bold border transition-all"
+                      style={{ background: cfg.featuredSpan === n ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", borderColor: cfg.featuredSpan === n ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.12)", color: cfg.featuredSpan === n ? "#f59e0b" : "rgba(255,255,255,0.85)" }}>
                       {n}
                     </button>
                   ))}
