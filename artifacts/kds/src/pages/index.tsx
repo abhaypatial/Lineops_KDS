@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
 import { useQuery, useQueryClient }          from "@tanstack/react-query";
 import { useListOrders, useListStations, useBumpOrder, useListStores } from "@workspace/api-client-react";
 import { useKdsWebSocket, stripMachineLocal, getKdsDeviceId } from "@/hooks/use-kds-websocket";
@@ -7,6 +7,17 @@ import { FlaskConical, Maximize2, Minimize2, Zap } from "lucide-react";
 import { toast as sonnerToast }             from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type ModColorEntry = { text: string; dot: string };
+type ModifierColors = { remove: ModColorEntry; extra: ModColorEntry; normal: ModColorEntry };
+
+const DEFAULT_MOD_COLORS: ModifierColors = {
+  remove: { text: "#fca5a5", dot: "#ef4444" },
+  extra:  { text: "#86efac", dot: "#22c55e" },
+  normal: { text: "rgba(255,255,255,0.88)", dot: "#9ca3af" },
+};
+
+const ModColorCtx = createContext<ModifierColors>(DEFAULT_MOD_COLORS);
 
 type Allergen  = "nuts" | "gluten" | "dairy" | "shellfish" | "eggs" | "soy" | "spicy";
 type Station   = "grill" | "fryer" | "cold" | "dessert" | "other";
@@ -203,10 +214,11 @@ function progressColor(pct: number, p: Priority) {
   if (p === "VIP")  return "#f59e0b";
   return pct >= 1 ? "#ef4444" : pct >= 0.6 ? "#f59e0b" : "#22c55e";
 }
-function modColor(mod: string) {
+function modColor(mod: string, colors: ModifierColors | undefined) {
+  if (!colors) return null;
   const l = mod.toLowerCase();
-  if (/^(no |without |remove |hold )/.test(l)) return { text: "#fca5a5", dot: "#ef4444" };
-  if (/^(extra |add |with |double |more )/.test(l)) return { text: "#86efac", dot: "#22c55e" };
+  if (/^(no |without |remove |hold )/.test(l)) return colors.remove;
+  if (/^(extra |add |with |double |more )/.test(l)) return colors.extra;
   return null;
 }
 
@@ -223,11 +235,12 @@ function AllergenBadge({ a }: { a: Allergen }) {
 }
 
 function ModLine({ mod, showColors }: { mod: string; showColors: boolean }) {
-  const sem = showColors ? modColor(mod) : null;
+  const modColors = useContext(ModColorCtx);
+  const sem = showColors ? modColor(mod, modColors) : null;
   return (
     <div className="flex items-center gap-1.5">
-      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sem?.dot ?? "#9ca3af" }} />
-      <span className="text-xs leading-tight font-medium" style={{ color: sem?.text ?? "rgba(255,255,255,0.88)" }}>{mod}</span>
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sem?.dot ?? modColors.normal.dot }} />
+      <span className="text-xs leading-tight font-medium" style={{ color: sem?.text ?? modColors.normal.text }}>{mod}</span>
     </div>
   );
 }
@@ -572,7 +585,7 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
           <Zap style={{ width: 11, height: 11, color: "#f59e0b" }} />
           <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">Quick Actions</span>
         </div>
-        <button onClick={onClose} className="text-white/30 hover:text-white/60 text-base leading-none">×</button>
+        <button onClick={onClose} className="text-white/58 hover:text-white/85 text-base leading-none">×</button>
       </div>
       <div className="p-3 flex flex-col gap-2">
 
@@ -628,7 +641,7 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
 
         {/* Footer bar toggle */}
         <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Footer Bar</span>
+          <span className="text-[10px] text-white/55 uppercase tracking-wider">Footer Bar</span>
           <button onClick={() => toggle("showFooter", !cfg.showFooter)}
             className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
             style={{ background: cfg.showFooter ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
@@ -687,7 +700,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
         style={{ background: "#13131a" }}>
         <div className="px-4 py-3 border-b border-white/[0.07] flex items-center justify-between">
           <p className="text-xs font-bold text-white/70 tracking-wider uppercase">Display Options</p>
-          <button onClick={onClose} className="text-white/30 hover:text-white/60 text-lg leading-none">×</button>
+          <button onClick={onClose} className="text-white/58 hover:text-white/85 text-lg leading-none">×</button>
         </div>
         <div className="px-4 py-3 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
 
@@ -785,7 +798,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 {(["compact", "normal", "comfortable"] as Density[]).map(d => (
                   <button key={d} onClick={() => set("density", d)}
                     className="h-6 px-2 rounded text-[9px] font-bold border capitalize transition-all"
-                    style={{ background: cfg.density === d ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.density === d ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.density === d ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+                    style={{ background: cfg.density === d ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.density === d ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.density === d ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
                     {d.slice(0, 3)}
                   </button>
                 ))}
@@ -797,7 +810,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 {(["sm", "md", "lg"] as FontSize[]).map(id => (
                   <button key={id} onClick={() => set("fontSize", id)}
                     className="w-7 h-6 rounded text-xs font-bold border transition-all uppercase"
-                    style={{ background: cfg.fontSize === id ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.fontSize === id ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.fontSize === id ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+                    style={{ background: cfg.fontSize === id ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", borderColor: cfg.fontSize === id ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)", color: cfg.fontSize === id ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
                     {id}
                   </button>
                 ))}
@@ -818,7 +831,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                   style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>+</button>
                 <button onClick={() => set("zoomOverride", null)}
                   className="h-6 px-2 rounded border text-[9px] font-bold transition-all"
-                  style={{ background: cfg.zoomOverride === null ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.zoomOverride === null ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.zoomOverride === null ? "#f59e0b" : "rgba(255,255,255,0.25)" }}>
+                  style={{ background: cfg.zoomOverride === null ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", borderColor: cfg.zoomOverride === null ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.07)", color: cfg.zoomOverride === null ? "#f59e0b" : "rgba(255,255,255,0.65)" }}>
                   Auto
                 </button>
               </div>
@@ -839,12 +852,12 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
             </div>
             {cfg.showNowServing && (
               <div className="flex items-center gap-2 pl-3 border-l border-white/[0.07]">
-                <span className="text-[10px] text-white/40 shrink-0">Auto-dismiss</span>
+                <span className="text-[10px] text-white/60 shrink-0">Auto-dismiss</span>
                 <input type="range" min={15} max={120} step={5}
                   value={cfg.nowServingExpirySec}
                   onChange={e => set("nowServingExpirySec", parseInt(e.target.value))}
                   className="flex-1 h-1 cursor-pointer accent-amber-500" />
-                <span className="text-[10px] text-white/30 w-8 text-right shrink-0">{cfg.nowServingExpirySec}s</span>
+                <span className="text-[10px] text-white/60 w-8 text-right shrink-0">{cfg.nowServingExpirySec}s</span>
               </div>
             )}
             <div className="flex items-center justify-between">
@@ -920,7 +933,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                     })}
                   </div>
                 </div>
-                <span className="text-[9px] text-white/20 leading-relaxed">Border flash shows throughout · "chime" = soft soothing tone · "beep" = classic KDS double-beep</span>
+                <span className="text-[9px] text-white/42 leading-relaxed">Border flash shows throughout · "chime" = soft soothing tone · "beep" = classic KDS double-beep</span>
               </div>
             )}
             <div className="flex items-center justify-between">
@@ -940,15 +953,15 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                   onChange={e => set("soundVolume", parseFloat(e.target.value))}
                   onMouseUp={() => playChime(cfg.soundChime, cfg.soundVolume)}
                   className="flex-1 h-1 cursor-pointer accent-amber-500" />
-                <span className="text-[10px] text-white/30 w-7 text-right">{Math.round(cfg.soundVolume * 100)}%</span>
+                <span className="text-[10px] text-white/60 w-7 text-right">{Math.round(cfg.soundVolume * 100)}%</span>
               </div>
               <div className="flex flex-col gap-1 pl-3 border-l border-white/[0.07]">
-                <span className="text-[10px] text-white/30 mb-0.5">Per-station chimes</span>
+                <span className="text-[10px] text-white/55 mb-0.5">Per-station chimes</span>
                 {(Object.entries(STATION_META) as [Station, typeof STATION_META[Station]][]).map(([station, meta]) => (
                   <div key={station} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
-                      <span className="text-[10px] text-white/45 truncate">{meta.label}</span>
+                      <span className="text-[10px] text-white/65 truncate">{meta.label}</span>
                     </div>
                     <div className="flex gap-0.5 shrink-0">
                       {(["ding", "beep", "blip", "none"] as (ChimeType | "none")[]).map(t => {
@@ -986,7 +999,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
             </div>
             {cfg.bumpBarEnabled && (<>
               <div className="flex flex-col gap-1 pl-3 border-l border-white/[0.07]">
-                <span className="text-[10px] text-white/30 mb-0.5">Device preset</span>
+                <span className="text-[10px] text-white/55 mb-0.5">Device preset</span>
                 {(Object.entries(BUMP_BAR_PRESETS) as [BumpBarPreset, { label: string; desc: string }][]).map(([id, preset]) => (
                   <button key={id}
                     onClick={() => {
@@ -1000,7 +1013,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                     className="flex flex-col items-start px-2.5 py-1.5 rounded-lg border text-left transition-all"
                     style={{ background: cfg.bumpBarPreset === id ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.03)", borderColor: cfg.bumpBarPreset === id ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.07)" }}>
                     <span className="text-[10px] font-bold" style={{ color: cfg.bumpBarPreset === id ? "#f59e0b" : "rgba(255,255,255,0.5)" }}>{preset.label}</span>
-                    <span className="text-[9px] text-white/25 mt-0.5">{preset.desc}</span>
+                    <span className="text-[9px] text-white/48 mt-0.5">{preset.desc}</span>
                   </button>
                 ))}
               </div>
@@ -1013,7 +1026,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                 </div>
               )}
               <div className="px-2.5 py-2 rounded-lg border border-white/[0.06]" style={{ background: "rgba(255,255,255,0.02)" }}>
-                <p className="text-[9px] text-white/25 leading-relaxed">USB HID bump bars connect as keyboards — plug in and pick your model. For gamepad-protocol bars, button A = bump, L/R = navigate.</p>
+                <p className="text-[9px] text-white/50 leading-relaxed">USB HID bump bars connect as keyboards — plug in and pick your model. For gamepad-protocol bars, button A = bump, L/R = navigate.</p>
               </div>
             </>)}
             <div className="flex items-center justify-between mt-1">
@@ -1163,6 +1176,7 @@ export default function KdsDisplay() {
   const [recentBumped,    setRecentBumped] = useState<{ order: DisplayOrder; bumpedAt: number }[]>([]);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
   const [pingActive, setPingActive] = useState(false);
+  const [modColors, setModColors] = useState<ModifierColors>(DEFAULT_MOD_COLORS);
 
   const { playChime } = useOrderChime();
   const cfgRef           = useRef(cfg);
@@ -1200,6 +1214,14 @@ export default function KdsDisplay() {
     try { localStorage.setItem("kds_cfg", JSON.stringify(cfg)); } catch {}
   }, [cfg]);
 
+  // Load modifier colors from server
+  useEffect(() => {
+    fetch("/api/modifier-colors")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setModColors(d as ModifierColors); })
+      .catch(() => {});
+  }, []);
+
   // onNewOrder is handled by the allOrders effect below (has station info)
   useKdsWebSocket(storeId, queryClient, undefined, (safeCfg) => {
     setCfg(c => ({ ...c, ...(safeCfg as Partial<KdsConfig>) }));
@@ -1207,6 +1229,8 @@ export default function KdsDisplay() {
   }, () => {
     setPingActive(true);
     setTimeout(() => setPingActive(false), 1600);
+  }, (colors) => {
+    setModColors(colors as ModifierColors);
   });
 
   // Build a stationId → Station slug map from DB stations
@@ -1497,6 +1521,7 @@ export default function KdsDisplay() {
   const theme = THEME_META[cfg.theme] ?? THEME_META.ink;
 
   return (
+    <ModColorCtx.Provider value={modColors}>
     <div className="bg-[#0a0a0b] text-white flex flex-col select-none overflow-hidden relative"
       style={{
         fontFamily: "'Inter',system-ui,sans-serif",
@@ -1644,18 +1669,18 @@ export default function KdsDisplay() {
       {cfg.showStats && allOrders.length > 0 && (
         <div className="mx-4 mb-2 px-3 py-1.5 rounded-xl border flex items-center gap-3 shrink-0 flex-wrap"
           style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-          <span className="text-[9px] text-white/25 uppercase tracking-widest shrink-0">Stats</span>
+          <span className="text-[9px] text-white/55 uppercase tracking-widest shrink-0">Stats</span>
           <div className="flex gap-4 flex-wrap">
             <span className="text-[10px]">
-              <span className="text-white/28">Min </span>
+              <span className="text-white/60">Min </span>
               <span className="font-mono text-white/55">{fmtSec(statsMin)}</span>
             </span>
             <span className="text-[10px]">
-              <span className="text-white/28">Avg </span>
+              <span className="text-white/60">Avg </span>
               <span className="font-mono text-white/55">{fmtSec(statsAvg)}</span>
             </span>
             <span className="text-[10px]">
-              <span className="text-white/28">Max </span>
+              <span className="text-white/60">Max </span>
               <span className="font-mono font-bold"
                 style={{ color: statsMax >= ALERT_SEC ? "#f87171" : statsMax >= WARN_SEC ? "#f59e0b" : "rgba(255,255,255,0.55)" }}>
                 {fmtSec(statsMax)}
@@ -1751,7 +1776,7 @@ export default function KdsDisplay() {
             style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="flex items-center gap-3 px-3 py-2">
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.28)" }}>Recent</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.72)" }}>Recent</span>
               </div>
               <div className="w-px self-stretch bg-white/[0.05] shrink-0" />
               <div className="flex-1 flex gap-1.5 flex-wrap items-center min-w-0">
@@ -1874,7 +1899,7 @@ export default function KdsDisplay() {
               <button
                 onClick={() => setCfg(c => ({ ...c, showVirtualBumpBar: false }))}
                 className="h-7 px-1.5 rounded-lg text-[10px] border transition-all active:scale-95 ml-0.5"
-                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.22)" }}
+                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.60)" }}
                 title="Hide virtual bump bar">×</button>
             </div>
           )}
@@ -1882,13 +1907,13 @@ export default function KdsDisplay() {
           {isFullscreen && (
             <div className="flex items-center gap-1.5">
               <kbd className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.13] bg-white/[0.06] text-white/50">F4</kbd>
-              <span className="text-[10px] text-white/28 uppercase tracking-wider">Exit Kiosk</span>
+              <span className="text-[10px] text-white/62 uppercase tracking-wider">Exit Kiosk</span>
             </div>
           )}
           <button
             onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
             className="h-6 px-1.5 rounded text-[11px] border transition-all hover:bg-white/[0.06] ml-1"
-            style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.2)" }}
+            style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.55)" }}
             title="Hide footer bar">×</button>
         </footer>
       )}
@@ -1921,5 +1946,6 @@ export default function KdsDisplay() {
         @keyframes pingFlash   { 0%{opacity:0} 8%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
       `}</style>
     </div>
+    </ModColorCtx.Provider>
   );
 }

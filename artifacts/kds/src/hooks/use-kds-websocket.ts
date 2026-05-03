@@ -46,6 +46,7 @@ export function useKdsWebSocket(
   onNewOrder?: (orderNumber: string) => void,
   onConfigPush?: (safeConfig: Record<string, unknown>) => void,
   onPing?: () => void,
+  onModifierColorsUpdate?: (colors: Record<string, unknown>) => void,
 ) {
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -56,6 +57,8 @@ export function useKdsWebSocket(
   onConfigPushRef.current = onConfigPush;
   const onPingRef = useRef(onPing);
   onPingRef.current = onPing;
+  const onModifierColorsUpdateRef = useRef(onModifierColorsUpdate);
+  onModifierColorsUpdateRef.current = onModifierColorsUpdate;
 
   useEffect(() => {
     if (!storeId) return;
@@ -105,6 +108,11 @@ export function useKdsWebSocket(
             }
             case "kds_ping":
               onPingRef.current?.();
+              break;
+            case "modifier_colors_update":
+              if (data.payload && onModifierColorsUpdateRef.current) {
+                onModifierColorsUpdateRef.current(data.payload as Record<string, unknown>);
+              }
               break;
           }
         } catch (err) {

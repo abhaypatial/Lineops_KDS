@@ -34,7 +34,7 @@ pnpm workspace monorepo with TypeScript throughout. Contract-first API via OpenA
 
 ## Database Schema
 
-Tables: `enterprises`, `stores`, `stations`, `devices`, `orders`, `order_items`, `kds_config_templates`, `kds_station_configs`, `device_health_events`
+Tables: `enterprises`, `stores`, `stations`, `devices`, `orders`, `order_items`, `kds_config_templates`, `kds_station_configs`, `device_health_events`, `modifier_color_settings`
 
 Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (linked to stations)
 
@@ -45,6 +45,7 @@ Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (li
 - **KDS Display** (`/`): Live order grid, station filtering tabs, keyboard bump bar (←→ navigate, SPACE/Enter bump), configurable recall key (default Backspace), physical bump bar presets (Logic Controls / POS-X / MMF / Custom), virtual bump bar (◄ BUMP ↩Recall ▶), elapsed-time color coding (yellow >10m, red >15m), rush/VIP order highlighting, resolution-aware auto-zoom, long-order font scaling + 2-col layout + overflow badge
 - **Ping Flash Overlay**: Full-screen green ring + badge when `kds_ping` WS event received — confirms display is wired correctly before service. 1.6s animated overlay with device ID.
 - **Now Serving strip** + **Recent/recall tray**: independent `showNowServing` and `showRecentBumped` toggles; recall any bumped order via keyboard, virtual bar, or Quick Actions panel
+- **Modifier Color Customization**: per-category color configuration (Remove/No/Hold, Extra/Add/Double, Normal) stored in `modifier_color_settings` DB table — `GET/PUT /api/modifier-colors`; changes broadcast to all displays via WS; configurable from Template Builder back-office under the "Colors" tab
 - **Config Templates**: save/apply/delete named configs per store; push-to-all via WebSocket broadcast; export/import JSON — `kds_config_templates` DB table + REST API
 - **Station Config Management** (`/station-configs`): assign a named template config to each kitchen station; push to all displays at that station over WS; copy configs between stations — `kds_station_configs` DB table + REST endpoints (`PUT/GET /api/stations/:id/config`, `POST /api/stations/:id/push-config`, `POST /api/stations/copy-config`)
 - **Per-device config push** (`POST /api/devices/:id/push-config`): targeted WS push to a single display by device ID; machine-local settings (zoom, bump bar, keys) always preserved

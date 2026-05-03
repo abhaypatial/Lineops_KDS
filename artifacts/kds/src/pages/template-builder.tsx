@@ -1,6 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type ModColorEntry  = { text: string; dot: string };
+type ModifierColors = { remove: ModColorEntry; extra: ModColorEntry; normal: ModColorEntry };
+
+const DEFAULT_MOD_COLORS: ModifierColors = {
+  remove: { text: "#fca5a5", dot: "#ef4444" },
+  extra:  { text: "#86efac", dot: "#22c55e" },
+  normal: { text: "rgba(255,255,255,0.88)", dot: "#9ca3af" },
+};
 
 type Station  = "grill" | "fryer" | "cold" | "dessert" | "other" | "all" | "expo";
 type ZoneMode = "cards" | "list" | "spotlight";
@@ -354,6 +363,128 @@ function ZonePanel({ zone, onChange }: { zone: Zone; onChange: (z: Zone) => void
   );
 }
 
+// ─── Modifier Colors Panel ────────────────────────────────────────────────────
+
+type ModColorField = { label: string; key: keyof ModifierColors; desc: string };
+const MOD_COLOR_FIELDS: ModColorField[] = [
+  { key: "remove", label: "Remove / No / Hold",  desc: "no cheese, without onion, hold sauce…" },
+  { key: "extra",  label: "Extra / Add / Double", desc: "extra bacon, add guac, double shot…"   },
+  { key: "normal", label: "Normal (default)",     desc: "all other modifiers"                   },
+];
+
+function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative w-7 h-7 rounded-lg overflow-hidden border border-white/[0.15] cursor-pointer shrink-0"
+      style={{ background: value }}>
+      <input type="color" value={value.startsWith("#") ? value : "#9ca3af"}
+        onChange={e => onChange(e.target.value)}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+    </div>
+  );
+}
+
+function HexInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  return (
+    <input value={draft}
+      onChange={e => { setDraft(e.target.value); if (/^(#[0-9a-fA-F]{6}|rgba?\(.+\))$/.test(e.target.value)) onChange(e.target.value); }}
+      onBlur={() => setDraft(value)}
+      className="flex-1 h-7 px-2 rounded-lg border text-[10px] font-mono outline-none min-w-0"
+      style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
+    />
+  );
+}
+
+function ModifierColorsPanel() {
+  const [colors, setColors]   = useState<ModifierColors>(DEFAULT_MOD_COLORS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [saved, setSaved]     = useState(false);
+
+  useEffect(() => {
+    fetch("/api/modifier-colors")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setColors(d as ModifierColors); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const setEntry = (key: keyof ModifierColors, field: keyof ModColorEntry, val: string) =>
+    setColors(prev => ({ ...prev, [key]: { ...prev[key], [field]: val } }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await fetch("/api/modifier-colors", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(colors),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally { setSaving(false); }
+  };
+
+  const reset = () => setColors(DEFAULT_MOD_COLORS);
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-24">
+      <span className="text-[10px] text-white/30 animate-pulse">Loading…</span>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-0.5">Modifier Colors</p>
+        <p className="text-[10px] text-white/35 leading-relaxed">
+          Set the color of each modifier category shown on KDS order cards. Changes broadcast to all connected displays.
+        </p>
+      </div>
+
+      {MOD_COLOR_FIELDS.map(({ key, label, desc }) => (
+        <div key={key} className="flex flex-col gap-2 p-3 rounded-xl border"
+          style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.07)" }}>
+          <div>
+            <p className="text-[11px] font-bold text-white/75">{label}</p>
+            <p className="text-[9px] text-white/35 italic mt-0.5">{desc}</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-white/50 w-8 shrink-0">Text</span>
+              <ColorSwatch value={colors[key].text} onChange={v => setEntry(key, "text", v)} />
+              <HexInput value={colors[key].text} onChange={v => setEntry(key, "text", v)} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-white/50 w-8 shrink-0">Dot</span>
+              <ColorSwatch value={colors[key].dot} onChange={v => setEntry(key, "dot", v)} />
+              <HexInput value={colors[key].dot} onChange={v => setEntry(key, "dot", v)} />
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 pt-1">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colors[key].dot }} />
+            <span className="text-xs font-medium" style={{ color: colors[key].text }}>Preview modifier text</span>
+          </div>
+        </div>
+      ))}
+
+      <div className="flex gap-2 pt-1">
+        <button onClick={reset}
+          className="flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all"
+          style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>
+          Reset defaults
+        </button>
+        <button onClick={save} disabled={saving}
+          className="flex-1 py-2 rounded-xl text-[11px] font-bold border transition-all disabled:opacity-50"
+          style={{ background: saved ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)", borderColor: saved ? "rgba(34,197,94,0.4)" : "rgba(245,158,11,0.4)", color: saved ? "#86efac" : "#f59e0b" }}>
+          {saving ? "Saving…" : saved ? "✓ Saved" : "Save & Broadcast"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Global Settings Panel ────────────────────────────────────────────────────
 
 function GlobalPanel({ template, onChange }: { template: Template; onChange: (t: Template) => void }) {
@@ -461,7 +592,7 @@ export default function TemplateBuilderPage() {
   const [templates, setTemplates]      = useState<Template[]>([...PRESETS.map(p => ({ ...p }))]);
   const [activeId, setActiveId]        = useState<string>(PRESETS[0].id);
   const [selectedZoneId, setSelectedZ] = useState<string | null>(null);
-  const [rightPanel, setRightPanel]    = useState<"zone" | "global">("global");
+  const [rightPanel, setRightPanel]    = useState<"zone" | "global" | "colors">("global");
   const [exportJson, setExportJson]    = useState<string | null>(null);
   const [importText, setImportText]    = useState("");
   const [showImport, setShowImport]    = useState(false);
@@ -651,7 +782,7 @@ export default function TemplateBuilderPage() {
         <div className="w-72 shrink-0 bg-[#111118] border-l border-white/[0.07] flex flex-col overflow-hidden">
           {/* Panel tabs */}
           <div className="flex border-b border-white/[0.07] shrink-0">
-            {(["zone", "global"] as const).map(id => (
+            {(["zone", "global", "colors"] as const).map(id => (
               <button key={id} onClick={() => setRightPanel(id)}
                 className="flex-1 py-2.5 text-[11px] font-bold transition-all border-b-2"
                 style={{
@@ -659,7 +790,7 @@ export default function TemplateBuilderPage() {
                   borderColor: rightPanel === id ? "#f59e0b" : "transparent",
                   background:  rightPanel === id ? "rgba(245,158,11,0.05)" : "transparent",
                 }}>
-                {id === "zone" ? "Zone Config" : "Template Settings"}
+                {id === "zone" ? "Zone" : id === "global" ? "Settings" : "Colors"}
               </button>
             ))}
           </div>
@@ -676,8 +807,10 @@ export default function TemplateBuilderPage() {
                   </p>
                 </div>
               )
-            ) : (
+            ) : rightPanel === "global" ? (
               <GlobalPanel template={template} onChange={updateTemplate} />
+            ) : (
+              <ModifierColorsPanel />
             )}
           </div>
         </div>

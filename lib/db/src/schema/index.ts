@@ -9,3 +9,4 @@ export * from "./outbound_webhooks";
 export * from "./kds_config_templates";
 export * from "./kds_station_configs";
 export * from "./device_health_events";
+export * from "./modifier_color_settings";
