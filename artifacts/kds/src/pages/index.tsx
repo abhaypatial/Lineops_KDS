@@ -18,6 +18,7 @@ type FontSize      = "sm" | "md" | "lg";
 type BumpBarPreset  = "keyboard" | "logic-controls" | "pos-x" | "mmf" | "custom";
 type StationChime   = ChimeType | "none";
 type ExpoSendMode   = "expo_bump" | "all_stations";
+type KdsTheme = "ink" | "blue" | "slate";
 
 type DisplayItem = {
   id: string; qty: number; name: string;
@@ -52,6 +53,7 @@ type KdsConfig = {
   bumpKey: string; prevKey: string; nextKey: string; recallKey: string;
   zoomOverride: number | null;
   showVirtualBumpBar: boolean;
+  theme: KdsTheme;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -86,6 +88,11 @@ const FONT_SZ: Record<FontSize, { num: number; meta: number; timer: number; feat
   md: { num: 30, meta: 10, timer: 14, featured: 42 },
   lg: { num: 38, meta: 11, timer: 17, featured: 52 },
 };
+const THEME_META: Record<KdsTheme, { label: string; bg: string; card: string; line: string; text: string; subtle: string }> = {
+  ink:   { label: "Ink",   bg: "#0a0a0b", card: "#111116", line: "rgba(255,255,255,0.07)", text: "rgba(255,255,255,0.76)", subtle: "rgba(255,255,255,0.55)" },
+  blue:  { label: "Blue",  bg: "#08111e", card: "#0f1b2e", line: "rgba(96,165,250,0.18)", text: "rgba(219,234,254,0.88)", subtle: "rgba(191,219,254,0.68)" },
+  slate: { label: "Slate", bg: "#101114", card: "#171922", line: "rgba(148,163,184,0.16)", text: "rgba(241,245,249,0.8)", subtle: "rgba(226,232,240,0.62)" },
+};
 const WARN_SEC  = 540;
 const ALERT_SEC = 900;
 const NEW_SEC   = 60;
@@ -112,6 +119,7 @@ const DEFAULT_CFG: KdsConfig = {
   bumpKey: " ", prevKey: "ArrowLeft", nextKey: "ArrowRight", recallKey: "Backspace",
   zoomOverride: null,
   showVirtualBumpBar: true,
+  theme: "ink",
 };
 
 // ─── Bump bar presets ─────────────────────────────────────────────────────────
@@ -385,11 +393,13 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
       ? "warnPulse 2.5s ease-in-out infinite"
       : "none";
 
+  const theme = THEME_META[cfg.theme] ?? THEME_META.ink;
+
   return (
     <div className="flex flex-col rounded-xl overflow-hidden border cursor-pointer"
       style={{
         gridColumn: `span ${effectiveSpan}`,
-        background: "#111116",
+        background: theme.card,
         borderColor: borderC,
         boxShadow: shadowC,
         animation: escalAnim,
@@ -407,7 +417,7 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap mb-1">
               {cfg.showCustomerName && (
-                <span className="font-semibold tracking-wide truncate" style={{ fontSize: fs.meta, color: "rgba(255,255,255,0.80)" }}>
+                <span className="font-semibold tracking-wide truncate" style={{ fontSize: fs.meta, color: "#a7f3d0" }}>
                   {order.customer}
                 </span>
               )}
@@ -446,7 +456,7 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
               </svg>
               <span className="font-mono tabular-nums font-bold" style={{ fontSize: fs.timer, color: tColor }}>{fmtTime(elapsed)}</span>
             </div>
-            <span className="text-[9px] text-white/50 font-medium">{doneCount}/{order.items.length}</span>
+            <span className="text-[10px] font-semibold" style={{ color: theme.subtle }}>{doneCount}/{order.items.length}</span>
             <button onClick={e => { e.stopPropagation(); onBump(); }}
               className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border transition-all active:scale-95"
               style={{
@@ -1529,6 +1539,8 @@ export default function KdsDisplay() {
   const statsAvg   = allOrders.length ? Math.round(allOrders.reduce((a, o) => a + o.elapsedSec, 0) / allOrders.length) : 0;
   function fmtSec(s: number) { const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; }
 
+  const theme = THEME_META[cfg.theme] ?? THEME_META.ink;
+
   return (
     <div className="bg-[#0a0a0b] text-white flex flex-col select-none overflow-hidden relative"
       style={{
@@ -1536,6 +1548,7 @@ export default function KdsDisplay() {
         zoom: kdsZoom,
         height: `${(100 / kdsZoom).toFixed(3)}dvh`,
         width: `${(100 / kdsZoom).toFixed(3)}vw`,
+        background: theme.bg,
       }}>
 
       {/* ── Ping flash overlay ───────────────────────────────────────────── */}
@@ -1552,7 +1565,7 @@ export default function KdsDisplay() {
       )}
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="h-14 flex items-center justify-between px-5 border-b border-white/[0.07] shrink-0 bg-[#0d0d10]">
+      <header className="h-14 flex items-center justify-between px-5 border-b shrink-0" style={{ background: theme.bg, borderColor: theme.line }}>
         <div className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1">
           {cfg.mode === "multi" ? (
             stationTabs.map(tab => {
@@ -1584,7 +1597,7 @@ export default function KdsDisplay() {
 
         <div className="flex items-center gap-4 shrink-0 ml-4">
           <Clock />
-          <span className="text-white/30 text-[11px]">
+          <span className="text-[11px]" style={{ color: theme.subtle }}>
             <span className="text-white font-semibold">{visibleOrders.length}</span> orders ·{" "}
             <span style={{ color: doneTotal === itemTotal && itemTotal > 0 ? "#22c55e" : "rgba(255,255,255,0.45)" }}>
               {doneTotal}/{itemTotal}
@@ -1819,7 +1832,7 @@ export default function KdsDisplay() {
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       {cfg.showFooter && (
-      <footer className="h-11 border-t border-white/[0.07] bg-[#0d0d10] flex items-center px-5 shrink-0 gap-6">
+      <footer className="h-11 flex items-center px-5 shrink-0 gap-6" style={{ background: theme.bg, borderTop: `1px solid ${theme.line}` }}>
           {(() => {
             const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
             const pk = cfg.prevKey === "ArrowLeft"  ? "←" : cfg.prevKey;
