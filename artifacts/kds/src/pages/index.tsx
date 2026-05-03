@@ -226,8 +226,8 @@ function ModLine({ mod, showColors }: { mod: string; showColors: boolean }) {
   const sem = showColors ? modColor(mod) : null;
   return (
     <div className="flex items-center gap-1.5">
-      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sem?.dot ?? "#6b7280" }} />
-      <span className="text-xs leading-tight" style={{ color: sem?.text ?? "rgba(255,255,255,0.42)" }}>{mod}</span>
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sem?.dot ?? "#9ca3af" }} />
+      <span className="text-xs leading-tight font-medium" style={{ color: sem?.text ?? "rgba(255,255,255,0.88)" }}>{mod}</span>
     </div>
   );
 }
@@ -255,7 +255,7 @@ function Clock() {
   const [t, setT] = useState(() => new Date());
   useEffect(() => { const i = setInterval(() => setT(new Date()), 1000); return () => clearInterval(i); }, []);
   return (
-    <span className="font-mono text-xs text-white/30 tabular-nums">
+    <span className="font-mono text-xs text-white/60 tabular-nums">
       {t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
     </span>
   );
@@ -693,7 +693,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
 
           {/* Mode */}
           <div className="flex flex-col gap-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">KDS Mode</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">KDS Mode</p>
             <div className="grid grid-cols-3 gap-1">
               {(["multi", "single", "expo"] as KdsMode[]).map(id => (
                 <button key={id} onClick={() => set("mode", id)}
@@ -738,7 +738,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
 
           {/* Layout */}
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Layout</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Layout</p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/55">Grid columns</span>
               <div className="flex gap-1">
@@ -827,7 +827,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
 
           {/* Now Serving */}
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Now Serving Strip</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Now Serving Strip</p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/55">Show strip</span>
               <button onClick={() => set("showNowServing", !cfg.showNowServing)}
@@ -860,7 +860,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
 
           {/* Content toggles */}
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30 mb-1">Card Content</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55 mb-1">Card Content</p>
             {toggles.map(({ label, key }) => (
               <button key={key} onClick={() => set(key, !cfg[key] as KdsConfig[typeof key])}
                 className="flex items-center justify-between w-full py-0.5">
@@ -876,7 +876,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
 
           {/* Sound alerts */}
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Sound Alerts</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Sound Alerts</p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/55">Age escalation alerts</span>
               <button onClick={() => set("escalationEnabled", !cfg.escalationEnabled)}
@@ -896,8 +896,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                       return (
                         <button key={t}
                           onClick={() => { set("escalationWarnChime", t); playChime(t, cfg.soundVolume); }}
-                          className="h-5 px-1.5 rounded text-[8px] font-bold border capitalize transition-all"
-                          style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.04)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.07)", color: active ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+                          className="h-6 px-2 rounded text-[9px] font-bold border capitalize transition-all"
+                          style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.12)", color: active ? "#f59e0b" : "rgba(255,255,255,0.82)" }}>
                           {t}
                         </button>
                       );
@@ -912,8 +912,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                       return (
                         <button key={t}
                           onClick={() => { set("escalationAlertChime", t); playChime(t, cfg.soundVolume); }}
-                          className="h-5 px-1.5 rounded text-[8px] font-bold border capitalize transition-all"
-                          style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.04)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.07)", color: active ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+                          className="h-6 px-2 rounded text-[9px] font-bold border capitalize transition-all"
+                          style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.12)", color: active ? "#f59e0b" : "rgba(255,255,255,0.82)" }}>
                           {t}
                         </button>
                       );
@@ -959,8 +959,8 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                               setCfg(c => ({ ...c, stationChimes: { ...c.stationChimes, [station]: t } }));
                               if (t !== "none") playChime(t as ChimeType, cfg.soundVolume);
                             }}
-                            className="h-5 px-1.5 rounded text-[8px] font-bold border capitalize transition-all"
-                            style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.04)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.07)", color: active ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+                            className="h-6 px-1.5 rounded text-[9px] font-bold border capitalize transition-all"
+                            style={{ background: active ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", borderColor: active ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.12)", color: active ? "#f59e0b" : "rgba(255,255,255,0.82)" }}>
                             {t === "none" ? "off" : t}
                           </button>
                         );
@@ -974,7 +974,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
 
           {/* Bump bar */}
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Bump Bar</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Bump Bar</p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/55">Physical bump bar</span>
               <button onClick={() => set("bumpBarEnabled", !cfg.bumpBarEnabled)}
@@ -1038,7 +1038,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
 
           {/* Config Templates */}
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Config Templates</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Config Templates</p>
 
             {/* Broadcast config alert */}
             {activeTpl && (
@@ -1109,51 +1109,6 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
               </div>
             )}
 
-            {/* Push to all / Export / Import */}
-            <div className="flex gap-1.5 flex-wrap">
-              <button
-                onClick={async () => {
-                  const shareable = stripMachineLocal(cfg as unknown as Record<string, unknown>);
-                  await fetch("/api/kds/templates/active", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: "Broadcast", config: shareable }),
-                  });
-                  sonnerToast.success("Config pushed to all displays (machine settings preserved)", { duration: 3000 });
-                }}
-                className="flex-1 h-7 rounded-lg text-[9px] font-bold border transition-all"
-                style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.7)" }}>
-                ↑ Push to all displays
-              </button>
-              <button
-                onClick={() => {
-                  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: "application/json" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a"); a.href = url; a.download = "kds-config.json"; a.click();
-                  URL.revokeObjectURL(url);
-                }}
-                className="h-7 px-2.5 rounded-lg text-[9px] font-bold border transition-all"
-                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}>
-                Export JSON
-              </button>
-              <label
-                className="h-7 px-2.5 rounded-lg text-[9px] font-bold border transition-all cursor-pointer flex items-center"
-                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}>
-                Import JSON
-                <input type="file" accept=".json" className="hidden" onChange={e => {
-                  const file = e.target.files?.[0]; if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = ev => {
-                    try {
-                      const parsed = JSON.parse(ev.target?.result as string) as Partial<KdsConfig>;
-                      setCfg(c => ({ ...c, ...parsed }));
-                      sonnerToast.success("Config imported", { duration: 2000 });
-                    } catch { sonnerToast.error("Invalid config file"); }
-                  };
-                  reader.readAsText(file);
-                }} />
-              </label>
-            </div>
           </div>
 
         </div>
@@ -1575,7 +1530,7 @@ export default function KdsDisplay() {
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0"
                   style={active
                     ? { background: tab.color, color: tab.id === "All" ? "#000" : "#fff" }
-                    : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)" }}>
+                    : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.78)" }}>
                   {!active && <span className="w-1.5 h-1.5 rounded-full" style={{ background: tab.color }} />}
                   {tab.label}
                 </button>
@@ -1583,7 +1538,7 @@ export default function KdsDisplay() {
             })
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
                 {cfg.mode === "single"
                   ? `${STATION_META[cfg.singleStation].label} Station`
                   : "Expo View"}
@@ -1848,14 +1803,14 @@ export default function KdsDisplay() {
             <div key={label} className="flex items-center gap-1.5">
               <div className="flex gap-1">
                 {keys.map(k => (
-                  <kbd key={k} className="font-mono text-[11px] font-bold px-2.5 py-1 rounded border border-white/[0.18] bg-white/[0.08] text-white/70">{k}</kbd>
+                  <kbd key={k} className="font-mono text-[11px] font-bold px-2.5 py-1 rounded border border-white/[0.22] bg-white/[0.10] text-white/85">{k}</kbd>
                 ))}
               </div>
-              <span className="text-[11px] text-white/45 uppercase tracking-wider">{label}</span>
+              <span className="text-[11px] text-white/70 uppercase tracking-wider">{label}</span>
             </div>
           ))}
           {doneTotal > 0 && (
-            <span className="text-[11px] text-white/40">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
+            <span className="text-[11px] text-white/65">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
           )}
           {/* Kitchen health indicator */}
           {allOrders.length > 0 && (
