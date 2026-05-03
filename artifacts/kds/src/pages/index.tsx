@@ -1695,7 +1695,7 @@ export default function KdsDisplay() {
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="w-2 h-2 rounded-full"
                 style={{ background: "#4ade80", animation: "pulse 1.2s ease-in-out infinite", boxShadow: "0 0 7px rgba(74,222,128,0.7)" }} />
-              <span className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: "#4ade80" }}>Now Serving</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: "#86efac" }}>Now Serving</span>
             </div>
             <div className="w-px self-stretch bg-white/[0.07] shrink-0" />
             {/* Chips */}
@@ -1719,21 +1719,21 @@ export default function KdsDisplay() {
                         {ns.order.customer}
                       </span>
                     )}
-                    <span className="font-mono text-[9px] tabular-nums" style={{ color: "rgba(255,255,255,0.22)" }}>
+                    <span className="font-mono text-[10px] font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.58)" }}>
                       {fmtSec(secAgo)}
                     </span>
                     <button onClick={() => recallOrder(ns.order.id)}
-                      className="flex items-center justify-center w-3.5 h-3.5 rounded transition-all hover:bg-white/10"
-                      style={{ color: "rgba(134,239,172,0.38)", fontSize: 9 }}
+                      className="flex items-center justify-center w-4 h-4 rounded transition-all hover:bg-white/10"
+                      style={{ color: "rgba(134,239,172,0.85)", fontSize: 10, fontWeight: 700 }}
                       title="Recall — reopen this order">↩</button>
                   </div>
                 );
               })}
             </div>
             {/* Clear button */}
-            <button onClick={() => setNowServing([])}
-              className="shrink-0 h-6 px-2 rounded-lg text-[9px] font-bold border transition-all hover:bg-white/[0.06]"
-              style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.22)" }}
+              <button onClick={() => setNowServing([])}
+              className="shrink-0 h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all hover:bg-white/[0.08]"
+              style={{ borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.78)", background: "rgba(255,255,255,0.04)" }}
               title="Clear all (C)">
               ✕ Clear
             </button>
@@ -1759,17 +1759,17 @@ export default function KdsDisplay() {
                   <div key={r.order.id}
                     className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
                     style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-[12px] font-black tabular-nums" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    <span className="text-[12px] font-black tabular-nums" style={{ color: "rgba(255,255,255,0.82)" }}>
                       #{r.order.number}
                     </span>
                     {r.order.customer && (
-                      <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.28)" }}>
+                      <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.72)" }}>
                         {r.order.customer}
                       </span>
                     )}
                     <button onClick={() => recallOrder(r.order.id)}
-                      className="flex items-center justify-center w-4 h-4 rounded transition-all hover:bg-white/10"
-                      style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                      className="flex items-center justify-center w-5 h-5 rounded transition-all hover:bg-white/10"
+                      style={{ color: "rgba(255,255,255,0.82)", fontSize: 11, fontWeight: 700 }}
                       title="Recall this order">↩</button>
                   </div>
                 ))}
