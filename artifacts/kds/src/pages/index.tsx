@@ -1552,7 +1552,7 @@ export default function KdsDisplay() {
       )}
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="h-12 flex items-center justify-between px-4 border-b border-white/[0.07] shrink-0 bg-[#0d0d10]">
+      <header className="h-14 flex items-center justify-between px-5 border-b border-white/[0.07] shrink-0 bg-[#0d0d10]">
         <div className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1">
           {cfg.mode === "multi" ? (
             stationTabs.map(tab => {
@@ -1582,7 +1582,7 @@ export default function KdsDisplay() {
           )}
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 ml-4">
+        <div className="flex items-center gap-4 shrink-0 ml-4">
           <Clock />
           <span className="text-white/30 text-[11px]">
             <span className="text-white font-semibold">{visibleOrders.length}</span> orders ·{" "}
@@ -1594,17 +1594,17 @@ export default function KdsDisplay() {
           {/* Test inject */}
           {testOrdersEnabled && (
             <button onClick={injectTestOrder} disabled={injecting || !storeId}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border border-white/[0.1] transition-all disabled:opacity-40"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold border border-white/[0.1] transition-all disabled:opacity-40"
               style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.38)" }}
               title="Inject a random test order">
-              <FlaskConical style={{ width: 12, height: 12 }} />
+              <FlaskConical style={{ width: 13, height: 13 }} />
               {injecting ? "…" : "Test"}
             </button>
           )}
 
           {/* Fullscreen toggle */}
           <button onClick={isFullscreen ? exitFullscreen : enterFullscreen}
-            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
             style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.38)" }}
             title={isFullscreen ? "Exit fullscreen (F4)" : "Enter fullscreen"}>
             {isFullscreen
@@ -1614,9 +1614,9 @@ export default function KdsDisplay() {
 
           {/* Settings gear */}
           <button onClick={() => setShowSettings(s => !s)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
             style={{ background: showSettings ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", color: showSettings ? "#f59e0b" : "rgba(255,255,255,0.38)" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
             </svg>
@@ -1819,7 +1819,7 @@ export default function KdsDisplay() {
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       {cfg.showFooter && (
-        <footer className="h-9 border-t border-white/[0.07] bg-[#0d0d10] flex items-center px-4 shrink-0 gap-5">
+      <footer className="h-11 border-t border-white/[0.07] bg-[#0d0d10] flex items-center px-5 shrink-0 gap-6">
           {(() => {
             const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
             const pk = cfg.prevKey === "ArrowLeft"  ? "←" : cfg.prevKey;
@@ -1835,32 +1835,32 @@ export default function KdsDisplay() {
             <div key={label} className="flex items-center gap-1.5">
               <div className="flex gap-1">
                 {keys.map(k => (
-                  <kbd key={k} className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.18] bg-white/[0.08] text-white/70">{k}</kbd>
+                  <kbd key={k} className="font-mono text-[11px] font-bold px-2.5 py-1 rounded border border-white/[0.18] bg-white/[0.08] text-white/70">{k}</kbd>
                 ))}
               </div>
-              <span className="text-[10px] text-white/45 uppercase tracking-wider">{label}</span>
+              <span className="text-[11px] text-white/45 uppercase tracking-wider">{label}</span>
             </div>
           ))}
           {doneTotal > 0 && (
-            <span className="text-[10px] text-white/40">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
+            <span className="text-[11px] text-white/40">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
           )}
           {/* Kitchen health indicator */}
           {allOrders.length > 0 && (
             <div className="flex items-center gap-2">
               {alertCount > 0 && (
-                <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "#f87171", animation: "pulse 1s ease-in-out infinite" }}>
+                <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: "#f87171", animation: "pulse 1s ease-in-out infinite" }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
                   {alertCount} crit
                 </span>
               )}
               {warnCount > 0 && (
-                <span className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: "#f59e0b" }}>
+                <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "#f59e0b" }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                   {warnCount} late
                 </span>
               )}
               {alertCount === 0 && warnCount === 0 && (
-                <span className="text-[10px] font-medium" style={{ color: "rgba(74,222,128,0.55)" }}>✓ On time</span>
+                <span className="text-[11px] font-medium" style={{ color: "rgba(74,222,128,0.55)" }}>✓ On time</span>
               )}
             </div>
           )}
