@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   useListEnterprises, useCreateEnterprise,
@@ -103,11 +103,12 @@ export default function SetupPage() {
       </div>
 
       <Tabs defaultValue="enterprises" className="w-full max-w-4xl">
-        <TabsList className="grid w-full grid-cols-5 mb-8 bg-muted rounded-md p-1">
+        <TabsList className="grid w-full grid-cols-6 mb-8 bg-muted rounded-md p-1">
           <TabsTrigger value="enterprises" className="font-bold uppercase tracking-wider text-xs">Enterprises</TabsTrigger>
           <TabsTrigger value="stores" className="font-bold uppercase tracking-wider text-xs">Stores</TabsTrigger>
           <TabsTrigger value="stations" className="font-bold uppercase tracking-wider text-xs">Stations</TabsTrigger>
           <TabsTrigger value="devices" className="font-bold uppercase tracking-wider text-xs">Devices</TabsTrigger>
+          <TabsTrigger value="appearance" className="font-bold uppercase tracking-wider text-xs">Appearance</TabsTrigger>
           <TabsTrigger value="production" className="font-bold uppercase tracking-wider text-xs">Production</TabsTrigger>
         </TabsList>
         
@@ -259,10 +260,84 @@ export default function SetupPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="appearance" className="space-y-6 mt-0">
+          <AppearanceSettings />
+        </TabsContent>
+
         <TabsContent value="production" className="space-y-6 mt-0">
           <ProductionSettings />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ── Appearance Settings tab ───────────────────────────────────────────────────
+
+const KDS_THEMES = [
+  { id: "ink",   label: "Ink",   desc: "Pure black — max contrast, all kitchens",        bg: "#09090b", card: "#111116" },
+  { id: "slate", label: "Slate", desc: "Dark grey-blue — commercial kitchen",             bg: "#0f1117", card: "#181c24" },
+  { id: "amber", label: "Amber", desc: "Warm amber glow — casual dining, wood-fired",    bg: "#0d0a04", card: "#1a1408" },
+  { id: "steel", label: "Steel", desc: "Industrial steel — bright-lit prep kitchens",    bg: "#0c0e12", card: "#141820" },
+  { id: "ember", label: "Ember", desc: "Dark ember — steakhouse, grill stations",        bg: "#0e0906", card: "#1c1009" },
+  { id: "chalk", label: "Chalk", desc: "Max legibility — outdoor, sunlit environments",  bg: "#000000", card: "#0d0d0d" },
+] as const;
+
+function AppearanceSettings() {
+  const [kdsTheme, setKdsTheme] = useState<string>(() => {
+    try { return (JSON.parse(localStorage.getItem("kds_cfg") ?? "{}") as { theme?: string }).theme ?? "ink"; }
+    catch { return "ink"; }
+  });
+
+  const applyTheme = useCallback((theme: string) => {
+    setKdsTheme(theme);
+    try {
+      const cfg = JSON.parse(localStorage.getItem("kds_cfg") ?? "{}") as Record<string, unknown>;
+      localStorage.setItem("kds_cfg", JSON.stringify({ ...cfg, theme }));
+      toast.success(`Theme set to ${KDS_THEMES.find(t => t.id === theme)?.label ?? theme}`);
+    } catch {
+      toast.error("Could not save theme");
+    }
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold uppercase tracking-wider">KDS Display Theme</CardTitle>
+          <CardDescription>
+            Choose the colour scheme for all Kitchen Display screens. The change takes effect immediately on any open KDS display tab.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {KDS_THEMES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => applyTheme(t.id)}
+                className="flex flex-col items-start gap-1.5 rounded-xl border p-4 text-left transition-all hover:opacity-90"
+                style={{
+                  background: kdsTheme === t.id ? `${t.bg}` : "var(--muted)",
+                  borderColor: kdsTheme === t.id ? "rgb(245 158 11 / 0.65)" : "var(--border)",
+                  boxShadow: kdsTheme === t.id ? "0 0 0 2px rgb(245 158 11 / 0.25)" : "none",
+                }}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <div className="w-5 h-5 rounded-md border border-white/20 shrink-0" style={{ background: t.card }} />
+                  <span className="font-bold text-sm flex-1" style={{ color: kdsTheme === t.id ? "#f59e0b" : undefined }}>
+                    {t.label}
+                  </span>
+                  {kdsTheme === t.id && <span className="text-amber-400 text-xs font-black">✓</span>}
+                </div>
+                <p className="text-xs text-muted-foreground leading-snug">{t.desc}</p>
+              </button>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Theme is stored in the browser. To change it on a different KDS display device, visit <code className="font-mono bg-muted px-1 rounded">/setup</code> on that device and select a theme here.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

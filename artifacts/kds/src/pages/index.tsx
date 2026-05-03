@@ -642,8 +642,8 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
         <button
           onClick={() => lastRecallable && recallAndClose(lastRecallable.order.id)}
           disabled={!lastRecallable}
-          className="w-full py-2.5 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 active:scale-[0.98]"
-          style={{ background: "rgba(74,222,128,0.09)", borderColor: "rgba(74,222,128,0.28)", color: lastRecallable ? "rgba(74,222,128,0.95)" : "rgba(255,255,255,0.65)" }}>
+          className="w-full py-2.5 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-40 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          style={{ background: lastRecallable ? "rgba(74,222,128,0.14)" : "rgba(255,255,255,0.05)", borderColor: lastRecallable ? "rgba(74,222,128,0.45)" : "rgba(255,255,255,0.15)", color: lastRecallable ? "rgba(74,222,128,1)" : "rgba(255,255,255,0.75)" }}>
           <span>↩</span>
           {lastRecallable ? `Recall #${lastRecallable.order.number}` : "Nothing to recall"}
         </button>
@@ -653,11 +653,11 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
           <button
             onClick={() => setShowRecallList(v => !v)}
             disabled={recallable.length === 0}
-            className="w-full py-2 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-50 flex items-center justify-between px-3 active:scale-[0.98]"
-            style={{ background: showRecallList ? "rgba(74,222,128,0.10)" : "rgba(255,255,255,0.05)", borderColor: showRecallList ? "rgba(74,222,128,0.32)" : "rgba(255,255,255,0.10)", color: recallable.length > 0 ? (showRecallList ? "rgba(74,222,128,0.9)" : "rgba(255,255,255,0.78)") : "rgba(255,255,255,0.55)" }}>
+            className="w-full py-2 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-40 flex items-center justify-between px-3 active:scale-[0.98]"
+            style={{ background: showRecallList ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.06)", borderColor: showRecallList ? "rgba(74,222,128,0.38)" : "rgba(255,255,255,0.15)", color: recallable.length > 0 ? (showRecallList ? "rgba(74,222,128,1)" : "rgba(255,255,255,0.90)") : "rgba(255,255,255,0.65)" }}>
             <span>↩↩ Recall list</span>
             {recallable.length > 0 && (
-              <span className="tabular-nums text-[11px] opacity-80">{recallable.length}</span>
+              <span className="tabular-nums text-[11px] font-black" style={{ color: "rgba(74,222,128,0.85)" }}>{recallable.length}</span>
             )}
           </button>
           {showRecallList && recallable.length > 0 && (
@@ -665,13 +665,13 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
               {recallable.map(r => (
                 <button key={r.order.id}
                   onClick={() => recallAndClose(r.order.id)}
-                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all hover:bg-white/[0.05] active:scale-[0.98]"
-                  style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all hover:bg-white/[0.07] active:scale-[0.98]"
+                  style={{ borderColor: "rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}>
                   <div className="flex items-center gap-2">
-                    <span className="font-black tabular-nums text-[12px]" style={{ color: "rgba(255,255,255,0.75)" }}>#{r.order.number}</span>
-                    {r.order.customer && <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.50)" }}>{r.order.customer}</span>}
+                    <span className="font-black tabular-nums text-[12px]" style={{ color: "rgba(255,255,255,0.90)" }}>#{r.order.number}</span>
+                    {r.order.customer && <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.62)" }}>{r.order.customer}</span>}
                   </div>
-                  <span style={{ color: "rgba(74,222,128,0.7)", fontSize: 13 }}>↩</span>
+                  <span style={{ color: "rgba(74,222,128,0.90)", fontSize: 13 }}>↩</span>
                 </button>
               ))}
             </div>
@@ -759,8 +759,8 @@ function VirtualBumpBar({
         className="flex flex-col items-center justify-center px-5 py-3 gap-1 transition-all active:scale-95 hover:bg-white/[0.06] disabled:opacity-30 border-r"
         style={{ borderColor: "rgba(255,255,255,0.07)", minWidth: 64 }}
         title="Previous order (← key)">
-        <span className="text-[20px] leading-none text-white/75">←</span>
-        <span className="text-[9px] uppercase tracking-widest text-white/35 font-bold">Prev</span>
+        <span className="text-[20px] leading-none text-white/90">←</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/65 font-bold">Prev</span>
       </button>
 
       {/* BUMP */}
@@ -791,8 +791,8 @@ function VirtualBumpBar({
         className="flex flex-col items-center justify-center px-5 py-3 gap-1 transition-all active:scale-95 disabled:opacity-30 border-r hover:bg-white/[0.06]"
         style={{ borderColor: "rgba(255,255,255,0.07)", minWidth: 72 }}
         title="Recall last bumped order (Backspace)">
-        <span className="text-[18px] leading-none" style={{ color: canRecall ? "rgba(74,222,128,0.9)" : "rgba(255,255,255,0.3)" }}>↩</span>
-        <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: canRecall ? "rgba(74,222,128,0.65)" : "rgba(255,255,255,0.25)" }}>
+        <span className="text-[18px] leading-none" style={{ color: canRecall ? "rgba(74,222,128,0.98)" : "rgba(255,255,255,0.38)" }}>↩</span>
+        <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: canRecall ? "rgba(74,222,128,0.90)" : "rgba(255,255,255,0.40)" }}>
           {lastRecallable ? `#${lastRecallable.number}` : "Recall"}
         </span>
       </button>
@@ -804,8 +804,8 @@ function VirtualBumpBar({
         className="flex flex-col items-center justify-center px-5 py-3 gap-1 transition-all active:scale-95 hover:bg-white/[0.06] disabled:opacity-30"
         style={{ minWidth: 64 }}
         title="Next order (→ key)">
-        <span className="text-[20px] leading-none text-white/75">→</span>
-        <span className="text-[9px] uppercase tracking-widest text-white/35 font-bold">Next</span>
+        <span className="text-[20px] leading-none text-white/90">→</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/65 font-bold">Next</span>
       </button>
     </div>
   );
@@ -1154,26 +1154,6 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
             </div>
           </div>
 
-          {/* Appearance */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Appearance</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(Object.entries(THEME_META) as [KdsTheme, typeof THEME_META[KdsTheme]][]).map(([id, meta]) => (
-                <button key={id}
-                  onClick={() => set("theme", id)}
-                  className="flex flex-col items-start px-2.5 py-2 rounded-lg border text-left transition-all"
-                  style={{ background: cfg.theme === id ? `${meta.bg}` : "rgba(255,255,255,0.03)", borderColor: cfg.theme === id ? "rgba(245,158,11,0.42)" : "rgba(255,255,255,0.08)" }}>
-                  <div className="flex items-center gap-1.5 w-full mb-0.5">
-                    <div className="w-3 h-3 rounded shrink-0 border border-white/10" style={{ background: meta.card }} />
-                    <span className="text-[10px] font-bold flex-1" style={{ color: cfg.theme === id ? "#f59e0b" : "rgba(255,255,255,0.82)" }}>{meta.label}</span>
-                    {cfg.theme === id && <span className="text-amber-400 text-[8px]">✓</span>}
-                  </div>
-                  <span className="text-[8px] leading-snug" style={{ color: "rgba(255,255,255,0.38)" }}>{meta.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Now Serving */}
           <div className="flex flex-col gap-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Now Serving Strip</p>
@@ -1470,8 +1450,12 @@ export default function KdsDisplay() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [injecting, setInjecting]   = useState(false);
   const [nowServingOrders, setNowServing] = useState<{ order: DisplayOrder; firedAt: number }[]>([]);
-  const [recentBumped,    setRecentBumped] = useState<{ order: DisplayOrder; bumpedAt: number }[]>([]);
+  const [recentBumped,    setRecentBumped] = useState<{ order: DisplayOrder; bumpedAt: number }[]>(() => {
+    try { return JSON.parse(localStorage.getItem("kds_recent_bumped") ?? "[]") as { order: DisplayOrder; bumpedAt: number }[]; }
+    catch { return []; }
+  });
   const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [showRecallListFooter, setShowRecallListFooter] = useState(false);
   const [showInjectPanel,   setShowInjectPanel]   = useState(false);
   const [pingActive, setPingActive] = useState(false);
   const [modColors, setModColors] = useState<ModifierColors>(DEFAULT_MOD_COLORS);
@@ -1516,6 +1500,11 @@ export default function KdsDisplay() {
   useEffect(() => {
     try { localStorage.setItem("kds_cfg", JSON.stringify(cfg)); } catch {}
   }, [cfg]);
+
+  // Persist recent bumped orders to localStorage (survives refresh — fixes recall)
+  useEffect(() => {
+    try { localStorage.setItem("kds_recent_bumped", JSON.stringify(recentBumped.slice(0, 10))); } catch {}
+  }, [recentBumped]);
 
   // Load modifier colors from server
   useEffect(() => {
@@ -2290,17 +2279,63 @@ export default function KdsDisplay() {
               style={{ background: cfg.showVirtualBumpBar ? footerAccentFaint : "rgba(255,255,255,0.05)", borderColor: cfg.showVirtualBumpBar ? footerAccentBorder : "rgba(255,255,255,0.08)", color: cfg.showVirtualBumpBar ? footerAccent : "rgba(255,255,255,0.72)" }}>
               Virtual
             </button>
-            <button
-              onClick={() => {
-                const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
-                const last = recentBumped.find(r => !activeIds.has(r.order.id));
-                if (last) recallOrder(last.order.id);
-              }}
-              disabled={recentBumped.every(r => nowServingOrders.some(ns => ns.order.id === r.order.id))}
-              className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
-              style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.88)" }}>
-              Recall last
-            </button>
+            {/* Recall last */}
+            {(() => {
+              const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
+              const recallableFooter = recentBumped.filter(r => !activeIds.has(r.order.id));
+              const lastRecallFooter = recallableFooter[0] ?? null;
+              return (
+                <>
+                  <button
+                    onClick={() => { if (lastRecallFooter) recallOrder(lastRecallFooter.order.id); }}
+                    disabled={!lastRecallFooter}
+                    className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95 disabled:opacity-40"
+                    style={{ background: lastRecallFooter ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.04)", borderColor: lastRecallFooter ? "rgba(74,222,128,0.40)" : "rgba(255,255,255,0.10)", color: lastRecallFooter ? "rgba(74,222,128,1)" : "rgba(255,255,255,0.65)" }}
+                    title="Recall last bumped order">
+                    ↩ Recall last
+                  </button>
+
+                  {/* Recall list dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowRecallListFooter(v => !v)}
+                      disabled={recallableFooter.length === 0}
+                      className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1.5"
+                      style={{ background: showRecallListFooter ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.05)", borderColor: showRecallListFooter ? "rgba(74,222,128,0.38)" : "rgba(255,255,255,0.12)", color: recallableFooter.length > 0 ? (showRecallListFooter ? "rgba(74,222,128,1)" : "rgba(255,255,255,0.88)") : "rgba(255,255,255,0.55)" }}
+                      title="Show all recallable orders">
+                      ↩↩
+                      {recallableFooter.length > 0 && (
+                        <span className="tabular-nums font-black" style={{ color: showRecallListFooter ? "rgba(74,222,128,1)" : "rgba(74,222,128,0.85)" }}>{recallableFooter.length}</span>
+                      )}
+                    </button>
+                    {showRecallListFooter && recallableFooter.length > 0 && (
+                      <div
+                        className="absolute bottom-10 right-0 z-50 rounded-xl overflow-hidden shadow-2xl border"
+                        style={{ background: "#13131a", borderColor: "rgba(255,255,255,0.14)", minWidth: 180 }}>
+                        <div className="px-3 py-2 border-b border-white/[0.08] flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-[0.15em]" style={{ color: "rgba(74,222,128,0.9)" }}>↩ Recall list</span>
+                          <button onClick={() => setShowRecallListFooter(false)} className="text-white/40 hover:text-white/80 text-sm leading-none ml-3">×</button>
+                        </div>
+                        <div className="p-2 flex flex-col gap-1">
+                          {recallableFooter.map(r => (
+                            <button key={r.order.id}
+                              onClick={() => { recallOrder(r.order.id); setShowRecallListFooter(false); }}
+                              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all hover:bg-white/[0.07] active:scale-[0.98] text-left"
+                              style={{ borderColor: "rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)" }}>
+                              <div className="flex items-center gap-2">
+                                <span className="font-black tabular-nums text-[12px]" style={{ color: "rgba(255,255,255,0.92)" }}>#{r.order.number}</span>
+                                {r.order.customer && <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.58)" }}>{r.order.customer}</span>}
+                              </div>
+                              <span style={{ color: "rgba(74,222,128,0.90)", fontSize: 13, marginLeft: 8 }}>↩</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
             <button
               onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
               className="h-8 px-2.5 rounded-lg text-[12px] border transition-all hover:bg-white/[0.06]"
