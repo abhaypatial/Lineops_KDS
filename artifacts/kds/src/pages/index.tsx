@@ -227,8 +227,8 @@ function modColor(mod: string, colors: ModifierColors | undefined) {
 function AllergenBadge({ a }: { a: Allergen }) {
   const m = ALLERGEN_META[a];
   return (
-    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
-      style={{ background: m.bg, color: m.color, border: `1px solid ${m.color}55` }}>
+    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+      style={{ background: m.bg, color: m.color, border: `1px solid ${m.color}66` }}>
       ⚠ {m.label}
     </span>
   );
@@ -285,9 +285,9 @@ function ExpoStationBar({ order, doneItems }: { order: DisplayOrder; doneItems: 
           <div key={s} className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full"
               style={{ background: done === stItems.length ? sm.color : "rgba(255,255,255,0.1)", border: `1px solid ${sm.color}66` }} />
-            <span className="text-[9px] font-semibold uppercase"
-              style={{ color: done === stItems.length ? sm.color : "rgba(255,255,255,0.25)" }}>{sm.label}</span>
-            <span className="text-[9px] text-white/20">{done}/{stItems.length}</span>
+            <span className="text-[10px] font-semibold uppercase"
+              style={{ color: done === stItems.length ? sm.color : "rgba(255,255,255,0.45)" }}>{sm.label}</span>
+            <span className="text-[10px] text-white/45">{done}/{stItems.length}</span>
           </div>
         );
       })}
@@ -315,7 +315,7 @@ function ItemRow({ item, done, onToggle, cfg }: {
               {item.name}
             </span>
             {cfg.showStationColors && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider opacity-75"
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider opacity-80"
                 style={{ background: sm.bg, color: sm.color }}>{sm.label}</span>
             )}
           </div>
@@ -469,9 +469,9 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
               </svg>
               <span className="font-mono tabular-nums font-bold" style={{ fontSize: fs.timer, color: tColor }}>{fmtTime(elapsed)}</span>
             </div>
-            <span className="text-[10px] font-semibold" style={{ color: theme.subtle }}>{doneCount}/{order.items.length}</span>
+            <span className="text-[12px] font-semibold" style={{ color: theme.subtle }}>{doneCount}/{order.items.length}</span>
             <button onClick={e => { e.stopPropagation(); onBump(); }}
-              className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border transition-all active:scale-95"
+              className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border transition-all active:scale-95"
               style={{
                 background: hasPrio ? `${pColor}18` : "rgba(255,255,255,0.06)",
                 borderColor: hasPrio ? `${pColor}44` : "rgba(255,255,255,0.15)",
@@ -484,9 +484,10 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
 
         {/* Order note */}
         {cfg.showNotes && order.note && (
-          <div className="text-[10px] px-2.5 py-1.5 rounded-lg border flex items-center gap-2 leading-snug"
-            style={{ background: "rgba(245,158,11,0.07)", borderColor: "rgba(245,158,11,0.22)", color: "#fbbf24" }}>
-            <span className="shrink-0">📋</span>{order.note}
+          <div className="px-3 py-2 rounded-lg border flex items-start gap-2 leading-snug"
+            style={{ background: "rgba(245,158,11,0.09)", borderColor: "rgba(245,158,11,0.30)", color: "#fde68a" }}>
+            <span className="shrink-0 text-base leading-tight">📋</span>
+            <span className="text-[13px] font-medium leading-snug">{order.note}</span>
           </div>
         )}
 
@@ -501,9 +502,9 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
             ))}
           </div>
           {overflowCount > 0 && (
-            <div className="mt-2 px-2 py-1 rounded-md text-center"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>
+            <div className="mt-2 px-2 py-1.5 rounded-md text-center"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}>
+              <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.55)" }}>
                 +{overflowCount} more item{overflowCount > 1 ? "s" : ""}
               </span>
             </div>
