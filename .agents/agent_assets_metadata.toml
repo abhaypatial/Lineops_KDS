@@ -18,3 +18,9 @@ id = "t8O1E2ki0N8BsEaDHd8E2"
 uri = "file://LineOps_KDS.zip"
 type = "unspecified"
 title = "LineOps KDS — Full Project (829 files, 34.6 MB)"
+
+[[outputs]]
+id = "DdoLrndm-RUyIzdLc0pBk"
+uri = "file://LineOps_KDS_Deploy.zip"
+type = "unspecified"
+title = "LineOps KDS — One-Click Docker Deploy Bundle"
