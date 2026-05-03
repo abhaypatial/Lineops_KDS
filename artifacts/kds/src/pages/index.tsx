@@ -398,10 +398,7 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
     ? order.items.filter(it => it.station === cfg.singleStation)
     : order.items;
 
-  // Long-order layout helpers
-  const MAX_VISIBLE_ITEMS = cfg.density === "compact" ? 14 : cfg.density === "comfortable" ? 10 : 12;
-  const clippedItems = visibleItems.slice(0, MAX_VISIBLE_ITEMS);
-  const overflowCount = visibleItems.length - clippedItems.length;
+  // Long-order layout helpers — show ALL items, no clipping
   // Scale font for large item counts so content doesn't require scrolling
   const itemScale = visibleItems.length >= 12 ? 0.75
     : visibleItems.length >= 9  ? 0.84
@@ -540,21 +537,13 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
         {/* Item list — scales font for long orders; 2-col for wide/dense cards */}
         <div style={{ fontSize: `${itemScale}em` }}>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${itemCols},1fr)`, gap: "10px 16px" }}>
-            {clippedItems.map((item, idx) => (
+            {visibleItems.map((item, idx) => (
               <div key={item.id}
                 style={{ borderTop: idx > 0 && itemCols === 1 ? "1px solid rgba(255,255,255,0.05)" : "none", paddingTop: idx > 0 && itemCols === 1 ? 8 : 0 }}>
                 <ItemRow item={item} done={doneItems.has(item.id)} onToggle={() => onToggleItem(item.id)} cfg={cfg} />
               </div>
             ))}
           </div>
-          {overflowCount > 0 && (
-            <div className="mt-2 px-2 py-1.5 rounded-md text-center"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}>
-              <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.55)" }}>
-                +{overflowCount} more item{overflowCount > 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Expo station readiness */}
