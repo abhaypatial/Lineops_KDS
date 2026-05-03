@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-#  LineOps KDS — One-Prompt Linux Installer
+#  DEPRECATED — This file is kept for backward compatibility only.
+#  Please use lineops-kds-setup.sh instead:
+#
+#    curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-setup.sh | sudo bash
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#  LineOps KDS — Linux Installer (legacy entry point)
 #
 #  Run this single command on any Linux machine:
 #

@@ -26,7 +26,7 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 - **Screen management** — see which KDS displays are online, idle, or offline
 - **Multi-location setup** — manage multiple restaurants, each with their own stations and screens
 - **POS integrations** — Square, Toast POS, Clover, Lightspeed K-Series, Volante VE, and any custom POS via webhook
-- **One-command install** — runs on any Linux server; `install.ps1` for Windows; `kds` CLI for day-to-day ops
+- **One-command install** — runs on any Linux server; Windows PowerShell installer; `kds` CLI for day-to-day ops
 - **Auto-start on boot** — backend and kiosk display both start automatically when the server powers on
 
 ---
@@ -35,15 +35,24 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 
 The fastest way to get LineOps KDS running — no technical knowledge needed:
 
-**Linux / macOS:**
+**Linux (full stack):**
 ```bash
-sudo bash install.sh
+curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-setup.sh | sudo bash
 ```
 
 **Windows (Docker Desktop must be running):**
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\install.ps1
+irm https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-setup.ps1 | iex
+```
+
+**Back-office only** (API server + dashboard, no KDS display):
+```bash
+curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-backoffice-setup.sh | sudo bash
+```
+
+**KDS display only** (connect to a remote back-office server):
+```bash
+curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-frontend-setup.sh | sudo bash -s -- --api-url http://192.168.1.10
 ```
 
 Then open `http://localhost` in any browser — the KDS display loads full-screen. Press **F4** to exit kiosk mode.
@@ -71,15 +80,14 @@ Open `http://localhost/` — the KDS display loads automatically.
 
 ## Production Install
 
-**Linux (one-liner):**
+**Linux (full stack):**
 ```bash
-sudo bash install.sh
+curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-setup.sh | sudo bash
 ```
 
-**Windows (Docker Desktop):**
+**Windows:**
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\install.ps1
+irm https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-setup.ps1 | iex
 ```
 
 Full step-by-step for all platforms: **[docs/INSTALL.md](docs/INSTALL.md)**
@@ -120,8 +128,12 @@ docker compose up -d
 | `docker/nginx.conf` | All | Reverse proxy — routes `/api`, `/ws`, `/` |
 | `docker/lineops-kds.service` | Linux | systemd service — starts the Docker Compose stack on boot |
 | `docker/lineops-kds-display.service` | Linux | systemd service — launches Chromium kiosk on the display machine |
-| `install.sh` | Linux/macOS | One-liner installer |
-| `install.ps1` | Windows | PowerShell installer — Docker Desktop |
+| `install/lineops-kds-setup.sh` | Linux | Full-stack installer — all services |
+| `install/lineops-kds-setup.ps1` | Windows | PowerShell full-stack installer |
+| `install/lineops-backoffice-setup.sh` | Linux | Back-office only (API + dashboard) |
+| `install/lineops-kds-frontend-setup.sh` | Linux | KDS display only (remote API) |
+| `install/linux.sh` | Linux | Legacy — redirects to lineops-kds-setup.sh |
+| `install/windows.ps1` | Windows | Legacy — redirects to lineops-kds-setup.ps1 |
 | `bin/kds` | Linux/macOS | Bash CLI — terminal commands for ops |
 | `bin/kds.ps1` | Windows | PowerShell CLI — same commands as `bin/kds` |
 | `.env.example` | All | Environment variable reference |

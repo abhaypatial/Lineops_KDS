@@ -1,7 +1,9 @@
 #Requires -Version 5.1
+# DEPRECATED — Use lineops-kds-setup.ps1 instead:
+#   irm https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-setup.ps1 | iex
 <#
 .SYNOPSIS
-    LineOps KDS — One-Prompt Windows Installer
+    LineOps KDS — Windows Installer (legacy entry point)
 
 .DESCRIPTION
     Installs the LineOps KDS on a Windows machine with Docker Desktop.

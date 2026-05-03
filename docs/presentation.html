@@ -280,6 +280,32 @@
 
   /* ── Separator ── */
   hr.sep { border: none; border-top: 1px solid rgba(255,255,255,0.07); width: 100%; margin: 4px 0; }
+
+  /* ── Bump demo animations ── */
+  @keyframes cardBump {
+    0%   { opacity: 1; transform: scale(1); }
+    20%  { opacity: 1; transform: scale(1.04); border-color: rgba(34,197,94,0.6) !important; }
+    100% { opacity: 0; transform: scale(0.86) translateY(-18px); }
+  }
+  @keyframes bumpPulse {
+    0%,100% { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.30); color: #f59e0b; }
+    50%     { background: rgba(245,158,11,0.30); border-color: rgba(245,158,11,0.80); box-shadow: 0 0 14px rgba(245,158,11,0.45); }
+  }
+  .card-bump  { animation: cardBump  0.55s cubic-bezier(0.4,0,1,1) forwards; }
+  .bump-pulse { animation: bumpPulse 0.45s ease-in-out 2; }
+
+  /* ── Bump demo layout ── */
+  .bd-side { width: 188px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+  .bd-info {
+    background: #13131a; border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px; padding: 14px;
+  }
+  .bd-info-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.38); margin-bottom: 10px; }
+  .bd-info-val { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.70); line-height: 1.6; }
+  .bd-stat { border-radius: 10px; padding: 12px; }
+  .bd-stat-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .bd-stat-num { font-size: 22px; font-weight: 900; }
+  .bd-stat-sub { font-size: 9px; color: rgba(255,255,255,0.35); }
 </style>
 </head>
 <body>
@@ -413,6 +439,55 @@
       </div>
     </div>
     <p class="sub" style="margin-top:14px;font-size:14px;">WebSocket push · Sub-100ms delivery · Per-station colour coding · Animated urgency timers</p>
+  </div>
+
+  <!-- ── SLIDE: Bump Demo ── -->
+  <div class="slide" id="slide-bump">
+    <div class="eyebrow">Kitchen Workflow</div>
+    <h2 style="margin-bottom:20px;">Order in. <span class="grad-text">Bumped.</span> Done.</h2>
+    <div style="display:flex;gap:28px;align-items:flex-start;max-width:840px;width:100%;">
+      <div class="kds-mock" style="flex:1;">
+        <div class="kds-header">
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:rgba(255,255,255,0.55);">GRILL STATION</span>
+          <span style="margin-left:auto;" id="bd-count" class="tab-badge">1</span>
+        </div>
+        <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:200px;align-items:start;">
+          <div class="order-card">
+            <div class="card-accent" style="background:#ef4444;"></div>
+            <div class="card-inner">
+              <div class="card-meta">
+                <div><div class="card-customer">Davis</div><div class="card-number">#304</div></div>
+                <div><div class="card-timer timer-ok">⏱ 3:22</div></div>
+              </div>
+              <div class="card-items">
+                <div class="card-item">
+                  <div class="item-qty" style="background:rgba(239,68,68,0.25);color:#f87171;">2</div>
+                  <div><div class="item-name">Smash Burger</div></div>
+                </div>
+              </div>
+              <div class="bump-btn" style="margin-top:6px;">BUMP ↵</div>
+            </div>
+          </div>
+          <div id="bd-slot" style="min-height:160px;"></div>
+        </div>
+      </div>
+      <div class="bd-side">
+        <div class="bd-info">
+          <div class="bd-info-lbl">Status</div>
+          <div class="bd-info-val" id="bd-msg">Idle — waiting for order...</div>
+        </div>
+        <div class="bd-stat" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);">
+          <div class="bd-stat-lbl" style="color:rgba(245,158,11,0.65);">WebSocket Push</div>
+          <div class="bd-stat-num" style="color:#f59e0b;">&lt;100ms</div>
+          <div class="bd-stat-sub">POS → Kitchen display</div>
+        </div>
+        <div class="bd-stat" style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.18);">
+          <div class="bd-stat-lbl" style="color:rgba(34,197,94,0.65);">Bump Recall</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.60);line-height:1.5;margin-top:4px;">Accidentally bumped? One key restores the ticket. Last 20 orders saved.</div>
+        </div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:16px;font-size:13px;">Space / bump bar key / touchscreen tap — all methods work simultaneously</p>
   </div>
 
   <!-- ── SLIDE 2: Feature Grid ── -->
@@ -620,7 +695,7 @@
       </div>
       <div class="col-right">
         <div class="terminal">
-          <div><span class="t-prompt">$</span> <span class="t-cmd">sudo bash install.sh</span></div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">sudo bash lineops-kds-setup.sh</span></div>
           <div class="t-out">→ Checking Docker... <span class="t-ok">✓</span></div>
           <div class="t-out">→ Generating secrets... <span class="t-ok">✓</span></div>
           <div class="t-out">→ Starting services... <span class="t-ok">✓</span></div>
@@ -738,6 +813,81 @@
 
   buildNav();
   go(0);
+
+  // ── Bump demo loop ──────────────────────────────────────────────────────────
+  let bdPhase = 0, bdTick = 0;
+  const BD_DUR = [2000, 2500, 1400, 1800, 1500];
+
+  function bdRender() {
+    const slot = document.getElementById('bd-slot');
+    const msg  = document.getElementById('bd-msg');
+    const cnt  = document.getElementById('bd-count');
+    if (!slot || !msg || !cnt) return;
+
+    if (bdPhase === 0) {
+      slot.innerHTML = '';
+      cnt.textContent = '1';
+      msg.style.color = 'rgba(255,255,255,0.40)';
+      msg.textContent = 'Idle — waiting for next order...';
+    } else if (bdPhase === 1) {
+      cnt.textContent = '2';
+      slot.innerHTML = `<div class="order-card card-arrive" id="bd-card" style="border-color:rgba(245,158,11,0.35);">
+        <div class="card-accent" style="background:#f59e0b;"></div>
+        <div class="card-inner">
+          <div class="card-meta">
+            <div>
+              <div style="display:flex;gap:4px;margin-bottom:4px;">
+                <span class="badge badge-vip" style="font-size:8px;padding:2px 6px;">VIP</span>
+              </div>
+              <div class="card-customer">Taylor</div>
+              <div class="card-number">#472</div>
+            </div>
+            <div><div class="card-timer timer-ok">&#9201; 0:01</div></div>
+          </div>
+          <div class="card-items">
+            <div class="card-item">
+              <div class="item-qty" style="background:rgba(239,68,68,0.25);color:#f87171;">1</div>
+              <div><div class="item-name">Ribeye Steak <span class="item-station" style="color:#ef4444;">GRILL</span></div></div>
+            </div>
+            <div class="card-item">
+              <div class="item-qty" style="background:rgba(239,68,68,0.25);color:#f87171;">1</div>
+              <div><div class="item-name">Garlic Fries <span class="item-station" style="color:#ef4444;">GRILL</span></div></div>
+            </div>
+          </div>
+          <div class="bump-btn vip" id="bd-bumpbtn" style="margin-top:6px;">BUMP &#9166;</div>
+        </div>
+      </div>`;
+      msg.style.color = '#fde68a';
+      msg.innerHTML = '&#9889; Order #472 arrived<br><span style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.45);">VIP &middot; 2 items &middot; Grill</span>';
+    } else if (bdPhase === 2) {
+      const btn = document.getElementById('bd-bumpbtn');
+      if (btn) btn.classList.add('bump-pulse');
+      msg.style.color = '#fbbf24';
+      msg.innerHTML = '&#9000; Chef presses BUMP<br><span style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.45);">Keyboard &middot; Bump bar &middot; Touch</span>';
+    } else if (bdPhase === 3) {
+      const card = document.getElementById('bd-card');
+      if (card) card.classList.add('card-bump');
+      cnt.textContent = '1';
+      msg.style.color = '#4ade80';
+      msg.innerHTML = '&#10003; Order #472 complete<br><span style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.45);">Ticket cleared &middot; Logged</span>';
+    } else {
+      slot.innerHTML = '';
+      cnt.textContent = '1';
+      msg.style.color = 'rgba(255,255,255,0.40)';
+      msg.textContent = 'Idle — waiting for next order...';
+    }
+  }
+
+  setInterval(() => {
+    const bs = document.getElementById('slide-bump');
+    if (!bs || !bs.classList.contains('active')) { bdPhase = 0; bdTick = 0; return; }
+    bdTick += 100;
+    if (bdTick >= BD_DUR[bdPhase]) {
+      bdTick = 0;
+      bdPhase = (bdPhase + 1) % BD_DUR.length;
+      bdRender();
+    }
+  }, 100);
 </script>
 </body>
 </html>

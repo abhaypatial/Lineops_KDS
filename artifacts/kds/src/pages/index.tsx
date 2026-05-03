@@ -29,7 +29,7 @@ type FontSize      = "sm" | "md" | "lg";
 type BumpBarPreset  = "keyboard" | "logic-controls" | "pos-x" | "mmf" | "custom";
 type StationChime   = ChimeType | "none";
 type ExpoSendMode   = "expo_bump" | "all_stations";
-type KdsTheme = "ink" | "blue" | "slate";
+type KdsTheme = "ink" | "slate" | "amber" | "steel" | "ember" | "chalk";
 
 type DisplayItem = {
   id: string; qty: number; name: string;
@@ -105,10 +105,13 @@ const FONT_SZ: Record<FontSize, { num: number; meta: number; timer: number; feat
   md: { num: 30, meta: 10, timer: 14, featured: 42 },
   lg: { num: 38, meta: 11, timer: 17, featured: 52 },
 };
-const THEME_META: Record<KdsTheme, { label: string; bg: string; card: string; line: string; text: string; subtle: string }> = {
-  ink:   { label: "Ink",   bg: "#0a0a0b", card: "#111116", line: "rgba(255,255,255,0.07)", text: "rgba(255,255,255,0.76)", subtle: "rgba(255,255,255,0.55)" },
-  blue:  { label: "Blue",  bg: "#08111e", card: "#0f1b2e", line: "rgba(96,165,250,0.18)", text: "rgba(219,234,254,0.88)", subtle: "rgba(191,219,254,0.68)" },
-  slate: { label: "Slate", bg: "#101114", card: "#171922", line: "rgba(148,163,184,0.16)", text: "rgba(241,245,249,0.8)", subtle: "rgba(226,232,240,0.62)" },
+const THEME_META: Record<KdsTheme, { label: string; desc: string; bg: string; card: string; line: string; text: string; subtle: string }> = {
+  ink:   { label: "Ink",   desc: "Pure black — max contrast, all kitchens",        bg: "#09090b", card: "#111116", line: "rgba(255,255,255,0.08)", text: "rgba(255,255,255,0.88)", subtle: "rgba(255,255,255,0.56)" },
+  slate: { label: "Slate", desc: "Dark grey-blue — commercial kitchen",             bg: "#0f1117", card: "#181c24", line: "rgba(148,163,184,0.14)", text: "rgba(241,245,249,0.88)", subtle: "rgba(203,213,225,0.62)" },
+  amber: { label: "Amber", desc: "Warm amber glow — casual dining, wood-fired",    bg: "#0d0a04", card: "#1a1408", line: "rgba(245,158,11,0.16)",  text: "rgba(255,237,180,0.92)", subtle: "rgba(251,191,36,0.62)"  },
+  steel: { label: "Steel", desc: "Industrial steel — bright-lit prep kitchens",    bg: "#0c0e12", card: "#141820", line: "rgba(100,130,165,0.16)", text: "rgba(200,218,240,0.90)", subtle: "rgba(148,175,210,0.64)"  },
+  ember: { label: "Ember", desc: "Dark ember — steakhouse, grill stations",        bg: "#0e0906", card: "#1c1009", line: "rgba(239,68,68,0.14)",   text: "rgba(255,220,200,0.90)", subtle: "rgba(252,165,128,0.64)"  },
+  chalk: { label: "Chalk", desc: "Max legibility — outdoor, sunlit environments",  bg: "#000000", card: "#0d0d0d", line: "rgba(255,255,255,0.11)", text: "rgba(255,255,255,0.96)", subtle: "rgba(255,255,255,0.66)"  },
 };
 const WARN_SEC  = 540;
 const ALERT_SEC = 900;
@@ -1148,6 +1151,26 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                   Auto
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Appearance */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Appearance</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.entries(THEME_META) as [KdsTheme, typeof THEME_META[KdsTheme]][]).map(([id, meta]) => (
+                <button key={id}
+                  onClick={() => set("theme", id)}
+                  className="flex flex-col items-start px-2.5 py-2 rounded-lg border text-left transition-all"
+                  style={{ background: cfg.theme === id ? `${meta.bg}` : "rgba(255,255,255,0.03)", borderColor: cfg.theme === id ? "rgba(245,158,11,0.42)" : "rgba(255,255,255,0.08)" }}>
+                  <div className="flex items-center gap-1.5 w-full mb-0.5">
+                    <div className="w-3 h-3 rounded shrink-0 border border-white/10" style={{ background: meta.card }} />
+                    <span className="text-[10px] font-bold flex-1" style={{ color: cfg.theme === id ? "#f59e0b" : "rgba(255,255,255,0.82)" }}>{meta.label}</span>
+                    {cfg.theme === id && <span className="text-amber-400 text-[8px]">✓</span>}
+                  </div>
+                  <span className="text-[8px] leading-snug" style={{ color: "rgba(255,255,255,0.38)" }}>{meta.desc}</span>
+                </button>
+              ))}
             </div>
           </div>
 
