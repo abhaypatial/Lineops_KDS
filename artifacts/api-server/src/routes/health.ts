@@ -49,6 +49,9 @@ router.get("/config", (_req, res) => {
     environment: process.env["NODE_ENV"] ?? "development",
     version: "1.0.0",
     soundConfig: runtimeConfig.soundConfig,
+    footerBg: null,
+    footerTextColor: null,
+    footerAccentColor: null,
   });
 });
 

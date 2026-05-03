@@ -5,6 +5,11 @@ import { randomUUID } from "crypto";
 import { broadcast } from "../lib/ws";
 
 const router = Router();
+const DEFAULT_KDS_CONFIG = {
+  footerBg: null,
+  footerTextColor: null,
+  footerAccentColor: null,
+};
 
 // ─── KDS Config Templates ────────────────────────────────────────────────────
 
@@ -22,6 +27,17 @@ router.get("/kds/templates/active", async (req, res): Promise<void> => {
     .from(kdsConfigTemplatesTable)
     .where(eq(kdsConfigTemplatesTable.isActive, true));
   res.json(row ?? null);
+});
+
+router.get("/config", async (req, res): Promise<void> => {
+  const [active] = await db
+    .select()
+    .from(kdsConfigTemplatesTable)
+    .where(eq(kdsConfigTemplatesTable.isActive, true));
+  const config = active?.config && typeof active.config === "object"
+    ? active.config as Record<string, unknown>
+    : {};
+  res.json({ ...DEFAULT_KDS_CONFIG, ...config });
 });
 
 router.post("/kds/templates", async (req, res): Promise<void> => {
