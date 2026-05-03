@@ -28,6 +28,9 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm run typecheck:libs || true
 RUN pnpm --filter @workspace/api-server run build
 
+# Copy Drizzle migration SQL into the build output so it's bundled with the image
+RUN cp -r /workspace/lib/db/drizzle /workspace/artifacts/api-server/dist/drizzle
+
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM node:24-alpine AS runner
 
