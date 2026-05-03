@@ -1861,8 +1861,16 @@ export default function KdsDisplay() {
       )}
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="h-16 flex items-center justify-between px-6 border-b shrink-0" style={{ background: theme.bg, borderColor: theme.line }}>
-        <div className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1">
+      {/* zoom: 1/kdsZoom counter-acts the parent zoom so the header always renders at native screen size */}
+      <header className="flex items-center justify-between px-6 border-b shrink-0"
+        style={{
+          background: theme.bg,
+          borderColor: "rgba(255,255,255,0.12)",
+          zoom: 1 / kdsZoom,
+          height: `${80 * kdsZoom}px`,
+          minHeight: `${80 * kdsZoom}px`,
+        }}>
+        <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1">
           {cfg.mode === "multi" ? (
             stationTabs.map(tab => {
               const active = activeTab === tab.id;
@@ -1871,18 +1879,18 @@ export default function KdsDisplay() {
                 : allOrders.filter(o => o.items.some(it => it.stationId === tab.id)).length;
               return (
                 <button key={tab.id} onClick={() => setTab(tab.id)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold transition-all whitespace-nowrap shrink-0"
                   style={active
                     ? { background: tab.color, color: tab.id === "All" ? "#000" : "#fff" }
-                    : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.78)" }}>
-                  {!active && <span className="w-1.5 h-1.5 rounded-full" style={{ background: tab.color }} />}
+                    : { background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.82)" }}>
+                  {!active && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tab.color }} />}
                   {tab.label}
                   {count > 0 && (
                     <span
-                      className="text-[10px] font-black tabular-nums leading-none px-1 py-0.5 rounded-full"
+                      className="text-[11px] font-black tabular-nums leading-none px-1.5 py-0.5 rounded-full"
                       style={active
-                        ? { background: "rgba(0,0,0,0.25)", color: tab.id === "All" ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.95)" }
-                        : { background: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.85)" }}>
+                        ? { background: "rgba(0,0,0,0.28)", color: tab.id === "All" ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.95)" }
+                        : { background: "rgba(255,255,255,0.16)", color: "rgba(255,255,255,0.90)" }}>
                       {count}
                     </span>
                   )}
@@ -1890,45 +1898,47 @@ export default function KdsDisplay() {
               );
             })
           ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
+            <div className="flex items-center gap-2.5">
+              {cfg.mode === "single" && (
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: STATION_META[cfg.singleStation].color }} />
+              )}
+              <span className="text-[15px] font-bold text-white/90 uppercase tracking-wider">
                 {cfg.mode === "single"
                   ? `${STATION_META[cfg.singleStation].label} Station`
                   : "Expo View"}
               </span>
-              {cfg.mode === "single" && (
-                <span className="w-2 h-2 rounded-full" style={{ background: STATION_META[cfg.singleStation].color }} />
-              )}
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-4 shrink-0 ml-4">
           <Clock />
-          <span className="text-[11px]" style={{ color: theme.subtle }}>
-            <span className="text-white font-semibold">{visibleOrders.length}</span> orders ·{" "}
-            <span style={{ color: doneTotal === itemTotal && itemTotal > 0 ? "#22c55e" : "rgba(255,255,255,0.45)" }}>
+          <span className="text-[13px]" style={{ color: theme.subtle }}>
+            <span className="text-white font-bold text-[15px]">{visibleOrders.length}</span>{" "}
+            <span style={{ color: theme.subtle }}>orders ·</span>{" "}
+            <span className="font-semibold" style={{ color: doneTotal === itemTotal && itemTotal > 0 ? "#22c55e" : "rgba(255,255,255,0.55)" }}>
               {doneTotal}/{itemTotal}
-            </span> items
+            </span>{" "}
+            <span style={{ color: theme.subtle }}>items</span>
           </span>
 
           {/* Quick column control (multi mode only) */}
           {cfg.mode === "multi" && (
             <div className="flex items-center rounded-lg border overflow-hidden shrink-0"
-              style={{ borderColor: "rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.04)" }}>
+              style={{ borderColor: "rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)" }}>
               <button
                 onClick={() => setCfg(c => ({ ...c, numCols: Math.max(2, c.numCols - 1) }))}
                 disabled={cfg.numCols <= 2}
-                className="w-6 h-6 flex items-center justify-center text-[13px] font-bold transition-all hover:bg-white/[0.08] disabled:opacity-30"
-                style={{ color: "rgba(255,255,255,0.55)" }}
+                className="w-8 h-8 flex items-center justify-center text-[15px] font-bold transition-all hover:bg-white/[0.10] disabled:opacity-30"
+                style={{ color: "rgba(255,255,255,0.65)" }}
                 title="Fewer columns">−</button>
-              <span className="text-[11px] font-bold tabular-nums px-1"
-                style={{ color: "rgba(255,255,255,0.65)" }}>{cfg.numCols}</span>
+              <span className="text-[13px] font-bold tabular-nums px-1.5"
+                style={{ color: "rgba(255,255,255,0.75)" }}>{cfg.numCols}</span>
               <button
                 onClick={() => setCfg(c => ({ ...c, numCols: Math.min(6, c.numCols + 1) }))}
                 disabled={cfg.numCols >= 6}
-                className="w-6 h-6 flex items-center justify-center text-[13px] font-bold transition-all hover:bg-white/[0.08] disabled:opacity-30"
-                style={{ color: "rgba(255,255,255,0.55)" }}
+                className="w-8 h-8 flex items-center justify-center text-[15px] font-bold transition-all hover:bg-white/[0.10] disabled:opacity-30"
+                style={{ color: "rgba(255,255,255,0.65)" }}
                 title="More columns">+</button>
             </div>
           )}
@@ -1937,33 +1947,33 @@ export default function KdsDisplay() {
           {testOrdersEnabled && (
             <button
               onClick={() => { setShowInjectPanel(s => !s); setShowSettings(false); setShowQuickSettings(false); }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold border transition-all disabled:opacity-40"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13px] font-bold border transition-all disabled:opacity-40"
               style={{
-                background: showInjectPanel ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.04)",
-                borderColor: showInjectPanel ? "rgba(245,158,11,0.38)" : "rgba(255,255,255,0.1)",
-                color: showInjectPanel ? "#f59e0b" : "rgba(255,255,255,0.45)",
+                background: showInjectPanel ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)",
+                borderColor: showInjectPanel ? "rgba(245,158,11,0.40)" : "rgba(255,255,255,0.12)",
+                color: showInjectPanel ? "#f59e0b" : "rgba(255,255,255,0.55)",
               }}
               title="Open test order injector">
-              <FlaskConical style={{ width: 13, height: 13 }} />
+              <FlaskConical style={{ width: 15, height: 15 }} />
               Test
             </button>
           )}
 
           {/* Fullscreen toggle */}
           <button onClick={isFullscreen ? exitFullscreen : enterFullscreen}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-            style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.38)" }}
+            className="w-10 h-10 rounded-lg flex items-center justify-center transition-all hover:bg-white/[0.08]"
+            style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.55)" }}
             title={isFullscreen ? "Exit fullscreen (F4)" : "Enter fullscreen"}>
             {isFullscreen
-              ? <Minimize2 style={{ width: 13, height: 13 }} />
-              : <Maximize2 style={{ width: 13, height: 13 }} />}
+              ? <Minimize2 style={{ width: 16, height: 16 }} />
+              : <Maximize2 style={{ width: 16, height: 16 }} />}
           </button>
 
           {/* Settings gear */}
           <button onClick={() => setShowSettings(s => !s)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-            style={{ background: showSettings ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", color: showSettings ? "#f59e0b" : "rgba(255,255,255,0.38)" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            className="w-10 h-10 rounded-lg flex items-center justify-center transition-all hover:bg-white/[0.08]"
+            style={{ background: showSettings ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)", color: showSettings ? "#f59e0b" : "rgba(255,255,255,0.55)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
             </svg>
