@@ -1966,18 +1966,6 @@ export default function KdsDisplay() {
               Virtual
             </button>
             <button
-              onClick={() => {
-                const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
-                const recallable = recentBumped.filter(r => !activeIds.has(r.order.id));
-                const last = recallable[0];
-                if (last) recallOrder(last.order.id);
-              }}
-              disabled={recentBumped.filter(r => !nowServingOrders.some(ns => ns.order.id === r.order.id)).length === 0}
-              className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95 disabled:opacity-40"
-              style={{ background: "rgba(74,222,128,0.08)", borderColor: "rgba(74,222,128,0.22)", color: "rgba(74,222,128,0.9)" }}>
-              Recall
-            </button>
-            <button
               onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
               className="h-8 px-2.5 rounded-lg text-[12px] border transition-all hover:bg-white/[0.06]"
               style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.58)" }}
