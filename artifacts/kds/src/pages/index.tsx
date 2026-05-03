@@ -650,6 +650,19 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
               style={{ transform: cfg.showFooter ? "translateX(16px)" : "translateX(0)" }} />
           </button>
         </div>
+
+        {/* Recall recent */}
+        <button
+          onClick={() => {
+            const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
+            const last = recentBumped.find(r => !activeIds.has(r.order.id));
+            if (last) recallOrder(last.order.id);
+          }}
+          disabled={recentBumped.every(r => nowServingOrders.some(ns => ns.order.id === r.order.id))}
+          className="w-full py-2.5 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-30 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.88)" }}>
+          ↩ Recall recent
+        </button>
       </div>
     </div>
   );
@@ -1969,7 +1982,7 @@ export default function KdsDisplay() {
               onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
               className="h-8 px-2.5 rounded-lg text-[12px] border transition-all hover:bg-white/[0.06]"
               style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.58)" }}
-              title="Hide footer bar">×</button>
+              title="Hide footer bar">Hide</button>
           </div>
         </footer>
       )}
