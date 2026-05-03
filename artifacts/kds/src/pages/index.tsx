@@ -1026,7 +1026,7 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
           <p className="text-xs font-bold text-white/70 tracking-wider uppercase">Display Options</p>
           <button onClick={onClose} className="text-white/58 hover:text-white/85 text-lg leading-none">×</button>
         </div>
-        <div className="px-4 py-3 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+        <div className="px-4 py-3 flex flex-col gap-4">
 
           {/* Mode */}
           <div className="flex flex-col gap-1.5">
@@ -1849,7 +1849,7 @@ export default function KdsDisplay() {
       )}
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="h-14 flex items-center justify-between px-5 border-b shrink-0" style={{ background: theme.bg, borderColor: theme.line }}>
+      <header className="h-16 flex items-center justify-between px-6 border-b shrink-0" style={{ background: theme.bg, borderColor: theme.line }}>
         <div className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1">
           {cfg.mode === "multi" ? (
             stationTabs.map(tab => {
@@ -2011,7 +2011,7 @@ export default function KdsDisplay() {
 
       {/* ── Stats strip ─────────────────────────────────────────────────── */}
       {cfg.showStats && allOrders.length > 0 && (
-        <div className="mx-4 mb-2 px-3 py-1.5 rounded-xl border flex items-center gap-3 shrink-0 flex-wrap"
+        <div className="mx-4 mb-3 px-4 py-2 rounded-xl border flex items-center gap-3 shrink-0 flex-wrap"
           style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
           <span className="text-[11px] text-white/65 uppercase tracking-widest shrink-0 font-semibold">Stats</span>
           <div className="flex gap-4 flex-wrap">
@@ -2054,7 +2054,7 @@ export default function KdsDisplay() {
       {cfg.showAgeHeatmap && visibleOrders.length > 0 && (() => {
         const sorted = [...visibleOrders].sort((a, b) => b.elapsedSec - a.elapsedSec);
         return (
-          <div className="mx-4 mb-2 shrink-0">
+          <div className="mx-4 mb-3 shrink-0">
             <div className="flex items-center gap-1.5 overflow-x-auto"
               style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
               <span className="text-[10px] font-bold uppercase tracking-widest shrink-0"
@@ -2091,7 +2091,7 @@ export default function KdsDisplay() {
 
       {/* ── Now Serving strip (all modes) ────────────────────────────────── */}
       {cfg.showNowServing && nowServingOrders.length > 0 && (
-        <div className="mx-3 mb-2 rounded-xl overflow-hidden shrink-0"
+        <div className="mx-3 mb-3 rounded-xl overflow-hidden shrink-0"
           style={{
             background: "linear-gradient(135deg,rgba(22,101,52,0.18) 0%,rgba(20,83,45,0.10) 100%)",
             border: "1px solid rgba(34,197,94,0.2)",
@@ -2155,7 +2155,7 @@ export default function KdsDisplay() {
         const recallable = recentBumped.filter(r => !activeIds.has(r.order.id));
         if (!cfg.showRecentBumped || recallable.length === 0) return null;
         return (
-          <div className="mx-3 mb-2 rounded-xl overflow-hidden shrink-0"
+          <div className="mx-3 mb-3 rounded-xl overflow-hidden shrink-0"
             style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="flex items-center gap-3 px-3 py-2">
               <div className="flex items-center gap-1.5 shrink-0">
@@ -2195,7 +2195,7 @@ export default function KdsDisplay() {
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       {cfg.showFooter && (
-        <footer className="min-h-14 flex items-center px-4 md:px-5 py-2 shrink-0 gap-4 md:gap-6 flex-wrap" style={{ background: cfg.footerBg ?? theme.bg, borderTop: `1px solid ${theme.line}` }}>
+        <footer className="min-h-16 flex items-center px-5 md:px-6 py-3 shrink-0 gap-5 md:gap-7 flex-wrap" style={{ background: cfg.footerBg ?? theme.bg, borderTop: `1px solid ${theme.line}` }}>
           <div className="flex items-center gap-1.5 flex-wrap">
             {(() => {
               const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
