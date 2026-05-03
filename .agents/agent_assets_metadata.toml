@@ -12,3 +12,9 @@ id = "_CzZfkTss3p1bPoTjQc2r"
 uri = "file://FEATURES.md"
 type = "text"
 title = "LineOps KDS — Feature Reference"
+
+[[outputs]]
+id = "t8O1E2ki0N8BsEaDHd8E2"
+uri = "file://LineOps_KDS.zip"
+type = "unspecified"
+title = "LineOps KDS — Full Project (829 files, 34.6 MB)"
