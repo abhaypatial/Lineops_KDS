@@ -365,12 +365,35 @@ router.get("/integrations/health", async (req, res): Promise<void> => {
         .where(gte(integrationEventsTable.createdAt, since))
         .orderBy(desc(integrationEventsTable.createdAt));
 
-  type SourceStat = { total: number; success: number; errors: number; ignored: number; lastEventAt: string | null };
+  type SourceStat = {
+    total: number;
+    success: number;
+    errors: number;
+    ignored: number;
+    lastEventAt: string | null;
+    webhookSecretConfigured: boolean;
+  };
   const bySource = new Map<string, SourceStat>();
+
+  const secretMap: Record<string, boolean> = {
+    square: !!process.env.SQUARE_WEBHOOK_SECRET,
+    toast: !!process.env.TOAST_WEBHOOK_SECRET,
+    clover: !!process.env.CLOVER_WEBHOOK_SECRET,
+    lightspeed: !!process.env.LIGHTSPEED_WEBHOOK_SECRET,
+    volante: !!process.env.VOLANTE_WEBHOOK_SECRET,
+    generic: true,
+  };
 
   for (const row of rows) {
     if (!bySource.has(row.source)) {
-      bySource.set(row.source, { total: 0, success: 0, errors: 0, ignored: 0, lastEventAt: null });
+      bySource.set(row.source, {
+        total: 0,
+        success: 0,
+        errors: 0,
+        ignored: 0,
+        lastEventAt: null,
+        webhookSecretConfigured: secretMap[row.source] ?? false,
+      });
     }
     const s = bySource.get(row.source)!;
     s.total++;
@@ -383,7 +406,11 @@ router.get("/integrations/health", async (req, res): Promise<void> => {
   const sources = Object.fromEntries(
     [...bySource.entries()].map(([source, stat]) => [
       source,
-      { ...stat, successRate: stat.total > 0 ? Math.round((stat.success / stat.total) * 100) : null },
+      {
+        ...stat,
+        successRate: stat.total > 0 ? Math.round((stat.success / stat.total) * 100) : null,
+        webhookSecretConfigured: secretMap[source] ?? stat.webhookSecretConfigured,
+      },
     ])
   );
 

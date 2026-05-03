@@ -11,6 +11,7 @@ interface SourceStat {
   ignored: number;
   successRate: number | null;
   lastEventAt: string | null;
+  webhookSecretConfigured: boolean;
 }
 
 interface HealthResponse {
@@ -40,7 +41,7 @@ const POS_META: Record<string, { name: string; logo: string; color: string }> = 
   test:       { name: "Test Injector",    logo: "⚗", color: "#64748b" },
 };
 
-const ALL_SOURCES = ["square", "toast", "clover", "lightspeed", "volante", "generic"];
+const ALL_SOURCES = ["volante", "square", "toast", "clover", "lightspeed", "generic"];
 
 function meta(src: string) {
   return POS_META[src] ?? { name: src, logo: "⬡", color: "#6b7280" };
@@ -124,6 +125,7 @@ function SourceCard({
   const succ   = stat?.success ?? 0;
   const errs   = stat?.errors  ?? 0;
   const ign    = stat?.ignored ?? 0;
+  const secret = stat?.webhookSecretConfigured ?? false;
 
   return (
     <div className="flex flex-col gap-3 p-4 rounded-xl border transition-all"
@@ -187,6 +189,13 @@ function SourceCard({
         <span className="text-[9px] text-white/25">Last event</span>
         <span className="text-[9px] text-white/50 font-mono">
           {stat?.lastEventAt ? timeAgo(stat.lastEventAt) : "—"}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] text-white/25">Webhook secret</span>
+        <span className="text-[9px] font-semibold" style={{ color: secret ? "#22c55e" : "#ef4444" }}>
+          {secret ? "Configured" : "Missing"}
         </span>
       </div>
     </div>
@@ -380,7 +389,7 @@ export default function IntegrationsHealthPage() {
         {/* ── POS Health Grid ── */}
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/25 mb-3">
-            POS Systems — {healthData?.windowHours ?? 24}h summary
+            POS Systems — live status, last ping, and secret health
           </p>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
             {ALL_SOURCES.map(src => (
