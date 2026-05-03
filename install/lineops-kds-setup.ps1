@@ -6,6 +6,7 @@
 .DESCRIPTION
     Installs the complete LineOps KDS stack on a Windows machine with Docker Desktop.
     Deploys: PostgreSQL · API Server · KDS Display · Back-office Dashboard
+    Network: server listens on all interfaces (0.0.0.0:80) — Wi-Fi, LAN, and Ethernet all work.
 
     Run from an elevated PowerShell session (Run as Administrator):
 

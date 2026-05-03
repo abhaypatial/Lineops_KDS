@@ -18,6 +18,10 @@
 #    3. Starts ONLY the KDS display service (no database or API)
 #    4. Opens Chromium in kiosk mode pointed at the display URL
 #
+#  Network: each display connects to the back-office server over Wi-Fi,
+#  wired Ethernet, or any combination. The --api-url can be any reachable
+#  LAN address (e.g. 192.168.1.10, 10.0.0.5).
+#
 #  Typical deployment:
 #    - 1x Back-office server:       lineops-backoffice-setup.sh
 #    - N× Kitchen display screens:  lineops-kds-frontend-setup.sh --api-url <server-ip>

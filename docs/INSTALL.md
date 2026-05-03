@@ -17,6 +17,41 @@ The backend can run on any Linux server (even a Raspberry Pi 4). Display clients
 
 ---
 
+## Network Connectivity
+
+LineOps KDS works over **any local network type** — wired Ethernet, Wi-Fi (802.11n/ac/ax), or a mix of both. The server binds to all network interfaces (`0.0.0.0`) automatically, so no extra configuration is needed.
+
+| Connection type | Supported | Notes |
+|---|---|---|
+| **Wired Ethernet / LAN** | ✓ Recommended | Most reliable; lowest latency; ideal for fixed KDS screens |
+| **Wi-Fi (802.11n/ac/ax)** | ✓ Fully supported | Works for tablets, portable displays, and back-office access |
+| **Mixed (wired + wireless)** | ✓ Fully supported | Each screen connects independently — mix freely |
+| **VLAN / managed switch** | ✓ Supported | Server and displays must be on the same VLAN or with inter-VLAN routing |
+
+### WebSocket real-time delivery
+
+Orders are pushed to all connected KDS screens via WebSocket on port 80. There is no polling — each screen holds a persistent connection. If a display's Wi-Fi drops, it automatically reconnects and re-subscribes within seconds.
+
+### Finding your server IP
+
+After install the server IP is printed to the console. You can also run:
+
+```bash
+kds ip
+```
+
+This prints every IP address the server is listening on. Give the LAN/Wi-Fi IP (e.g. `192.168.1.10` or `10.0.0.5`) to each KDS screen as its display URL:
+
+```
+http://192.168.1.10/
+```
+
+### No internet required after install
+
+After the initial Docker image pull during setup, **LineOps KDS runs entirely on your local network**. No cloud relay, no SaaS dependency, no outbound connections are required during normal operation.
+
+---
+
 ## System Requirements
 
 ### Server (backend)
@@ -27,7 +62,7 @@ The backend can run on any Linux server (even a Raspberry Pi 4). Display clients
 | CPU | 2 cores | 4 cores |
 | RAM | 2 GB | 4 GB |
 | Disk | 10 GB | 20 GB |
-| Network | 100 Mbps LAN | Gigabit LAN |
+| Network | 100 Mbps LAN (or Wi-Fi 802.11n) | Gigabit Ethernet |
 | Software | Docker 24+, Docker Compose v2 | — |
 
 ### Display machine (per KDS screen)
@@ -193,13 +228,17 @@ docker compose down -v       # stop AND delete all data (full reset)
 Runs on any Ubuntu/Debian/RHEL server with or without Docker pre-installed:
 
 ```bash
-curl -fsSL https://your-domain/install.sh | sudo bash
+curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-setup.sh | sudo bash
 ```
 
-Or if you have the source:
-
+**Back-office only** (API server + dashboard, no display service):
 ```bash
-sudo bash install.sh
+curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-backoffice-setup.sh | sudo bash
+```
+
+**KDS display only** (connect to an existing back-office server on the LAN):
+```bash
+curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-kds-frontend-setup.sh | sudo bash -s -- --api-url http://192.168.1.10
 ```
 
 This will:

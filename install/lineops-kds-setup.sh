@@ -17,7 +17,8 @@
 #    5. Installs the `kds` management CLI to /usr/local/bin
 #    6. Prints the URLs your kitchen screens and managers should open
 #
-#  Requirements: Linux x86_64 / arm64, root/sudo, internet access
+#  Requirements: Linux x86_64 / arm64, root/sudo, internet access for setup
+#  Network: server listens on all interfaces (0.0.0.0:80) — Wi-Fi, LAN, and Ethernet all work
 #  Tested on: Ubuntu 22.04+, Debian 12+, RHEL 9+, Raspberry Pi OS (64-bit)
 # ─────────────────────────────────────────────────────────────────────────────
 

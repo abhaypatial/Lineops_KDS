@@ -6,8 +6,9 @@
 #    PostgreSQL · API Server · Back-office Dashboard
 #
 #  Use this when you want a central management server that kitchen screens
-#  connect to remotely. Run lineops-kds-frontend-setup.sh on each kitchen
-#  display device to connect it to this server.
+#  connect to remotely over Wi-Fi, wired Ethernet, or any mix of both.
+#  Run lineops-kds-frontend-setup.sh on each kitchen display device to
+#  connect it to this server. Server binds to 0.0.0.0:80 automatically.
 #
 #  Run with:
 #    curl -fsSL https://github.com/abhaypatial/Lineops_KDS/raw/main/install/lineops-backoffice-setup.sh | sudo bash

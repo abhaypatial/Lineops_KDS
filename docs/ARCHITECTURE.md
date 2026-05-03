@@ -19,7 +19,7 @@ LineOps KDS is made up of four pieces that run together:
 ```
                          ┌─────────────────────────────────────────────────┐
                          │                   nginx / proxy                  │
-                         │          localhost:80  (LAN-facing)              │
+                         │     0.0.0.0:80  (Wi-Fi · LAN · Ethernet)        │
                          └───────────┬─────────────────────┬───────────────┘
                                      │ /                   │ /api  /ws
                           ┌──────────▼────────┐   ┌───────▼──────────────┐

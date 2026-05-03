@@ -262,10 +262,11 @@
 
   /* ── Glow logo ── */
   .logo-glow {
-    width: 64px; height: 64px; border-radius: 16px;
-    background: linear-gradient(135deg, #f59e0b, #f97316);
+    width: 88px; height: 88px; border-radius: 22px;
+    background: linear-gradient(145deg, #16161F 0%, #0A0A12 100%);
+    border: 1.5px solid rgba(249,115,22,0.28);
     display: flex; align-items: center; justify-content: center;
-    font-size: 30px; box-shadow: 0 0 40px rgba(245,158,11,0.4);
+    box-shadow: 0 0 48px rgba(245,158,11,0.22), 0 0 96px rgba(245,158,11,0.09), inset 0 1px 0 rgba(255,255,255,0.06);
     margin-bottom: 24px;
   }
   @keyframes logoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
@@ -314,7 +315,34 @@
 
   <!-- ── SLIDE 0: Hero ── -->
   <div class="slide active" id="slide-0">
-    <div class="logo-glow logo-float">⚡</div>
+    <div class="logo-glow logo-float">
+      <svg width="56" height="56" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="ps-stem" x1="36" y1="28" x2="70" y2="134" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FDE68A"/>
+            <stop offset="45%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#EA580C"/>
+          </linearGradient>
+          <linearGradient id="ps-base" x1="36" y1="118" x2="144" y2="154" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#9A3412"/>
+          </linearGradient>
+        </defs>
+        <circle cx="114" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="132" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="150" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="114" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="132" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="150" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <rect x="36" y="28" width="34" height="106" rx="8" fill="url(#ps-stem)"/>
+        <rect x="36" y="118" width="108" height="36" rx="8" fill="url(#ps-base)"/>
+        <rect x="36" y="28" width="13" height="106" rx="8" fill="rgba(255,255,255,0.22)"/>
+        <rect x="36" y="28" width="34" height="13" rx="6" fill="rgba(255,220,150,0.24)"/>
+        <circle cx="150" cy="36" r="14" fill="#0A0A12"/>
+        <circle cx="150" cy="36" r="9" fill="#22C55E"/>
+        <circle cx="147" cy="33" r="3.5" fill="rgba(255,255,255,0.42)"/>
+      </svg>
+    </div>
     <div class="eyebrow">LineOps</div>
     <h1 class="grad-text">Kitchen Display<br>System</h1>
     <p class="sub">Production-ready real-time KDS for commercial kitchens.<br>Multi-tenant · Self-hosted · Sub-100 ms order delivery.</p>
@@ -688,8 +716,12 @@
             <div class="check-text"><strong>Windows PowerShell</strong> installer — same one-liner as Linux</div>
           </div>
           <div class="check-item">
+            <div class="check-icon">📶</div>
+            <div class="check-text"><strong>Wi-Fi · LAN · Ethernet</strong> — screens connect over any network type; mix wired and wireless freely</div>
+          </div>
+          <div class="check-item">
             <div class="check-icon">🔒</div>
-            <div class="check-text"><strong>LAN-only</strong> — all traffic stays on the local network; no internet required after install</div>
+            <div class="check-text"><strong>LAN-only</strong> — all traffic stays on your local network; no internet required after install</div>
           </div>
         </div>
       </div>
@@ -719,7 +751,34 @@
 
   <!-- ── SLIDE 7: Summary ── -->
   <div class="slide" id="slide-7">
-    <div class="logo-glow" style="animation:none;box-shadow:0 0 60px rgba(245,158,11,0.5);">⚡</div>
+    <div class="logo-glow" style="animation:none;box-shadow:0 0 56px rgba(245,158,11,0.32), 0 0 110px rgba(245,158,11,0.12);">
+      <svg width="56" height="56" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pe-stem" x1="36" y1="28" x2="70" y2="134" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FDE68A"/>
+            <stop offset="45%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#EA580C"/>
+          </linearGradient>
+          <linearGradient id="pe-base" x1="36" y1="118" x2="144" y2="154" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#9A3412"/>
+          </linearGradient>
+        </defs>
+        <circle cx="114" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="132" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="150" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="114" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="132" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="150" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <rect x="36" y="28" width="34" height="106" rx="8" fill="url(#pe-stem)"/>
+        <rect x="36" y="118" width="108" height="36" rx="8" fill="url(#pe-base)"/>
+        <rect x="36" y="28" width="13" height="106" rx="8" fill="rgba(255,255,255,0.22)"/>
+        <rect x="36" y="28" width="34" height="13" rx="6" fill="rgba(255,220,150,0.24)"/>
+        <circle cx="150" cy="36" r="14" fill="#0A0A12"/>
+        <circle cx="150" cy="36" r="9" fill="#22C55E"/>
+        <circle cx="147" cy="33" r="3.5" fill="rgba(255,255,255,0.42)"/>
+      </svg>
+    </div>
     <div class="eyebrow">LineOps KDS v1.3.0</div>
     <h2 class="grad-text" style="margin-bottom:16px;">Ready for production</h2>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:720px;margin-top:8px;">
@@ -747,7 +806,7 @@
       <div style="width:1px;height:28px;background:rgba(255,255,255,0.08);"></div>
       <div class="stat-item"><div class="stat-val">100%</div><div class="stat-lbl">items visible</div></div>
       <div style="width:1px;height:28px;background:rgba(255,255,255,0.08);"></div>
-      <div class="stat-item"><div class="stat-val">LAN</div><div class="stat-lbl">no internet needed</div></div>
+      <div class="stat-item"><div class="stat-val">WiFi+LAN</div><div class="stat-lbl">any network type</div></div>
     </div>
     <p class="sub" style="margin-top:16px;font-size:13px;">
       github.com/abhaypatial/Lineops_KDS

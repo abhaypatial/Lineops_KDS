@@ -28,6 +28,7 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 - **POS integrations** — Square, Toast POS, Clover, Lightspeed K-Series, Volante VE, and any custom POS via webhook
 - **One-command install** — runs on any Linux server; Windows PowerShell installer; `kds` CLI for day-to-day ops
 - **Auto-start on boot** — backend and kiosk display both start automatically when the server powers on
+- **Any network type** — displays connect over wired Ethernet, Wi-Fi, or a mix; the server binds to all interfaces automatically; no internet required after install
 
 ---
 
