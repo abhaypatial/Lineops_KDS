@@ -215,8 +215,12 @@ function urgencyPct(sec: number, p: Priority, warnSec = WARN_SEC, alertSec = ALE
   if (p === "VIP")  return Math.min(sec / warnSec, 1);
   return Math.min(sec / alertSec, 1);
 }
-function getOrderThresholds(order: { items: { station: string }[] }, cfg: { stationWarnSec: Record<string, number>; stationAlertSec: Record<string, number> }) {
-  const stations = [...new Set(order.items.map(it => it.station))];
+function getOrderThresholds(order: { items: { station?: string; stationId?: string }[] }, cfg: { stationWarnSec: Record<Station, number>; stationAlertSec: Record<Station, number> }) {
+  const stations = [...new Set(order.items.map(it => {
+    const raw = (it.station ?? it.stationId ?? "other").toString();
+    if (raw === "grill" || raw === "fryer" || raw === "cold" || raw === "dessert" || raw === "other") return raw as Station;
+    return stationNameToSlug(raw);
+  }))];
   if (stations.length === 0) return { warnSec: WARN_SEC, alertSec: ALERT_SEC };
   const warnSec  = Math.max(...stations.map(s => cfg.stationWarnSec[s]  ?? WARN_SEC));
   const alertSec = Math.max(...stations.map(s => cfg.stationAlertSec[s] ?? ALERT_SEC));
@@ -2256,6 +2260,17 @@ export default function KdsDisplay() {
               className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
               style={{ background: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)", borderColor: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.08)", color: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
               Virtual
+            </button>
+            <button
+              onClick={() => {
+                const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
+                const last = recentBumped.find(r => !activeIds.has(r.order.id));
+                if (last) recallOrder(last.order.id);
+              }}
+              disabled={recentBumped.every(r => nowServingOrders.some(ns => ns.order.id === r.order.id))}
+              className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
+              style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.88)" }}>
+              Recall last
             </button>
             <button
               onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
