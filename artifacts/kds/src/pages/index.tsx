@@ -55,6 +55,7 @@ type KdsConfig = {
   escalationWarnChime: ChimeType;
   escalationAlertChime: ChimeType;
   showStats: boolean;
+  showAgeHeatmap: boolean;
   showFooter: boolean;
   showNowServing: boolean;
   showRecentBumped: boolean;
@@ -65,6 +66,8 @@ type KdsConfig = {
   zoomOverride: number | null;
   showVirtualBumpBar: boolean;
   theme: KdsTheme;
+  stationWarnSec: Record<Station, number>;
+  stationAlertSec: Record<Station, number>;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -121,6 +124,7 @@ const DEFAULT_CFG: KdsConfig = {
   escalationWarnChime: "chime" as ChimeType,
   escalationAlertChime: "chime" as ChimeType,
   showStats: false,
+  showAgeHeatmap: false,
   showFooter: true,
   showNowServing: true,
   showRecentBumped: true,
@@ -131,6 +135,8 @@ const DEFAULT_CFG: KdsConfig = {
   zoomOverride: null,
   showVirtualBumpBar: true,
   theme: "ink",
+  stationWarnSec:  { grill: 540, fryer: 240, cold: 360, dessert: 480, other: 540 },
+  stationAlertSec: { grill: 900, fryer: 420, cold: 600, dessert: 780, other: 900 },
 };
 
 // ─── Bump bar presets ─────────────────────────────────────────────────────────
@@ -199,15 +205,22 @@ function urgencyRank(o: DisplayOrder) {
 function fmtTime(sec: number) {
   return `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, "0")}`;
 }
-function timerColor(sec: number, p: Priority) {
+function timerColor(sec: number, p: Priority, warnSec = WARN_SEC, alertSec = ALERT_SEC) {
   if (p === "RUSH") return "#ef4444";
   if (p === "VIP")  return "#f59e0b";
-  return sec >= ALERT_SEC ? "#ef4444" : sec >= WARN_SEC ? "#f59e0b" : "#ffffff";
+  return sec >= alertSec ? "#ef4444" : sec >= warnSec ? "#f59e0b" : "#ffffff";
 }
-function urgencyPct(sec: number, p: Priority) {
+function urgencyPct(sec: number, p: Priority, warnSec = WARN_SEC, alertSec = ALERT_SEC) {
   if (p === "RUSH") return 1;
-  if (p === "VIP")  return Math.min(sec / WARN_SEC, 1);
-  return Math.min(sec / ALERT_SEC, 1);
+  if (p === "VIP")  return Math.min(sec / warnSec, 1);
+  return Math.min(sec / alertSec, 1);
+}
+function getOrderThresholds(order: { items: { station: string }[] }, cfg: { stationWarnSec: Record<string, number>; stationAlertSec: Record<string, number> }) {
+  const stations = [...new Set(order.items.map(it => it.station))];
+  if (stations.length === 0) return { warnSec: WARN_SEC, alertSec: ALERT_SEC };
+  const warnSec  = Math.max(...stations.map(s => cfg.stationWarnSec[s]  ?? WARN_SEC));
+  const alertSec = Math.max(...stations.map(s => cfg.stationAlertSec[s] ?? ALERT_SEC));
+  return { warnSec, alertSec };
 }
 function progressColor(pct: number, p: Priority) {
   if (p === "RUSH") return "#ef4444";
@@ -245,8 +258,8 @@ function ModLine({ mod, showColors }: { mod: string; showColors: boolean }) {
   );
 }
 
-function UrgencyBar({ sec, priority }: { sec: number; priority: Priority }) {
-  const pct = urgencyPct(sec, priority);
+function UrgencyBar({ sec, priority, warnSec = WARN_SEC, alertSec = ALERT_SEC }: { sec: number; priority: Priority; warnSec?: number; alertSec?: number }) {
+  const pct = urgencyPct(sec, priority, warnSec, alertSec);
   return (
     <div className="h-0.5 w-full bg-white/[0.04] rounded-full overflow-hidden">
       <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: progressColor(pct, priority) }} />
@@ -343,9 +356,10 @@ function ItemRow({ item, done, onToggle, cfg }: {
 
 // ─── Order Card ───────────────────────────────────────────────────────────────
 
-function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, cfg }: {
+function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, onHold, isHeld, cfg }: {
   order: DisplayOrder; featured: boolean; doneItems: Set<string>;
-  onToggleItem: (id: string) => void; onBump: () => void; onFocus: () => void; cfg: KdsConfig;
+  onToggleItem: (id: string) => void; onBump: () => void; onFocus: () => void;
+  onHold: () => void; isHeld: boolean; cfg: KdsConfig;
 }) {
   const [elapsed, setElapsed] = useState(order.elapsedSec);
   useEffect(() => {
@@ -356,13 +370,14 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
 
   const hasPrio  = order.priority !== "normal";
   const pColor   = order.priority === "RUSH" ? "#ef4444" : order.priority === "VIP" ? "#f59e0b" : "rgba(255,255,255,0.06)";
-  const tColor   = timerColor(elapsed, order.priority);
+  const { warnSec: oWarnSec, alertSec: oAlertSec } = getOrderThresholds(order, cfg);
+  const tColor   = timerColor(elapsed, order.priority, oWarnSec, oAlertSec);
   const typeMeta = ORDER_TYPE_META[order.type];
   const doneCount = order.items.filter(it => doneItems.has(it.id)).length;
   const allDone   = doneCount === order.items.length;
   const isNew          = elapsed < NEW_SEC;
   const escalationLevel = cfg.escalationEnabled
-    ? (elapsed >= ALERT_SEC ? 2 : elapsed >= WARN_SEC ? 1 : 0)
+    ? (elapsed >= oAlertSec ? 2 : elapsed >= oWarnSec ? 1 : 0)
     : 0;
   const fs        = FONT_SZ[cfg.fontSize];
   const effectiveSpan = cfg.featuredFirst && featured
@@ -388,13 +403,15 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
 
   if (cfg.mode === "single" && visibleItems.length === 0) return null;
 
-  const borderC = escalationLevel === 2
-    ? "rgba(239,68,68,0.7)"
-    : escalationLevel === 1
-      ? "rgba(245,158,11,0.55)"
-      : featured
-        ? (hasPrio ? `${pColor}66` : "rgba(255,255,255,0.18)")
-        : (hasPrio ? `${pColor}33` : "rgba(255,255,255,0.06)");
+  const borderC = isHeld
+    ? "rgba(245,158,11,0.65)"
+    : escalationLevel === 2
+      ? "rgba(239,68,68,0.7)"
+      : escalationLevel === 1
+        ? "rgba(245,158,11,0.55)"
+        : featured
+          ? (hasPrio ? `${pColor}66` : "rgba(255,255,255,0.18)")
+          : (hasPrio ? `${pColor}33` : "rgba(255,255,255,0.06)");
   const shadowC = escalationLevel === 2
     ? "0 0 22px rgba(239,68,68,0.28)"
     : escalationLevel === 1
@@ -414,9 +431,10 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
         gridColumn: `span ${effectiveSpan}`,
         background: theme.card,
         borderColor: borderC,
-        boxShadow: shadowC,
-        animation: escalAnim,
-        transition: "border-color 0.3s",
+        boxShadow: isHeld ? "0 0 18px rgba(245,158,11,0.18)" : shadowC,
+        animation: isHeld ? "none" : escalAnim,
+        transition: "border-color 0.3s, opacity 0.2s",
+        opacity: isHeld ? 0.58 : 1,
       }}
       onClick={onFocus}>
       {/* Priority accent bar */}
@@ -452,6 +470,12 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
                   NEW
                 </span>
               )}
+              {isHeld && (
+                <span className="font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0"
+                  style={{ fontSize: 8, background: "rgba(245,158,11,0.20)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.50)" }}>
+                  ⏸ HOLD
+                </span>
+              )}
             </div>
             {cfg.showOrderNumber && (
               <span className="font-black leading-none tracking-tight"
@@ -470,15 +494,27 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
               <span className="font-mono tabular-nums font-bold" style={{ fontSize: fs.timer, color: tColor }}>{fmtTime(elapsed)}</span>
             </div>
             <span className="text-[12px] font-semibold" style={{ color: theme.subtle }}>{doneCount}/{order.items.length}</span>
-            <button onClick={e => { e.stopPropagation(); onBump(); }}
-              className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border transition-all active:scale-95"
-              style={{
-                background: hasPrio ? `${pColor}18` : "rgba(255,255,255,0.06)",
-                borderColor: hasPrio ? `${pColor}44` : "rgba(255,255,255,0.15)",
-                color: hasPrio ? pColor : "rgba(255,255,255,0.62)",
-              }}>
-              {cfg.mode === "expo" ? "Fire →" : "Bump ↵"}
-            </button>
+            <div className="flex gap-1">
+              <button onClick={e => { e.stopPropagation(); onHold(); }}
+                className="px-2 py-1 rounded-md text-[11px] font-bold border transition-all active:scale-95"
+                style={{
+                  background: isHeld ? "rgba(245,158,11,0.20)" : "rgba(255,255,255,0.04)",
+                  borderColor: isHeld ? "rgba(245,158,11,0.55)" : "rgba(255,255,255,0.09)",
+                  color: isHeld ? "#fbbf24" : "rgba(255,255,255,0.35)",
+                }}
+                title={isHeld ? "Release hold (H)" : "Put on hold (H)"}>
+                ⏸
+              </button>
+              <button onClick={e => { e.stopPropagation(); onBump(); }}
+                className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border transition-all active:scale-95"
+                style={{
+                  background: hasPrio ? `${pColor}18` : "rgba(255,255,255,0.06)",
+                  borderColor: hasPrio ? `${pColor}44` : "rgba(255,255,255,0.15)",
+                  color: hasPrio ? pColor : "rgba(255,255,255,0.62)",
+                }}>
+                {cfg.mode === "expo" ? "Fire →" : "Bump ↵"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -523,7 +559,7 @@ function OrderCard({ order, featured, doneItems, onToggleItem, onBump, onFocus, 
             All ready — {cfg.mode === "expo" ? "fire" : "bump"} to complete
           </p>
         )}
-        {cfg.showUrgencyBar && <UrgencyBar sec={elapsed} priority={order.priority} />}
+        {cfg.showUrgencyBar && <UrgencyBar sec={elapsed} priority={order.priority} warnSec={oWarnSec} alertSec={oAlertSec} />}
       </div>
     </div>
   );
@@ -640,6 +676,17 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
           )}
         </div>
 
+        {/* Age heatmap toggle */}
+        <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between">
+          <span className="text-[11px] text-white/65 uppercase tracking-wider">Age heatmap</span>
+          <button onClick={() => toggle("showAgeHeatmap", !cfg.showAgeHeatmap)}
+            className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
+            style={{ background: cfg.showAgeHeatmap ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
+            <span className="w-3 h-3 rounded-full bg-white transition-all"
+              style={{ transform: cfg.showAgeHeatmap ? "translateX(16px)" : "translateX(0)" }} />
+          </button>
+        </div>
+
         {/* Footer bar toggle */}
         <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between">
           <span className="text-[11px] text-white/65 uppercase tracking-wider">Footer Bar</span>
@@ -664,6 +711,100 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
           ↩ Recall recent
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Virtual Bump Bar ─────────────────────────────────────────────────────────
+
+function VirtualBumpBar({
+  focusedOrder, canPrev, canNext, canRecall, lastRecallable,
+  onPrev, onNext, onBump, onRecall, bottomOffset,
+}: {
+  focusedOrder: DisplayOrder | null;
+  canPrev: boolean; canNext: boolean; canRecall: boolean;
+  lastRecallable: DisplayOrder | null;
+  onPrev: () => void; onNext: () => void;
+  onBump: () => void; onRecall: () => void;
+  bottomOffset: number;
+}) {
+  const [elapsed, setElapsed] = useState(focusedOrder?.elapsedSec ?? 0);
+  useEffect(() => { setElapsed(focusedOrder?.elapsedSec ?? 0); }, [focusedOrder?.id, focusedOrder?.elapsedSec]);
+  useEffect(() => {
+    if (!focusedOrder) return;
+    const t = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [focusedOrder?.id]);
+  const elapsedColor = elapsed >= 900 ? "#f87171" : elapsed >= 540 ? "#f59e0b" : "rgba(255,255,255,0.45)";
+  return (
+    <div
+      className="absolute z-20 flex items-stretch rounded-2xl overflow-hidden border shadow-2xl"
+      style={{
+        bottom: bottomOffset,
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "rgba(13,13,16,0.88)",
+        borderColor: "rgba(255,255,255,0.10)",
+        backdropFilter: "blur(14px)",
+        animation: "vbbSlideUp 0.18s ease-out",
+        minWidth: 340,
+      }}
+    >
+      {/* PREV */}
+      <button
+        onClick={onPrev}
+        disabled={!canPrev}
+        className="flex flex-col items-center justify-center px-5 py-3 gap-1 transition-all active:scale-95 hover:bg-white/[0.06] disabled:opacity-30 border-r"
+        style={{ borderColor: "rgba(255,255,255,0.07)", minWidth: 64 }}
+        title="Previous order (← key)">
+        <span className="text-[20px] leading-none text-white/75">←</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/35 font-bold">Prev</span>
+      </button>
+
+      {/* BUMP */}
+      <button
+        onClick={onBump}
+        disabled={!focusedOrder}
+        className="flex flex-col items-center justify-center px-6 py-3 gap-1 transition-all active:scale-95 disabled:opacity-30 border-r flex-1"
+        style={{
+          borderColor: "rgba(255,255,255,0.07)",
+          background: focusedOrder ? "rgba(245,158,11,0.12)" : "transparent",
+        }}
+        title="Bump focused order (SPACE / ENTER)">
+        <span className="text-[20px] leading-none font-black" style={{ color: focusedOrder ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>✓</span>
+        <span className="text-[11px] font-black tabular-nums" style={{ color: focusedOrder ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
+          {focusedOrder ? `#${focusedOrder.number}` : "Bump"}
+        </span>
+        {focusedOrder && (
+          <span className="text-[9px] font-mono tabular-nums leading-none" style={{ color: elapsedColor }}>
+            {`${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`}
+          </span>
+        )}
+      </button>
+
+      {/* RECALL */}
+      <button
+        onClick={onRecall}
+        disabled={!canRecall}
+        className="flex flex-col items-center justify-center px-5 py-3 gap-1 transition-all active:scale-95 disabled:opacity-30 border-r hover:bg-white/[0.06]"
+        style={{ borderColor: "rgba(255,255,255,0.07)", minWidth: 72 }}
+        title="Recall last bumped order (Backspace)">
+        <span className="text-[18px] leading-none" style={{ color: canRecall ? "rgba(74,222,128,0.9)" : "rgba(255,255,255,0.3)" }}>↩</span>
+        <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: canRecall ? "rgba(74,222,128,0.65)" : "rgba(255,255,255,0.25)" }}>
+          {lastRecallable ? `#${lastRecallable.number}` : "Recall"}
+        </span>
+      </button>
+
+      {/* NEXT */}
+      <button
+        onClick={onNext}
+        disabled={!canNext}
+        className="flex flex-col items-center justify-center px-5 py-3 gap-1 transition-all active:scale-95 hover:bg-white/[0.06] disabled:opacity-30"
+        style={{ minWidth: 64 }}
+        title="Next order (→ key)">
+        <span className="text-[20px] leading-none text-white/75">→</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/35 font-bold">Next</span>
+      </button>
     </div>
   );
 }
@@ -1222,6 +1363,42 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
             </div>
           </div>
 
+          {/* Station targets */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Station Targets</p>
+            <p className="text-[9px] text-white/35 leading-relaxed -mt-1">Warn / alert thresholds per station. Cards change amber → red when exceeded.</p>
+            {(Object.entries(STATION_META) as [Station, typeof STATION_META[Station]][]).map(([station, meta]) => (
+              <div key={station} className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 min-w-0 w-16 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
+                  <span className="text-[10px] text-white/65 truncate">{meta.label}</span>
+                </div>
+                <div className="flex items-center gap-1 flex-1">
+                  <span className="text-[9px] text-amber-400/70 shrink-0">⚠</span>
+                  <input type="number" min={1} max={59} step={1}
+                    value={Math.floor((cfg.stationWarnSec[station] ?? WARN_SEC) / 60)}
+                    onChange={e => {
+                      const v = Math.max(1, Math.min(59, parseInt(e.target.value) || 1));
+                      setCfg(c => ({ ...c, stationWarnSec: { ...c.stationWarnSec, [station]: v * 60 } }));
+                    }}
+                    className="w-10 h-6 text-center text-[11px] font-bold rounded border bg-transparent outline-none focus:border-amber-500/60"
+                    style={{ borderColor: "rgba(255,255,255,0.12)", color: "#f59e0b" }} />
+                  <span className="text-[9px] text-white/35 shrink-0">m</span>
+                  <span className="text-[9px] text-red-400/70 shrink-0 ml-1">🔴</span>
+                  <input type="number" min={1} max={90} step={1}
+                    value={Math.floor((cfg.stationAlertSec[station] ?? ALERT_SEC) / 60)}
+                    onChange={e => {
+                      const v = Math.max(1, Math.min(90, parseInt(e.target.value) || 1));
+                      setCfg(c => ({ ...c, stationAlertSec: { ...c.stationAlertSec, [station]: v * 60 } }));
+                    }}
+                    className="w-10 h-6 text-center text-[11px] font-bold rounded border bg-transparent outline-none focus:border-red-500/60"
+                    style={{ borderColor: "rgba(255,255,255,0.12)", color: "#f87171" }} />
+                  <span className="text-[9px] text-white/35 shrink-0">m</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
     </div>
@@ -1276,6 +1453,11 @@ export default function KdsDisplay() {
   const [showInjectPanel,   setShowInjectPanel]   = useState(false);
   const [pingActive, setPingActive] = useState(false);
   const [modColors, setModColors] = useState<ModifierColors>(DEFAULT_MOD_COLORS);
+  const [sessionBumps, setSessionBumps] = useState(0);
+  const [heldOrders,   setHeldOrders]   = useState<Set<string>>(new Set());
+  const toggleHold = useCallback((id: string) => {
+    setHeldOrders(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }, []);
 
   const { playChime } = useOrderChime();
   const cfgRef           = useRef(cfg);
@@ -1351,7 +1533,9 @@ export default function KdsDisplay() {
     return allOrders.filter(o => o.items.some(it => it.stationId === activeTab));
   })();
 
-  const focusedOrder = visibleOrders.find(o => o.id === focusedId) ?? visibleOrders[0] ?? null;
+  // Orders available for bump-bar navigation (skip held)
+  const navigableOrders = visibleOrders.filter(o => !heldOrders.has(o.id));
+  const focusedOrder = navigableOrders.find(o => o.id === focusedId) ?? navigableOrders[0] ?? null;
   const doneTotal  = allOrders.reduce((s, o) => s + o.items.filter(it => doneItems.has(it.id)).length, 0);
   const itemTotal  = allOrders.reduce((s, o) => s + o.items.length, 0);
 
@@ -1365,7 +1549,8 @@ export default function KdsDisplay() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-          setFocus(prev => prev === orderId ? (visibleOrders.find(o => o.id !== orderId)?.id ?? null) : prev);
+          setHeldOrders(prev => { const next = new Set(prev); next.delete(orderId); return next; });
+          setFocus(prev => prev === orderId ? (navigableOrders.find(o => o.id !== orderId)?.id ?? null) : prev);
           setDone(prev => { const next = new Set(prev); bumped.items.forEach(it => next.delete(it.id)); return next; });
           setBumpToast({ number: bumped.number });
           setNowServing(prev => {
@@ -1376,6 +1561,7 @@ export default function KdsDisplay() {
             const without = prev.filter(r => r.order.id !== bumped.id);
             return [{ order: bumped, bumpedAt: Date.now() }, ...without].slice(0, 10);
           });
+          setSessionBumps(n => n + 1);
         },
       }
     );
@@ -1446,14 +1632,18 @@ export default function KdsDisplay() {
         if (target) { setFocus(target.id); e.preventDefault(); }
         return;
       }
-      const idx = visibleOrders.findIndex(o => o.id === focusedId);
+      // H key: toggle hold on focused order
+      if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (focusedOrder) { toggleHold(focusedOrder.id); e.preventDefault(); return; }
+      }
+      const idx = navigableOrders.findIndex(o => o.id === focusedId);
       const nextKey = cfg.nextKey;
       const prevKey = cfg.prevKey;
       const bumpKey = cfg.bumpKey;
       if (e.key === nextKey || e.key === "ArrowRight" || e.key === "ArrowDown") {
-        setFocus(visibleOrders[Math.min(idx + 1, visibleOrders.length - 1)]?.id ?? null);
+        setFocus(navigableOrders[Math.min(idx + 1, navigableOrders.length - 1)]?.id ?? null);
       } else if (e.key === prevKey || e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        setFocus(visibleOrders[Math.max(idx - 1, 0)]?.id ?? null);
+        setFocus(navigableOrders[Math.max(idx - 1, 0)]?.id ?? null);
       } else if ((e.key === bumpKey || e.key === "Enter") && focusedOrder) {
         e.preventDefault(); bump(focusedOrder.id);
       } else if (e.key === cfg.recallKey && cfg.recallKey) {
@@ -1466,7 +1656,7 @@ export default function KdsDisplay() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [visibleOrders, focusedId, focusedOrder, bump, exitFullscreen, queryClient, cfg.bumpKey, cfg.prevKey, cfg.nextKey, cfg.recallKey, nowServingOrders, recentBumped, recallOrder]);
+  }, [navigableOrders, visibleOrders, focusedId, focusedOrder, bump, exitFullscreen, queryClient, cfg.bumpKey, cfg.prevKey, cfg.nextKey, cfg.recallKey, nowServingOrders, recentBumped, recallOrder, toggleHold]);
 
   // ── Gamepad / bump bar (HID game-controller mode) ─────────────────────────
   useEffect(() => {
@@ -1610,8 +1800,8 @@ export default function KdsDisplay() {
   ];
 
   // ── Order age stats ───────────────────────────────────────────────────────
-  const warnCount  = allOrders.filter(o => o.elapsedSec >= WARN_SEC && o.elapsedSec < ALERT_SEC).length;
-  const alertCount = allOrders.filter(o => o.elapsedSec >= ALERT_SEC).length;
+  const warnCount  = allOrders.filter(o => { const t = getOrderThresholds(o, cfg); return o.elapsedSec >= t.warnSec && o.elapsedSec < t.alertSec; }).length;
+  const alertCount = allOrders.filter(o => { const t = getOrderThresholds(o, cfg); return o.elapsedSec >= t.alertSec; }).length;
   const statsMin   = allOrders.length ? Math.min(...allOrders.map(o => o.elapsedSec)) : 0;
   const statsMax   = allOrders.length ? Math.max(...allOrders.map(o => o.elapsedSec)) : 0;
   const statsAvg   = allOrders.length ? Math.round(allOrders.reduce((a, o) => a + o.elapsedSec, 0) / allOrders.length) : 0;
@@ -1649,6 +1839,9 @@ export default function KdsDisplay() {
           {cfg.mode === "multi" ? (
             stationTabs.map(tab => {
               const active = activeTab === tab.id;
+              const count  = tab.id === "All"
+                ? allOrders.length
+                : allOrders.filter(o => o.items.some(it => it.stationId === tab.id)).length;
               return (
                 <button key={tab.id} onClick={() => setTab(tab.id)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0"
@@ -1657,6 +1850,15 @@ export default function KdsDisplay() {
                     : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.78)" }}>
                   {!active && <span className="w-1.5 h-1.5 rounded-full" style={{ background: tab.color }} />}
                   {tab.label}
+                  {count > 0 && (
+                    <span
+                      className="text-[10px] font-black tabular-nums leading-none px-1 py-0.5 rounded-full"
+                      style={active
+                        ? { background: "rgba(0,0,0,0.22)", color: tab.id === "All" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)" }
+                        : { background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.65)" }}>
+                      {count}
+                    </span>
+                  )}
                 </button>
               );
             })
@@ -1682,6 +1884,27 @@ export default function KdsDisplay() {
               {doneTotal}/{itemTotal}
             </span> items
           </span>
+
+          {/* Quick column control (multi mode only) */}
+          {cfg.mode === "multi" && (
+            <div className="flex items-center rounded-lg border overflow-hidden shrink-0"
+              style={{ borderColor: "rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.04)" }}>
+              <button
+                onClick={() => setCfg(c => ({ ...c, numCols: Math.max(2, c.numCols - 1) }))}
+                disabled={cfg.numCols <= 2}
+                className="w-6 h-6 flex items-center justify-center text-[13px] font-bold transition-all hover:bg-white/[0.08] disabled:opacity-30"
+                style={{ color: "rgba(255,255,255,0.55)" }}
+                title="Fewer columns">−</button>
+              <span className="text-[11px] font-bold tabular-nums px-1"
+                style={{ color: "rgba(255,255,255,0.65)" }}>{cfg.numCols}</span>
+              <button
+                onClick={() => setCfg(c => ({ ...c, numCols: Math.min(6, c.numCols + 1) }))}
+                disabled={cfg.numCols >= 6}
+                className="w-6 h-6 flex items-center justify-center text-[13px] font-bold transition-all hover:bg-white/[0.08] disabled:opacity-30"
+                style={{ color: "rgba(255,255,255,0.55)" }}
+                title="More columns">+</button>
+            </div>
+          )}
 
           {/* Test inject */}
           {testOrdersEnabled && (
@@ -1762,6 +1985,8 @@ export default function KdsDisplay() {
                 onToggleItem={toggleItem}
                 onBump={() => bump(order.id)}
                 onFocus={() => setFocus(order.id)}
+                onHold={() => toggleHold(order.id)}
+                isHeld={heldOrders.has(order.id)}
                 cfg={cfg}
               />
             ))}
@@ -1809,6 +2034,45 @@ export default function KdsDisplay() {
           )}
         </div>
       )}
+
+      {/* ── Age Heatmap strip ────────────────────────────────────────────── */}
+      {cfg.showAgeHeatmap && visibleOrders.length > 0 && (() => {
+        const sorted = [...visibleOrders].sort((a, b) => b.elapsedSec - a.elapsedSec);
+        return (
+          <div className="mx-4 mb-2 shrink-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto"
+              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+              <span className="text-[10px] font-bold uppercase tracking-widest shrink-0"
+                style={{ color: "rgba(255,255,255,0.3)" }}>Age</span>
+              {sorted.map(order => {
+                const sec = order.elapsedSec;
+                const { warnSec: hWarn, alertSec: hAlert } = getOrderThresholds(order, cfg);
+                const color = sec >= hAlert ? "#f87171" : sec >= hWarn ? "#f59e0b" : "#4ade80";
+                const bg = sec >= hAlert ? "rgba(239,68,68,0.12)" : sec >= hWarn ? "rgba(245,158,11,0.12)" : "rgba(74,222,128,0.10)";
+                const border = sec >= hAlert ? "rgba(239,68,68,0.35)" : sec >= hWarn ? "rgba(245,158,11,0.35)" : "rgba(74,222,128,0.25)";
+                const isFocused = focusedOrder?.id === order.id;
+                return (
+                  <button
+                    key={order.id}
+                    onClick={() => setFocus(order.id)}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md border shrink-0 transition-all"
+                    style={{
+                      background: isFocused ? "rgba(255,255,255,0.12)" : bg,
+                      borderColor: isFocused ? "rgba(255,255,255,0.35)" : border,
+                      color,
+                      outline: isFocused ? "1px solid rgba(255,255,255,0.25)" : "none",
+                      outlineOffset: 1,
+                    }}
+                    title={`Order #${order.number} — ${fmtSec(sec)} old`}>
+                    <span className="text-[10px] font-bold">#{order.number}</span>
+                    <span className="text-[10px] font-mono opacity-80">{fmtSec(sec)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Now Serving strip (all modes) ────────────────────────────────── */}
       {cfg.showNowServing && nowServingOrders.length > 0 && (
@@ -1928,6 +2192,11 @@ export default function KdsDisplay() {
                 { keys: [pk, nk], label: "Navigate" },
               ];
               if (cfg.showNowServing && nowServingOrders.length > 0) hints.push({ keys: ["C"], label: "Clear Served" });
+              if (cfg.recallKey) {
+                const rk = cfg.recallKey === "Backspace" ? "⌫" : cfg.recallKey.length > 3 ? cfg.recallKey : cfg.recallKey.toUpperCase();
+                hints.push({ keys: [rk], label: "Recall" });
+              }
+              hints.push({ keys: ["H"], label: "Hold" });
               return hints;
             })().map(({ keys, label }) => (
               <div key={label} className="flex items-center gap-1.5">
@@ -1941,8 +2210,18 @@ export default function KdsDisplay() {
             ))}
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {sessionBumps > 0 && (
+              <span className="text-[12px] text-white/70">
+                <span className="font-semibold text-white/85">{sessionBumps}</span> order{sessionBumps !== 1 ? "s" : ""} bumped
+              </span>
+            )}
+            {heldOrders.size > 0 && (
+              <span className="text-[12px] font-semibold" style={{ color: "#fbbf24" }}>
+                ⏸ {heldOrders.size} on hold
+              </span>
+            )}
             {doneTotal > 0 && (
-              <span className="text-[12px] text-white/70">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
+              <span className="text-[12px] text-white/50">· {doneTotal} item{doneTotal !== 1 ? "s" : ""} done</span>
             )}
             {allOrders.length > 0 && (
               <div className="flex items-center gap-2">
@@ -1987,6 +2266,28 @@ export default function KdsDisplay() {
         </footer>
       )}
 
+      {/* ── Virtual Bump Bar ─────────────────────────────────────────────── */}
+      {cfg.showVirtualBumpBar && (() => {
+        const idx          = navigableOrders.findIndex(o => o.id === focusedId);
+        const activeIds    = new Set(nowServingOrders.map(ns => ns.order.id));
+        const recallable   = recentBumped.filter(r => !activeIds.has(r.order.id));
+        const lastRecall   = recallable[0]?.order ?? null;
+        return (
+          <VirtualBumpBar
+            focusedOrder={focusedOrder}
+            canPrev={idx > 0}
+            canNext={idx < navigableOrders.length - 1}
+            canRecall={recallable.length > 0}
+            lastRecallable={lastRecall}
+            onPrev={() => setFocus(navigableOrders[Math.max(idx - 1, 0)]?.id ?? null)}
+            onNext={() => setFocus(navigableOrders[Math.min(idx + 1, navigableOrders.length - 1)]?.id ?? null)}
+            onBump={() => focusedOrder && bump(focusedOrder.id)}
+            onRecall={() => lastRecall && recallOrder(lastRecall.id)}
+            bottomOffset={cfg.showFooter ? 68 : 16}
+          />
+        );
+      })()}
+
       {/* ── Overlays ─────────────────────────────────────────────────────── */}
       {showSettings      && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
       {showQuickSettings && <QuickSettingsPanel cfg={cfg} setCfg={setCfg} onClose={() => setShowQuickSettings(false)} focusedOrder={focusedOrder} onBumpFocused={() => focusedOrder && bump(focusedOrder.id)} recentBumped={recentBumped} nowServingOrders={nowServingOrders} recallOrder={recallOrder} />}
@@ -2020,6 +2321,7 @@ export default function KdsDisplay() {
         @keyframes warnPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 22px 6px rgba(245,158,11,0.32)} }
         @keyframes alertFlash  { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} 50%{box-shadow:0 0 28px 8px rgba(239,68,68,0.45)} }
         @keyframes pingFlash   { 0%{opacity:0} 8%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+        @keyframes vbbSlideUp  { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
       `}</style>
     </div>
     </ModColorCtx.Provider>

@@ -42,7 +42,12 @@ Hierarchy: Enterprise → Store → Station → Device; Order → OrderItems (li
 
 ## Key Features
 
-- **KDS Display** (`/`): Live order grid, station filtering tabs, keyboard bump bar (←→ navigate, SPACE/Enter bump), configurable recall key (default Backspace), physical bump bar presets (Logic Controls / POS-X / MMF / Custom), virtual bump bar (◄ BUMP ↩Recall ▶), elapsed-time color coding (yellow >10m, red >15m), rush/VIP order highlighting, resolution-aware auto-zoom, long-order font scaling + 2-col layout + overflow badge
+- **KDS Display** (`/`): Live order grid, station filtering tabs (with live order count badges), keyboard bump bar (←→ navigate, SPACE/Enter bump), configurable recall key (default Backspace), physical bump bar presets (Logic Controls / POS-X / MMF / Custom), virtual bump bar (◄ BUMP ↩Recall ▶ with live elapsed timer), elapsed-time color coding (yellow >9m, red >15m), rush/VIP order highlighting, resolution-aware auto-zoom, long-order font scaling + 2-col layout + overflow badge
+- **Per-Station Urgency Thresholds**: Each station has its own warn/alert minute targets (Fryer 4/7m, Cold 6/10m, Dessert 8/13m, Grill/Other 9/15m). `timerColor`, `UrgencyBar`, escalation flash, age-heatmap coloring, and footer warn/alert counts all use per-order thresholds derived from station mix. Configurable in Settings → **Station Targets** (⚠ warn / 🔴 alert inputs per station). Multi-station orders use the most permissive threshold.
+- **Order Hold**: Press `H` or click ⏸ on any card to put an order on hold — amber border, dimmed 58%, "⏸ HOLD" badge, skipped in bump-bar navigation; bumping auto-clears hold; hold count shown in footer
+- **Quick Column Control**: `− N +` button in header for instant 2–6 column grid resize without opening settings
+- **Age Heatmap Strip**: Toggle in Quick Settings — compact row of all active tickets sorted oldest-first, color-coded green/amber/red; click to focus; scrollable
+- **Session Stats**: Footer shows bumped count + held count for the current session
 - **Ping Flash Overlay**: Full-screen green ring + badge when `kds_ping` WS event received — confirms display is wired correctly before service. 1.6s animated overlay with device ID.
 - **Now Serving strip** + **Recent/recall tray**: independent `showNowServing` and `showRecentBumped` toggles; recall any bumped order via keyboard, virtual bar, or Quick Actions panel
 - **Modifier Color Customization**: per-category color configuration (Remove/No/Hold, Extra/Add/Double, Normal) stored in `modifier_color_settings` DB table — `GET/PUT /api/modifier-colors`; changes broadcast to all displays via WS; configurable from Template Builder back-office under the "Colors" tab
