@@ -1775,13 +1775,13 @@ export default function KdsDisplay() {
             <span className="hidden lg:inline text-[10px] uppercase tracking-wider text-white/35">Bump bar</span>
             <button
               onClick={() => setCfg(c => ({ ...c, bumpBarEnabled: !c.bumpBarEnabled }))}
-              className="h-8 px-3 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
+              className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
               style={{ background: cfg.bumpBarEnabled ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)", borderColor: cfg.bumpBarEnabled ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.08)", color: cfg.bumpBarEnabled ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
               {cfg.bumpBarEnabled ? "ON" : "OFF"}
             </button>
             <button
               onClick={() => setCfg(c => ({ ...c, showVirtualBumpBar: !c.showVirtualBumpBar }))}
-              className="h-8 px-3 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
+              className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
               style={{ background: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)", borderColor: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.08)", color: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
               Virtual
             </button>
