@@ -71,9 +71,17 @@ router.post("/test/inject-order", async (req, res): Promise<void> => {
 
   const orderNum   = String(Math.floor(Math.random() * 900) + 100);
   const tableNum   = Math.floor(Math.random() * 20) + 1;
-  const priority   = PRIORITIES[Math.floor(Math.random() * PRIORITIES.length)];
   const customer   = NAMES[Math.floor(Math.random() * NAMES.length)];
-  const orderNote  = ORDER_NOTES[Math.floor(Math.random() * ORDER_NOTES.length)];
+
+  const priorityParam = (req.query.priority as string | undefined)?.toLowerCase();
+  const priority = (priorityParam === "rush" || priorityParam === "vip" || priorityParam === "normal")
+    ? priorityParam
+    : PRIORITIES[Math.floor(Math.random() * PRIORITIES.length)];
+
+  const noteParam = req.query.note as string | undefined;
+  const orderNote = noteParam !== undefined
+    ? noteParam
+    : ORDER_NOTES[Math.floor(Math.random() * ORDER_NOTES.length)];
 
   const stationFilter = req.query.station as string | undefined;
   const multiStation  = req.query.multiStation === "true";

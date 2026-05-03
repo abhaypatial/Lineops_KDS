@@ -655,6 +655,180 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
   );
 }
 
+// ─── Inject Order Panel ───────────────────────────────────────────────────────
+
+const INJECT_STATIONS = [
+  { id: "multi",   label: "Multi",   color: "#a5b4fc" },
+  { id: "grill",   label: "Grill",   color: "#ef4444" },
+  { id: "fryer",   label: "Fryer",   color: "#f59e0b" },
+  { id: "cold",    label: "Cold",    color: "#3b82f6" },
+  { id: "dessert", label: "Dessert", color: "#a855f7" },
+  { id: "other",   label: "Other",   color: "#6b7280" },
+] as const;
+
+const INJECT_PRIORITIES = [
+  { id: "random", label: "Rnd",    color: undefined },
+  { id: "normal", label: "Normal", color: undefined },
+  { id: "rush",   label: "RUSH",   color: "#ef4444" },
+  { id: "vip",    label: "VIP",    color: "#f59e0b" },
+] as const;
+
+const INJECT_NOTES = [
+  { id: "random",                         label: "Random" },
+  { id: "",                               label: "None" },
+  { id: "Allergy: nuts",                  label: "🥜 Allergy: nuts" },
+  { id: "Birthday table — add candles",   label: "🎂 Birthday" },
+  { id: "VIP guest",                      label: "⭐ VIP guest" },
+] as const;
+
+function InjectOrderPanel({
+  storeId, onClose, onFired,
+}: {
+  storeId: string;
+  onClose: () => void;
+  onFired: () => void;
+}) {
+  const [station,  setStation]  = useState<string>("multi");
+  const [priority, setPriority] = useState<string>("random");
+  const [count,    setCount]    = useState<number>(0);
+  const [note,     setNote]     = useState<string>("random");
+  const [firing,   setFiring]   = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  async function fire() {
+    if (firing) return;
+    setFiring(true);
+    try {
+      const params = new URLSearchParams({ storeId });
+      if (station === "multi") params.set("multiStation", "true");
+      else params.set("station", station);
+      if (priority !== "random") params.set("priority", priority);
+      if (count > 0) params.set("count", String(count));
+      if (note !== "random") params.set("note", note);
+      const res  = await fetch(`/api/test/inject-order?${params}`, { method: "POST" });
+      const json = await res.json() as { ok: boolean; order?: { orderNumber: string } };
+      if (res.ok && json.ok) {
+        sonnerToast.success(`Order #${json.order?.orderNumber} fired`, { duration: 2000 });
+        onFired();
+      } else {
+        sonnerToast.error("Injection failed");
+      }
+    } catch { sonnerToast.error("Network error"); }
+    finally { setFiring(false); }
+  }
+
+  async function clearAll() {
+    if (clearing) return;
+    setClearing(true);
+    try {
+      const res  = await fetch(`/api/orders/clear-all?storeId=${storeId}`, { method: "POST" });
+      const json = await res.json() as { cleared: number };
+      if (res.ok) {
+        sonnerToast.success(`Cleared ${json.cleared} order${json.cleared !== 1 ? "s" : ""}`, { duration: 2000 });
+        onFired();
+        onClose();
+      }
+    } catch { sonnerToast.error("Network error"); }
+    finally { setClearing(false); }
+  }
+
+  const chip = (active: boolean, color?: string) => ({
+    background: active ? (color ? `${color}18` : "rgba(245,158,11,0.15)") : "rgba(255,255,255,0.04)",
+    borderColor: active ? (color ? `${color}50` : "rgba(245,158,11,0.4)") : "rgba(255,255,255,0.09)",
+    color:       active ? (color ?? "#f59e0b") : "rgba(255,255,255,0.52)",
+  });
+
+  return (
+    <div className="absolute top-12 right-[104px] z-50 rounded-2xl overflow-hidden shadow-2xl"
+      style={{ background: "#13131a", width: 292, border: "1px solid rgba(255,255,255,0.13)" }}>
+      {/* Title bar */}
+      <div className="px-3.5 py-2.5 border-b border-white/[0.07] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FlaskConical style={{ width: 12, height: 12, color: "#f59e0b" }} />
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/65">Test Order Injector</span>
+        </div>
+        <button onClick={onClose} className="text-white/40 hover:text-white/80 text-base leading-none transition-colors">×</button>
+      </div>
+
+      <div className="p-3.5 flex flex-col gap-3.5">
+
+        {/* Station */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 mb-1.5">Station</p>
+          <div className="flex flex-wrap gap-1">
+            {INJECT_STATIONS.map(s => (
+              <button key={s.id} onClick={() => setStation(s.id)}
+                className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all"
+                style={chip(station === s.id, s.color)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Priority */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 mb-1.5">Priority</p>
+          <div className="flex gap-1">
+            {INJECT_PRIORITIES.map(p => (
+              <button key={p.id} onClick={() => setPriority(p.id)}
+                className="flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all"
+                style={chip(priority === p.id, p.color)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Item Count */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 mb-1.5">
+            Items <span className="normal-case opacity-60">{count === 0 ? "(random)" : ""}</span>
+          </p>
+          <div className="flex gap-1">
+            {[0, 1, 2, 3, 4, 5, 6].map(n => (
+              <button key={n} onClick={() => setCount(n)}
+                className="flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all"
+                style={chip(count === n)}>
+                {n === 0 ? "~" : n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Note */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 mb-1.5">Order Note</p>
+          <div className="flex flex-wrap gap-1">
+            {INJECT_NOTES.map(n => (
+              <button key={n.id} onClick={() => setNote(n.id)}
+                className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all"
+                style={chip(note === n.id)}>
+                {n.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-0.5">
+          <button onClick={fire} disabled={firing}
+            className="flex-1 py-2.5 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+            style={{ background: "rgba(245,158,11,0.14)", borderColor: "rgba(245,158,11,0.42)", color: "#f59e0b" }}>
+            <FlaskConical style={{ width: 12, height: 12 }} />
+            {firing ? "Firing…" : "Fire Order"}
+          </button>
+          <button onClick={clearAll} disabled={clearing}
+            className="py-2.5 px-3.5 rounded-xl text-[11px] font-bold border transition-all disabled:opacity-50 flex items-center justify-center gap-1 active:scale-[0.98]"
+            style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.28)", color: "#f87171" }}>
+            {clearing ? "…" : "✕ Clear All"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Settings Overlay ─────────────────────────────────────────────────────────
 
 function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
@@ -1086,6 +1260,7 @@ export default function KdsDisplay() {
   const [nowServingOrders, setNowServing] = useState<{ order: DisplayOrder; firedAt: number }[]>([]);
   const [recentBumped,    setRecentBumped] = useState<{ order: DisplayOrder; bumpedAt: number }[]>([]);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [showInjectPanel,   setShowInjectPanel]   = useState(false);
   const [pingActive, setPingActive] = useState(false);
   const [modColors, setModColors] = useState<ModifierColors>(DEFAULT_MOD_COLORS);
 
@@ -1497,12 +1672,17 @@ export default function KdsDisplay() {
 
           {/* Test inject */}
           {testOrdersEnabled && (
-            <button onClick={injectTestOrder} disabled={injecting || !storeId}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold border border-white/[0.1] transition-all disabled:opacity-40"
-              style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.38)" }}
-              title="Inject a random test order">
+            <button
+              onClick={() => { setShowInjectPanel(s => !s); setShowSettings(false); setShowQuickSettings(false); }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold border transition-all disabled:opacity-40"
+              style={{
+                background: showInjectPanel ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.04)",
+                borderColor: showInjectPanel ? "rgba(245,158,11,0.38)" : "rgba(255,255,255,0.1)",
+                color: showInjectPanel ? "#f59e0b" : "rgba(255,255,255,0.45)",
+              }}
+              title="Open test order injector">
               <FlaskConical style={{ width: 13, height: 13 }} />
-              {injecting ? "…" : "Test"}
+              Test
             </button>
           )}
 
@@ -1536,11 +1716,11 @@ export default function KdsDisplay() {
               <div className="text-4xl mb-1 text-white/10">✓</div>
               <p className="text-white/20 text-sm">All clear — kitchen idle</p>
               {testOrdersEnabled && (
-                <button onClick={injectTestOrder} disabled={injecting || !storeId}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/[0.1] text-xs font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.2] transition-all mt-1 disabled:opacity-40"
+                <button onClick={() => setShowInjectPanel(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/[0.1] text-xs font-semibold text-white/40 hover:text-white/60 hover:border-white/[0.2] transition-all mt-1"
                   style={{ background: "rgba(255,255,255,0.03)" }}>
                   <FlaskConical style={{ width: 13, height: 13 }} />
-                  {injecting ? "Injecting…" : "Inject a test order"}
+                  Inject a test order
                 </button>
               )}
             </div>
@@ -1798,6 +1978,13 @@ export default function KdsDisplay() {
       {showSettings      && <SettingsOverlay cfg={cfg} setCfg={setCfg} onClose={() => setShowSettings(false)} playChime={playChime} />}
       {showQuickSettings && <QuickSettingsPanel cfg={cfg} setCfg={setCfg} onClose={() => setShowQuickSettings(false)} focusedOrder={focusedOrder} onBumpFocused={() => focusedOrder && bump(focusedOrder.id)} recentBumped={recentBumped} nowServingOrders={nowServingOrders} recallOrder={recallOrder} />}
       {bumpToast         && <BumpToast number={bumpToast.number} onDone={() => setBumpToast(null)} />}
+      {showInjectPanel && storeId && (
+        <InjectOrderPanel
+          storeId={storeId}
+          onClose={() => setShowInjectPanel(false)}
+          onFired={() => queryClient.invalidateQueries({ queryKey: ["/api/orders"] })}
+        />
+      )}
 
       {/* ── Quick Settings FAB ────────────────────────────────────────────── */}
       <button
