@@ -44,8 +44,8 @@ app.use(cors({
     : true,
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "512kb" }));
+app.use(express.urlencoded({ extended: true, limit: "512kb" }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 // POS webhook routes get a generous limit to allow bursts (e.g. 20 simultaneous

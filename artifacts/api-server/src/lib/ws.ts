@@ -48,8 +48,13 @@ export function setupWebSocketServer(server: Server): void {
     logger.info({ ip: req.socket.remoteAddress }, "WebSocket client connected");
 
     ws.on("message", (data) => {
+      const raw = data.toString();
+      if (raw.length > 65_536) {
+        logger.warn({ ip: req.socket.remoteAddress }, "WS message too large — ignoring");
+        return;
+      }
       try {
-        const msg = JSON.parse(data.toString());
+        const msg = JSON.parse(raw);
         if (msg.type === "register" && msg.payload?.deviceId) {
           const deviceId = msg.payload.deviceId as string;
           deviceRegistry.set(deviceId, ws);

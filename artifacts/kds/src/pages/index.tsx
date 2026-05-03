@@ -57,6 +57,9 @@ type KdsConfig = {
   showStats: boolean;
   showAgeHeatmap: boolean;
   showFooter: boolean;
+  footerBg?: string | null;
+  footerTextColor?: string | null;
+  footerAccentColor?: string | null;
   showNowServing: boolean;
   showRecentBumped: boolean;
   nowServingExpirySec: number;
@@ -126,6 +129,9 @@ const DEFAULT_CFG: KdsConfig = {
   showStats: false,
   showAgeHeatmap: false,
   showFooter: true,
+  footerBg: null,
+  footerTextColor: null,
+  footerAccentColor: null,
   showNowServing: true,
   showRecentBumped: true,
   nowServingExpirySec: 45,
@@ -1811,6 +1817,11 @@ export default function KdsDisplay() {
   const statsAvg   = allOrders.length ? Math.round(allOrders.reduce((a, o) => a + o.elapsedSec, 0) / allOrders.length) : 0;
   function fmtSec(s: number) { const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; }
 
+  // Footer accent colour — falls back to amber if not configured
+  const footerAccent = cfg.footerAccentColor ?? "#f59e0b";
+  const footerAccentFaint  = /^#[0-9a-fA-F]{6}$/.test(footerAccent) ? footerAccent + "24" : "rgba(245,158,11,0.14)";
+  const footerAccentBorder = /^#[0-9a-fA-F]{6}$/.test(footerAccent) ? footerAccent + "59" : "rgba(245,158,11,0.35)";
+
   const theme = THEME_META[cfg.theme] ?? THEME_META.ink;
 
   return (
@@ -2184,7 +2195,7 @@ export default function KdsDisplay() {
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       {cfg.showFooter && (
-        <footer className="min-h-14 flex items-center px-4 md:px-5 py-2 shrink-0 gap-4 md:gap-6 flex-wrap" style={{ background: theme.bg, borderTop: `1px solid ${theme.line}` }}>
+        <footer className="min-h-14 flex items-center px-4 md:px-5 py-2 shrink-0 gap-4 md:gap-6 flex-wrap" style={{ background: cfg.footerBg ?? theme.bg, borderTop: `1px solid ${theme.line}` }}>
           <div className="flex items-center gap-1.5 flex-wrap">
             {(() => {
               const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
@@ -2252,13 +2263,13 @@ export default function KdsDisplay() {
             <button
               onClick={() => setCfg(c => ({ ...c, bumpBarEnabled: !c.bumpBarEnabled }))}
               className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
-              style={{ background: cfg.bumpBarEnabled ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)", borderColor: cfg.bumpBarEnabled ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.08)", color: cfg.bumpBarEnabled ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
+              style={{ background: cfg.bumpBarEnabled ? footerAccentFaint : "rgba(255,255,255,0.05)", borderColor: cfg.bumpBarEnabled ? footerAccentBorder : "rgba(255,255,255,0.08)", color: cfg.bumpBarEnabled ? footerAccent : "rgba(255,255,255,0.72)" }}>
               {cfg.bumpBarEnabled ? "ON" : "OFF"}
             </button>
             <button
               onClick={() => setCfg(c => ({ ...c, showVirtualBumpBar: !c.showVirtualBumpBar }))}
               className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
-              style={{ background: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)", borderColor: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.08)", color: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
+              style={{ background: cfg.showVirtualBumpBar ? footerAccentFaint : "rgba(255,255,255,0.05)", borderColor: cfg.showVirtualBumpBar ? footerAccentBorder : "rgba(255,255,255,0.08)", color: cfg.showVirtualBumpBar ? footerAccent : "rgba(255,255,255,0.72)" }}>
               Virtual
             </button>
             <button

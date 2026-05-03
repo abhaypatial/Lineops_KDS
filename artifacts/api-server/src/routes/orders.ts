@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { randomUUID } from "crypto";
 import { broadcast } from "../lib/ws";
+import { strictLimiter } from "../middleware/rate-limit";
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.get("/orders", async (req, res): Promise<void> => {
     .from(ordersTable)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(ordersTable.createdAt))
-    .limit(100);
+    .limit(500);
 
   // Attach items
   if (orders.length === 0) {
@@ -89,52 +90,56 @@ router.get("/orders", async (req, res): Promise<void> => {
 
 router.post("/orders", async (req, res): Promise<void> => {
   const body = CreateOrderBody.parse(req.body);
-  const orderId = randomUUID();
-  const [order] = await db
-    .insert(ordersTable)
-    .values({
-      id: orderId,
-      storeId: body.storeId,
-      posOrderId: body.posOrderId ?? null,
-      orderNumber: body.orderNumber,
-      status: "pending",
-      priority: body.priority ?? "normal",
-      customerName: body.customerName ?? null,
-      notes: body.notes ?? null,
-    })
-    .returning();
 
-  const items = await Promise.all(
-    (body.items ?? []).map((item, idx) =>
-      db
-        .insert(orderItemsTable)
-        .values({
-          id: randomUUID(),
-          orderId,
-          stationId: item.stationId,
-          name: item.name,
-          quantity: item.quantity,
-          modifiers: item.modifiers ?? [],
-          notes: item.notes ?? null,
-          status: "pending",
-          sortOrder: item.sortOrder ?? idx,
-        })
-        .returning()
-        .then((r) => r[0]),
-    ),
-  );
+  const { order, items } = await db.transaction(async (tx) => {
+    const orderId = randomUUID();
+    const [order] = await tx
+      .insert(ordersTable)
+      .values({
+        id: orderId,
+        storeId: body.storeId,
+        posOrderId: body.posOrderId ?? null,
+        orderNumber: body.orderNumber,
+        status: "pending",
+        priority: body.priority ?? "normal",
+        customerName: body.customerName ?? null,
+        notes: body.notes ?? null,
+      })
+      .returning();
+
+    const itemRows = (body.items ?? []).length > 0
+      ? await tx
+          .insert(orderItemsTable)
+          .values(
+            (body.items ?? []).map((item, idx) => ({
+              id: randomUUID(),
+              orderId,
+              stationId: item.stationId,
+              name: item.name,
+              quantity: item.quantity,
+              modifiers: item.modifiers ?? [],
+              notes: item.notes ?? null,
+              status: "pending" as const,
+              sortOrder: item.sortOrder ?? idx,
+            })),
+          )
+          .returning()
+      : [];
+
+    return { order, items: itemRows };
+  });
 
   const result = { ...order, items, elapsedSeconds: 0 };
 
   broadcast({
     type: "order_created",
-    payload: { orderId, storeId: body.storeId, orderNumber: body.orderNumber },
+    payload: { orderId: order.id, storeId: body.storeId, orderNumber: body.orderNumber },
   });
 
   res.status(201).json(result);
 });
 
-router.post("/orders/clear-all", async (req, res): Promise<void> => {
+router.post("/orders/clear-all", strictLimiter, async (req, res): Promise<void> => {
   const storeId = req.query.storeId as string | undefined;
 
   const conditions = [inArray(ordersTable.status, ["in_progress", "pending"] as const)];
@@ -228,11 +233,12 @@ router.patch("/orders/:id", async (req, res): Promise<void> => {
   res.json(result);
 });
 
-router.post("/orders/:id/bump", async (req, res): Promise<void> => {
+router.post("/orders/:id/bump", strictLimiter, async (req, res): Promise<void> => {
+  const orderId = req.params["id"] as string;
   const [order] = await db
     .select()
     .from(ordersTable)
-    .where(eq(ordersTable.id, req.params.id));
+    .where(eq(ordersTable.id, orderId));
   if (!order) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -240,14 +246,14 @@ router.post("/orders/:id/bump", async (req, res): Promise<void> => {
   const [bumped] = await db
     .update(ordersTable)
     .set({ status: "completed", completedAt: new Date() })
-    .where(eq(ordersTable.id, req.params.id))
+    .where(eq(ordersTable.id, orderId))
     .returning();
   // Mark all items ready
   await db
     .update(orderItemsTable)
     .set({ status: "ready" })
     .where(
-      and(eq(orderItemsTable.orderId, req.params.id), eq(orderItemsTable.status, "pending")),
+      and(eq(orderItemsTable.orderId, orderId), eq(orderItemsTable.status, "pending")),
     );
   const result = await getOrderWithItems(bumped.id);
   broadcast({

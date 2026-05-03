@@ -42,6 +42,8 @@ type Template = {
   showNotes: boolean;
   showOrderNumber: boolean;
   showCustomerName: boolean;
+  footerBg?: string | null;
+  footerAccentColor?: string | null;
 };
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
@@ -358,6 +360,90 @@ function ZonePanel({ zone, onChange }: { zone: Zone; onChange: (z: Zone) => void
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Footer Appearance Panel ──────────────────────────────────────────────────
+
+function FooterAppearanceSection({ template, onChange }: { template: Template; onChange: (t: Template) => void }) {
+  const set = <K extends keyof Template>(k: K, v: Template[K]) => onChange({ ...template, [k]: v });
+  const bg     = template.footerBg ?? "";
+  const accent = template.footerAccentColor ?? "";
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 mb-0.5">Footer Appearance</p>
+        <p className="text-[10px] text-white/35 leading-relaxed">
+          Override the footer bar colors on KDS displays. Leave blank to inherit the active theme.
+        </p>
+      </div>
+
+      {/* Background */}
+      <div className="flex flex-col gap-2 p-3 rounded-xl border"
+        style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.07)" }}>
+        <p className="text-[11px] font-bold text-white/75">Background</p>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-white/50 w-14 shrink-0">Color</span>
+          <ColorSwatch
+            value={bg || "#0a0a0b"}
+            onChange={v => set("footerBg", v)}
+          />
+          <HexInput
+            value={bg}
+            onChange={v => set("footerBg", v || null)}
+          />
+          {bg && (
+            <button onClick={() => set("footerBg", null)}
+              className="text-[10px] text-white/35 hover:text-white/55 transition-colors shrink-0">
+              ✕ Clear
+            </button>
+          )}
+        </div>
+        {bg && (
+          <div className="flex items-center gap-2 mt-1 rounded-lg px-3 py-2 border border-white/[0.1]" style={{ background: bg }}>
+            <span className="text-[11px] text-white/60">Preview</span>
+            <span className="text-[10px] text-white/40 font-mono">{bg}</span>
+          </div>
+        )}
+        {!bg && (
+          <p className="text-[10px] text-white/25 italic">Using theme background</p>
+        )}
+      </div>
+
+      {/* Accent */}
+      <div className="flex flex-col gap-2 p-3 rounded-xl border"
+        style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.07)" }}>
+        <p className="text-[11px] font-bold text-white/75">Accent Color</p>
+        <p className="text-[9px] text-white/35 italic mb-1">Used for bump bar buttons and active state highlights</p>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-white/50 w-14 shrink-0">Color</span>
+          <ColorSwatch
+            value={accent || "#f59e0b"}
+            onChange={v => set("footerAccentColor", v)}
+          />
+          <HexInput
+            value={accent}
+            onChange={v => set("footerAccentColor", v || null)}
+          />
+          {accent && (
+            <button onClick={() => set("footerAccentColor", null)}
+              className="text-[10px] text-white/35 hover:text-white/55 transition-colors shrink-0">
+              ✕ Clear
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent || "#f59e0b" }} />
+          <span className="text-[11px] font-bold" style={{ color: accent || "#f59e0b" }}>
+            Bump bar active state preview
+          </span>
+        </div>
+        {!accent && (
+          <p className="text-[10px] text-white/25 italic">Using default amber (#f59e0b)</p>
+        )}
       </div>
     </div>
   );
@@ -810,7 +896,12 @@ export default function TemplateBuilderPage() {
             ) : rightPanel === "global" ? (
               <GlobalPanel template={template} onChange={updateTemplate} />
             ) : (
-              <ModifierColorsPanel />
+              <div className="flex flex-col gap-6">
+                <FooterAppearanceSection template={template} onChange={updateTemplate} />
+                <div className="border-t border-white/[0.07] pt-5">
+                  <ModifierColorsPanel />
+                </div>
+              </div>
             )}
           </div>
         </div>

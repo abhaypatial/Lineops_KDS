@@ -170,6 +170,12 @@ kds start / stop / restart / update
 - `vite.config.ts` must not throw when `PORT`/`BASE_PATH` are unset — Docker build stages run without them; use defaults instead
 - CORS: `app.use(cors())` is wide-open by default. For locked-down deployments, set `CORS_ORIGIN` env var to restrict origins
 - Device status (`online`/`offline`) is now kept in sync in the DB automatically on every WS connect/disconnect
-- Rate limiting: `posWebhookLimiter` (500/min) on `/api/integrations`, `apiLimiter` (300/min) on all `/api` — middleware in `artifacts/api-server/src/middleware/rate-limit.ts`
+- Rate limiting: `posWebhookLimiter` (500/min) on `/api/integrations`, `apiLimiter` (300/min) on all `/api`, `strictLimiter` (60/min) on `/orders/clear-all` and `/orders/:id/bump` — middleware in `artifacts/api-server/src/middleware/rate-limit.ts`
 - Concurrent POS orders: `createOrderFromNormalised` uses `db.transaction()` + `.onConflictDoNothing()` with the `orders_store_pos_order_uniq` partial unique index — handles 20+ simultaneous orders and duplicate webhooks safely
+- Manual `POST /orders` is also wrapped in a DB transaction — order + items insert atomically, preventing partial order state on crash
+- DB connection pool: `max: 20`, `idleTimeoutMillis: 30s`, `connectionTimeoutMillis: 5s` — handles high-concurrency order bursts without exhausting connections
+- JSON body size capped at 512 KB (`express.json({ limit: "512kb" })`) to prevent large-payload DoS
+- WS messages capped at 64 KB per message — oversized frames are logged and dropped in `ws.ts`
+- `GET /orders` limit raised from 100 → 500 to support busy venues with hundreds of simultaneous active orders
+- Footer appearance customisable per-template: `footerBg` (background hex) and `footerAccentColor` (bump bar button accent) stored in KdsConfig and configurable via Template Builder → Colors tab. Both default to theme/amber fallback if not set.
 - Docker build: `Dockerfile.web` builder uses `node:24-slim` (not Alpine) because `pnpm-workspace.yaml` excludes `@rollup/rollup-linux-x64-musl`; Alpine's musl libc cannot load the glibc rollup binary
