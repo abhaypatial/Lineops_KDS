@@ -22,7 +22,7 @@ const navItems = [
   { title: "Template Builder",  href: "/template-builder",   icon: LayoutTemplate  },
   { title: "Station Configs",   href: "/station-configs",    icon: Layers          },
   { title: "Integration Hub",    href: "/integration-hub",     icon: Plug2           },
-  { title: "Integr. Health",    href: "/integrations-health", icon: HeartPulse      },
+  { title: "Integration Health", href: "/integrations-health", icon: HeartPulse      },
   { title: "Setup",             href: "/setup",              icon: Settings        },
   { title: "Live Monitor",      href: "/live",               icon: Activity        },
 ];

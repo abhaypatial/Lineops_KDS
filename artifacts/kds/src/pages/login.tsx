@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { LogoMark } from "@/components/logo";
 
 const KEY = "kds_admin_password";
 
@@ -63,20 +64,7 @@ export default function LoginPage() {
               marginBottom: 8,
             }}
           >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                background: "linear-gradient(135deg,#f59e0b,#ef4444)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 18,
-              }}
-            >
-              🍳
-            </div>
+            <LogoMark size={36} />
             <span
               style={{
                 fontSize: 20,
@@ -89,7 +77,7 @@ export default function LoginPage() {
             </span>
           </div>
           <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, margin: 0 }}>
-            Admin Access
+            Admin access
           </p>
         </div>
 
