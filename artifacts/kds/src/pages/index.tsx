@@ -579,12 +579,12 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
   const toggle = <K extends keyof KdsConfig>(k: K, v: KdsConfig[K]) => setCfg(c => ({ ...c, [k]: v }));
 
   return (
-    <div className="absolute bottom-11 right-16 z-40 rounded-2xl overflow-hidden shadow-2xl border border-white/[0.12]"
-      style={{ background: "#13131a", width: 240 }}>
+    <div className="absolute bottom-16 right-16 z-40 rounded-2xl overflow-hidden shadow-2xl border border-white/[0.12]"
+      style={{ background: "#13131a", width: 248 }}>
       <div className="px-3 py-2.5 border-b border-white/[0.07] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap style={{ width: 11, height: 11, color: "#f59e0b" }} />
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">Quick Actions</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/65">Quick Actions</span>
         </div>
         <button onClick={onClose} className="text-white/58 hover:text-white/85 text-base leading-none">×</button>
       </div>
@@ -594,9 +594,9 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
         <button
           onClick={bumpAndClose}
           disabled={!focusedOrder}
-          className="w-full py-2 rounded-xl text-[10px] font-bold border transition-all disabled:opacity-30 flex items-center justify-center gap-1.5 active:scale-[0.98]"
-          style={{ background: focusedOrder ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)", borderColor: focusedOrder ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.07)", color: focusedOrder ? "#f59e0b" : "rgba(255,255,255,0.3)" }}>
-          <span style={{ fontSize: 12 }}>✓</span>
+          className="w-full py-2.5 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-30 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          style={{ background: focusedOrder ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)", borderColor: focusedOrder ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.07)", color: focusedOrder ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+          <span style={{ fontSize: 13 }}>✓</span>
           {focusedOrder ? `Bump #${focusedOrder.number}` : "No order focused"}
         </button>
 
@@ -604,8 +604,8 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
         <button
           onClick={() => lastRecallable && recallAndClose(lastRecallable.order.id)}
           disabled={!lastRecallable}
-          className="w-full py-2 rounded-xl text-[10px] font-bold border transition-all disabled:opacity-30 flex items-center justify-center gap-1.5 active:scale-[0.98]"
-          style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: lastRecallable ? "rgba(74,222,128,0.85)" : "rgba(255,255,255,0.3)" }}>
+          className="w-full py-2.5 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-30 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: lastRecallable ? "rgba(74,222,128,0.88)" : "rgba(255,255,255,0.35)" }}>
           <span>↩</span>
           {lastRecallable ? `Recall #${lastRecallable.order.number}` : "Nothing to recall"}
         </button>
@@ -615,11 +615,11 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
           <button
             onClick={() => setShowRecallList(v => !v)}
             disabled={recallable.length === 0}
-            className="w-full py-2 rounded-xl text-[10px] font-bold border transition-all disabled:opacity-30 flex items-center justify-between px-3 active:scale-[0.98]"
-            style={{ background: showRecallList ? "rgba(74,222,128,0.08)" : "rgba(255,255,255,0.04)", borderColor: showRecallList ? "rgba(74,222,128,0.25)" : "rgba(255,255,255,0.07)", color: recallable.length > 0 ? (showRecallList ? "rgba(74,222,128,0.8)" : "rgba(255,255,255,0.4)") : "rgba(255,255,255,0.2)" }}>
+            className="w-full py-2 rounded-xl text-[12px] font-bold border transition-all disabled:opacity-30 flex items-center justify-between px-3 active:scale-[0.98]"
+            style={{ background: showRecallList ? "rgba(74,222,128,0.08)" : "rgba(255,255,255,0.04)", borderColor: showRecallList ? "rgba(74,222,128,0.25)" : "rgba(255,255,255,0.07)", color: recallable.length > 0 ? (showRecallList ? "rgba(74,222,128,0.8)" : "rgba(255,255,255,0.55)") : "rgba(255,255,255,0.25)" }}>
             <span>↩↩ Recall list</span>
             {recallable.length > 0 && (
-              <span className="tabular-nums text-[9px] opacity-60">{recallable.length}</span>
+              <span className="tabular-nums text-[11px] opacity-70">{recallable.length}</span>
             )}
           </button>
           {showRecallList && recallable.length > 0 && (
@@ -628,12 +628,12 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
                 <button key={r.order.id}
                   onClick={() => recallAndClose(r.order.id)}
                   className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all hover:bg-white/[0.05] active:scale-[0.98]"
-                  style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
+                  style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
                   <div className="flex items-center gap-2">
-                    <span className="font-black tabular-nums text-[11px]" style={{ color: "rgba(255,255,255,0.6)" }}>#{r.order.number}</span>
-                    {r.order.customer && <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.3)" }}>{r.order.customer}</span>}
+                    <span className="font-black tabular-nums text-[12px]" style={{ color: "rgba(255,255,255,0.75)" }}>#{r.order.number}</span>
+                    {r.order.customer && <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.50)" }}>{r.order.customer}</span>}
                   </div>
-                  <span style={{ color: "rgba(74,222,128,0.6)", fontSize: 12 }}>↩</span>
+                  <span style={{ color: "rgba(74,222,128,0.7)", fontSize: 13 }}>↩</span>
                 </button>
               ))}
             </div>
@@ -642,7 +642,7 @@ function QuickSettingsPanel({ cfg, setCfg, onClose, focusedOrder, onBumpFocused,
 
         {/* Footer bar toggle */}
         <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between">
-          <span className="text-[10px] text-white/55 uppercase tracking-wider">Footer Bar</span>
+          <span className="text-[11px] text-white/65 uppercase tracking-wider">Footer Bar</span>
           <button onClick={() => toggle("showFooter", !cfg.showFooter)}
             className="w-8 h-4 rounded-full flex items-center px-0.5 transition-all"
             style={{ background: cfg.showFooter ? "#f59e0b" : "rgba(255,255,255,0.1)" }}>
@@ -1580,20 +1580,20 @@ export default function KdsDisplay() {
       {cfg.showStats && allOrders.length > 0 && (
         <div className="mx-4 mb-2 px-3 py-1.5 rounded-xl border flex items-center gap-3 shrink-0 flex-wrap"
           style={{ borderColor: "rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-          <span className="text-[9px] text-white/55 uppercase tracking-widest shrink-0">Stats</span>
+          <span className="text-[11px] text-white/65 uppercase tracking-widest shrink-0 font-semibold">Stats</span>
           <div className="flex gap-4 flex-wrap">
-            <span className="text-[10px]">
-              <span className="text-white/60">Min </span>
-              <span className="font-mono text-white/55">{fmtSec(statsMin)}</span>
+            <span className="text-[12px]">
+              <span className="text-white/65">Min </span>
+              <span className="font-mono text-white/70">{fmtSec(statsMin)}</span>
             </span>
-            <span className="text-[10px]">
-              <span className="text-white/60">Avg </span>
-              <span className="font-mono text-white/55">{fmtSec(statsAvg)}</span>
+            <span className="text-[12px]">
+              <span className="text-white/65">Avg </span>
+              <span className="font-mono text-white/70">{fmtSec(statsAvg)}</span>
             </span>
-            <span className="text-[10px]">
-              <span className="text-white/60">Max </span>
+            <span className="text-[12px]">
+              <span className="text-white/65">Max </span>
               <span className="font-mono font-bold"
-                style={{ color: statsMax >= ALERT_SEC ? "#f87171" : statsMax >= WARN_SEC ? "#f59e0b" : "rgba(255,255,255,0.55)" }}>
+                style={{ color: statsMax >= ALERT_SEC ? "#f87171" : statsMax >= WARN_SEC ? "#f59e0b" : "rgba(255,255,255,0.70)" }}>
                 {fmtSec(statsMax)}
               </span>
             </span>
@@ -1601,13 +1601,13 @@ export default function KdsDisplay() {
           {(warnCount > 0 || alertCount > 0) && (
             <div className="flex items-center gap-3 ml-1">
               {warnCount > 0 && (
-                <span className="flex items-center gap-1 text-[10px]" style={{ color: "#f59e0b" }}>
+                <span className="flex items-center gap-1 text-[12px]" style={{ color: "#f59e0b" }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                   {warnCount} late
                 </span>
               )}
               {alertCount > 0 && (
-                <span className="flex items-center gap-1 text-[10px]" style={{ color: "#f87171" }}>
+                <span className="flex items-center gap-1 text-[12px]" style={{ color: "#f87171" }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
                   {alertCount} critical
                 </span>
@@ -1631,7 +1631,7 @@ export default function KdsDisplay() {
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="w-2 h-2 rounded-full"
                 style={{ background: "#4ade80", animation: "pulse 1.2s ease-in-out infinite", boxShadow: "0 0 7px rgba(74,222,128,0.7)" }} />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: "#86efac" }}>Now Serving</span>
+              <span className="text-[12px] font-black uppercase tracking-[0.18em]" style={{ color: "#86efac" }}>Now Serving</span>
             </div>
             <div className="w-px self-stretch bg-white/[0.07] shrink-0" />
             {/* Chips */}
@@ -1651,16 +1651,16 @@ export default function KdsDisplay() {
                       #{ns.order.number}
                     </span>
                     {ns.order.customer && (
-                      <span className="text-[9px] font-semibold" style={{ color: "#86efac" }}>
+                      <span className="text-[11px] font-semibold" style={{ color: "#86efac" }}>
                         {ns.order.customer}
                       </span>
                     )}
-                    <span className="font-mono text-[10px] font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.58)" }}>
+                    <span className="font-mono text-[11px] font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.72)" }}>
                       {fmtSec(secAgo)}
                     </span>
                     <button onClick={() => recallOrder(ns.order.id)}
                       className="flex items-center justify-center w-4 h-4 rounded transition-all hover:bg-white/10"
-                      style={{ color: "rgba(134,239,172,0.85)", fontSize: 10, fontWeight: 700 }}
+                      style={{ color: "rgba(134,239,172,0.9)", fontSize: 11, fontWeight: 700 }}
                       title="Recall — reopen this order">↩</button>
                   </div>
                 );
@@ -1668,8 +1668,8 @@ export default function KdsDisplay() {
             </div>
             {/* Clear button */}
               <button onClick={() => setNowServing([])}
-              className="shrink-0 h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all hover:bg-white/[0.08]"
-              style={{ borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.78)", background: "rgba(255,255,255,0.04)" }}
+              className="shrink-0 h-7 px-2.5 rounded-lg text-[11px] font-bold border transition-all hover:bg-white/[0.08]"
+              style={{ borderColor: "rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.82)", background: "rgba(255,255,255,0.05)" }}
               title="Clear all (C)">
               ✕ Clear
             </button>
@@ -1687,32 +1687,32 @@ export default function KdsDisplay() {
             style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="flex items-center gap-3 px-3 py-2">
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.72)" }}>Recent</span>
+                <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.75)" }}>Recent</span>
               </div>
-              <div className="w-px self-stretch bg-white/[0.05] shrink-0" />
+              <div className="w-px self-stretch bg-white/[0.07] shrink-0" />
               <div className="flex-1 flex gap-1.5 flex-wrap items-center min-w-0">
                 {recallable.map(r => (
                   <div key={r.order.id}
                     className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-[12px] font-black tabular-nums" style={{ color: "rgba(255,255,255,0.82)" }}>
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}>
+                    <span className="text-[12px] font-black tabular-nums" style={{ color: "rgba(255,255,255,0.85)" }}>
                       #{r.order.number}
                     </span>
                     {r.order.customer && (
-                      <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.72)" }}>
+                      <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.72)" }}>
                         {r.order.customer}
                       </span>
                     )}
                     <button onClick={() => recallOrder(r.order.id)}
                       className="flex items-center justify-center w-5 h-5 rounded transition-all hover:bg-white/10"
-                      style={{ color: "rgba(255,255,255,0.82)", fontSize: 11, fontWeight: 700 }}
+                      style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 700 }}
                       title="Recall this order">↩</button>
                   </div>
                 ))}
               </div>
               <button onClick={() => setRecentBumped([])}
-                className="shrink-0 h-6 px-2 rounded-lg text-[9px] font-bold border transition-all hover:bg-white/[0.04]"
-                style={{ borderColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.18)" }}
+                className="shrink-0 h-6 px-2 rounded-lg text-[11px] font-bold border transition-all hover:bg-white/[0.06]"
+                style={{ borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }}
                 title="Clear recent">
                 ✕
               </button>
@@ -1772,7 +1772,7 @@ export default function KdsDisplay() {
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0 border-l border-white/[0.07] pl-4">
-            <span className="hidden lg:inline text-[10px] uppercase tracking-wider text-white/35">Bump bar</span>
+            <span className="hidden lg:inline text-[11px] uppercase tracking-wider text-white/55">Bump bar</span>
             <button
               onClick={() => setCfg(c => ({ ...c, bumpBarEnabled: !c.bumpBarEnabled }))}
               className="h-8 px-3 rounded-lg text-[11px] font-bold border transition-all active:scale-95"
@@ -1804,7 +1804,7 @@ export default function KdsDisplay() {
         onClick={() => { setShowQuickSettings(s => !s); setShowSettings(false); }}
         className="absolute z-30 w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-all"
         style={{
-          bottom: cfg.showFooter ? 44 : 16,
+          bottom: cfg.showFooter ? 62 : 16,
           right: 64,
           background: showQuickSettings ? "rgba(245,158,11,0.18)" : "rgba(13,13,16,0.92)",
           borderColor: showQuickSettings ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.12)",
