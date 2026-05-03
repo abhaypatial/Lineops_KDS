@@ -1667,7 +1667,7 @@ export default function KdsDisplay() {
               })}
             </div>
             {/* Clear button */}
-              <button onClick={() => setNowServing([])}
+            <button onClick={() => setNowServing([])}
               className="shrink-0 h-7 px-2.5 rounded-lg text-[11px] font-bold border transition-all hover:bg-white/[0.08]"
               style={{ borderColor: "rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.82)", background: "rgba(255,255,255,0.05)" }}
               title="Clear all (C)">
@@ -1804,7 +1804,7 @@ export default function KdsDisplay() {
         onClick={() => { setShowQuickSettings(s => !s); setShowSettings(false); }}
         className="absolute z-30 w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-all"
         style={{
-          bottom: cfg.showFooter ? 62 : 16,
+          bottom: cfg.showFooter ? 64 : 16,
           right: 64,
           background: showQuickSettings ? "rgba(245,158,11,0.18)" : "rgba(13,13,16,0.92)",
           borderColor: showQuickSettings ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.12)",
