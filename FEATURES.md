@@ -334,4 +334,4 @@ All changes take effect immediately and persist to `localStorage`.
 
 ---
 
-*Last updated: 2026-05-02 — added age escalation alerts, expo Now Serving strip, expo send mode, expo spotlight, station-aware test inject, Quick Settings FAB.*
+*Last updated: 2026-05-03 — all order items now always visible (no item cap), natural card heights (no clipping), footer color customization, Quick Actions contrast improvements, header tab badge brightness improvements.*

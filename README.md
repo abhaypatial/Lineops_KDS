@@ -17,7 +17,7 @@ Production-ready Kitchen Display System for commercial kitchens. Multi-tenant, r
 - **Station Config Management** — assign a saved config template to each kitchen station from the backend admin; push it to all displays at that station over WebSocket with one click; copy configs between stations; CLI: `kds devices push <deviceId> <templateId>` for per-display targeting
 - **Live device registry** — every KDS display registers itself via WebSocket on connect; `GET /api/devices/online` returns currently connected device IDs; per-device config push reaches a display in real-time or returns `reached: false` if offline
 - **Resolution-aware auto-zoom** — display automatically scales to fill any screen size without blank edges; manual override with Ctrl +/−/0
-- **Long-order handling** — cards with many items automatically reduce font size, switch to a two-column item layout, and show a "+N more" badge; no card ever requires scrolling
+- **Long-order handling** — cards with many items automatically reduce font size and switch to a two-column item layout; all items are always visible with no truncation or overflow badge
 - **Quick Actions panel** — single-tap: bump focused order, recall last order, open recall list, toggle footer bar; accessible from the ⚡ FAB
 - **Flexible UI controls** — toggle the footer bar, virtual bump bar, Now Serving strip, and recent-recall tray independently; each has a self-hide × button for one-tap dismissal without opening Settings
 - **Test order button** — fire a test order to any station instantly, straight from the KDS screen or CLI

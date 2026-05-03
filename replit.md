@@ -180,3 +180,6 @@ kds start / stop / restart / update
 - Footer appearance customisable per-template: `footerBg` (background hex) and `footerAccentColor` (bump bar button accent) stored in KdsConfig and configurable via Template Builder → Colors tab. Both default to theme/amber fallback if not set.
 - Template Builder Colors tab now includes footer background + accent controls above modifier colors
 - Docker build: `Dockerfile.web` builder uses `node:24-slim` (not Alpine) because `pnpm-workspace.yaml` excludes `@rollup/rollup-linux-x64-musl`; Alpine's musl libc cannot load the glibc rollup binary
+- All order items are always visible on every card — the old `MAX_VISIBLE_ITEMS` cap and "+N more" overflow badge have been removed; font scales down and layout switches to 2-column for large item counts
+- Grid layout uses natural card heights (`alignItems: "start"`, no `gridAutoRows: "1fr"`) so cards never clip content; main area scrolls vertically with `scrollbarWidth: none`
+- Quick Actions panel contrast raised: disabled opacity 30%→50%, button text 35%→65%, toggle labels 65%→85%, toggle track 10%→18% unselected; header tab badges 65%→85% white

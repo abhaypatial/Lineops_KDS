@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-05-03
+
+### Added
+
+- **Footer color customization** — `footerBg` and `footerAccentColor` fields in `KdsConfig`; configurable from Template Builder → Colors tab; both default to theme/amber fallback if not set. Footer background + accent hex controls sit above modifier colors in the Colors tab.
+
+### Fixed
+
+- **All order items now show** — removed the `MAX_VISIBLE_ITEMS` cap and the "+N more" overflow badge that was hiding items beyond 10–14; every item on every card is now always visible regardless of order size
+- **Cards no longer clip items** — replaced `gridAutoRows: "1fr"` (forced equal row heights that clipped content) with natural card sizing (`alignItems: "start"`); cards now grow to fit all their items, and the main grid area is vertically scrollable
+- **Quick Actions contrast** — raised disabled-button opacity from 30% → 50%; "No order focused" / "Nothing to recall" text lifted from 35% → 65% white; toggle labels lifted from 65% → 85%; divider borders lifted from 6% → 10% opacity; toggle track background brightened from 10% → 18% for unselected state
+- **Header station tab badge contrast** — inactive badges raised from 65% to 85% white; badge background lifted from 10% to 14% opacity for better readability on dark backgrounds
+
+### Changed
+
+- `main` overflow changed from `hidden` to `overflow-y: auto` with `scrollbarWidth: none` so order grids with many tickets scroll cleanly without a visible scrollbar
+
+---
+
 ## [1.2.0] - 2026-05-02
 
 ### Added
