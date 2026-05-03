@@ -1722,109 +1722,74 @@ export default function KdsDisplay() {
 
       {/* ── Footer bump bar ──────────────────────────────────────────────── */}
       {cfg.showFooter && (
-      <footer className="h-11 flex items-center px-5 shrink-0 gap-6" style={{ background: theme.bg, borderTop: `1px solid ${theme.line}` }}>
-          {(() => {
-            const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
-            const pk = cfg.prevKey === "ArrowLeft"  ? "←" : cfg.prevKey;
-            const nk = cfg.nextKey === "ArrowRight" ? "→" : cfg.nextKey;
-            const hints: { keys: string[]; label: string }[] = [
-              { keys: [bk],     label: cfg.mode === "expo" ? "Fire" : "Bump" },
-              { keys: ["R"],    label: "Refresh" },
-              { keys: [pk, nk], label: "Navigate" },
-            ];
-            if (cfg.showNowServing && nowServingOrders.length > 0) hints.push({ keys: ["C"], label: "Clear Served" });
-            return hints;
-          })().map(({ keys, label }) => (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className="flex gap-1">
-                {keys.map(k => (
-                  <kbd key={k} className="font-mono text-[11px] font-bold px-2.5 py-1 rounded border border-white/[0.22] bg-white/[0.10] text-white/85">{k}</kbd>
-                ))}
+        <footer className="min-h-14 flex items-center px-4 md:px-5 py-2 shrink-0 gap-4 md:gap-6 flex-wrap" style={{ background: theme.bg, borderTop: `1px solid ${theme.line}` }}>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {(() => {
+              const bk = cfg.bumpKey === " " ? "SPACE" : cfg.bumpKey.length > 3 ? cfg.bumpKey : cfg.bumpKey.toUpperCase();
+              const pk = cfg.prevKey === "ArrowLeft" ? "←" : cfg.prevKey;
+              const nk = cfg.nextKey === "ArrowRight" ? "→" : cfg.nextKey;
+              const hints: { keys: string[]; label: string }[] = [
+                { keys: [bk], label: cfg.mode === "expo" ? "Fire" : "Bump" },
+                { keys: ["R"], label: "Refresh" },
+                { keys: [pk, nk], label: "Navigate" },
+              ];
+              if (cfg.showNowServing && nowServingOrders.length > 0) hints.push({ keys: ["C"], label: "Clear Served" });
+              return hints;
+            })().map(({ keys, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className="flex gap-1">
+                  {keys.map(k => (
+                    <kbd key={k} className="font-mono text-[12px] font-bold px-2.5 py-1 rounded border border-white/[0.22] bg-white/[0.10] text-white/90">{k}</kbd>
+                  ))}
+                </div>
+                <span className="text-[12px] text-white/80 uppercase tracking-wider">{label}</span>
               </div>
-              <span className="text-[11px] text-white/70 uppercase tracking-wider">{label}</span>
-            </div>
-          ))}
-          {doneTotal > 0 && (
-            <span className="text-[11px] text-white/65">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
-          )}
-          {/* Kitchen health indicator */}
-          {allOrders.length > 0 && (
-            <div className="flex items-center gap-2">
-              {alertCount > 0 && (
-                <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: "#f87171", animation: "pulse 1s ease-in-out infinite" }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-                  {alertCount} crit
-                </span>
-              )}
-              {warnCount > 0 && (
-                <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "#f59e0b" }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                  {warnCount} late
-                </span>
-              )}
-              {alertCount === 0 && warnCount === 0 && (
-                <span className="text-[11px] font-medium" style={{ color: "rgba(74,222,128,0.55)" }}>✓ On time</span>
-              )}
-            </div>
-          )}
-          {/* Virtual bump buttons */}
-          {cfg.showVirtualBumpBar && (
-            <div className="flex items-center gap-1 shrink-0 ml-2 border-l border-white/[0.07] pl-3">
-              <button
-                onClick={() => {
-                  const idx = visibleOrders.findIndex(o => o.id === focusedId);
-                  setFocus(visibleOrders[Math.max(idx - 1, 0)]?.id ?? null);
-                }}
-                className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
-                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.62)" }}
-                title="Previous order">◀</button>
-              <button
-                onClick={() => focusedOrder && bump(focusedOrder.id)}
-                disabled={!focusedOrder}
-                className="h-7 px-3 rounded-lg text-[10px] font-black border transition-all active:scale-95 disabled:opacity-30"
-                style={{ background: "rgba(245,158,11,0.14)", borderColor: "rgba(245,158,11,0.4)", color: "#f59e0b" }}
-                title="Bump focused order">BUMP</button>
-              {(() => {
-                const activeIds = new Set(nowServingOrders.map(ns => ns.order.id));
-                const last = recentBumped.find(r => !activeIds.has(r.order.id));
-                return (
-                  <button
-                    onClick={() => last && recallOrder(last.order.id)}
-                    disabled={!last}
-                    className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 disabled:opacity-30"
-                    style={{ background: "rgba(74,222,128,0.07)", borderColor: "rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.75)" }}
-                    title={last ? `Recall #${last.order.number}` : "No recent orders"}>
-                    ↩{last ? ` #${last.order.number}` : " Recall"}
-                  </button>
-                );
-              })()}
-              <button
-                onClick={() => {
-                  const idx = visibleOrders.findIndex(o => o.id === focusedId);
-                  setFocus(visibleOrders[Math.min(idx + 1, visibleOrders.length - 1)]?.id ?? null);
-                }}
-                className="h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
-                style={{ background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.62)" }}
-                title="Next order">▶</button>
-              <button
-                onClick={() => setCfg(c => ({ ...c, showVirtualBumpBar: false }))}
-                className="h-7 px-1.5 rounded-lg text-[10px] border transition-all active:scale-95 ml-0.5"
-                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.60)" }}
-                title="Hide virtual bump bar">×</button>
-            </div>
-          )}
-          <div className="flex-1" />
-          {isFullscreen && (
-            <div className="flex items-center gap-1.5">
-              <kbd className="font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-white/[0.13] bg-white/[0.06] text-white/50">F4</kbd>
-              <span className="text-[10px] text-white/62 uppercase tracking-wider">Exit Kiosk</span>
-            </div>
-          )}
-          <button
-            onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
-            className="h-6 px-1.5 rounded text-[11px] border transition-all hover:bg-white/[0.06] ml-1"
-            style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.55)" }}
-            title="Hide footer bar">×</button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            {doneTotal > 0 && (
+              <span className="text-[12px] text-white/70">{doneTotal} item{doneTotal !== 1 ? "s" : ""} done this session</span>
+            )}
+            {allOrders.length > 0 && (
+              <div className="flex items-center gap-2">
+                {alertCount > 0 && (
+                  <span className="flex items-center gap-1 text-[12px] font-bold" style={{ color: "#f87171", animation: "pulse 1s ease-in-out infinite" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                    {alertCount} crit
+                  </span>
+                )}
+                {warnCount > 0 && (
+                  <span className="flex items-center gap-1 text-[12px] font-semibold" style={{ color: "#f59e0b" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                    {warnCount} late
+                  </span>
+                )}
+                {alertCount === 0 && warnCount === 0 && (
+                  <span className="text-[12px] font-medium" style={{ color: "rgba(74,222,128,0.62)" }}>✓ On time</span>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0 border-l border-white/[0.07] pl-4">
+            <span className="hidden lg:inline text-[10px] uppercase tracking-wider text-white/35">Bump bar</span>
+            <button
+              onClick={() => setCfg(c => ({ ...c, bumpBarEnabled: !c.bumpBarEnabled }))}
+              className="h-8 px-3 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
+              style={{ background: cfg.bumpBarEnabled ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)", borderColor: cfg.bumpBarEnabled ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.08)", color: cfg.bumpBarEnabled ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
+              {cfg.bumpBarEnabled ? "ON" : "OFF"}
+            </button>
+            <button
+              onClick={() => setCfg(c => ({ ...c, showVirtualBumpBar: !c.showVirtualBumpBar }))}
+              className="h-8 px-3 rounded-lg text-[10px] font-bold border transition-all active:scale-95"
+              style={{ background: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.14)" : "rgba(255,255,255,0.05)", borderColor: cfg.showVirtualBumpBar ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.08)", color: cfg.showVirtualBumpBar ? "#f59e0b" : "rgba(255,255,255,0.72)" }}>
+              Virtual
+            </button>
+            <button
+              onClick={() => setCfg(c => ({ ...c, showFooter: false }))}
+              className="h-8 px-2.5 rounded-lg text-[12px] border transition-all hover:bg-white/[0.06]"
+              style={{ borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.58)" }}
+              title="Hide footer bar">×</button>
+          </div>
         </footer>
       )}
 
