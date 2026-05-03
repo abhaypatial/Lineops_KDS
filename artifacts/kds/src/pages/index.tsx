@@ -666,21 +666,6 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
   const autoZoomVal = Math.min(2.2, Math.max(0.40, window.innerWidth / 1920));
   const curZ = cfg.zoomOverride ?? autoZoomVal;
 
-  const [templates, setTemplates] = useState<{ id: string; name: string; config: unknown; isActive: boolean }[]>([]);
-  const [activeTpl, setActiveTpl] = useState<{ config: unknown } | null>(null);
-  const [newTplName, setNewTplName] = useState("");
-  const [tplSaving, setTplSaving] = useState(false);
-
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/kds/templates").then(r => r.json()),
-      fetch("/api/kds/templates/active").then(r => r.json()),
-    ]).then(([tpls, active]: [unknown, unknown]) => {
-      setTemplates(tpls as typeof templates);
-      setActiveTpl(active as typeof activeTpl);
-    }).catch(() => {});
-  }, []);
-
   type ToggleItem = { label: string; key: keyof KdsConfig };
   const toggles: ToggleItem[] = [
     { label: "Order number",     key: "showOrderNumber"   },
@@ -1047,81 +1032,6 @@ function SettingsOverlay({ cfg, setCfg, onClose, playChime }: {
                   style={{ transform: cfg.showFooter ? "translateX(16px)" : "translateX(0)" }} />
               </button>
             </div>
-          </div>
-
-          {/* Config Templates */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/55">Config Templates</p>
-
-            {/* Broadcast config alert */}
-            {activeTpl && (
-              <div className="px-2.5 py-2 rounded-lg border flex flex-col gap-1.5"
-                style={{ background: "rgba(74,222,128,0.05)", borderColor: "rgba(74,222,128,0.18)" }}>
-                <p className="text-[9px]" style={{ color: "rgba(74,222,128,0.6)" }}>
-                  A config has been pushed to all displays.
-                </p>
-                <button
-                  onClick={() => { setCfg(c => ({ ...c, ...(activeTpl.config as Partial<KdsConfig>) })); setActiveTpl(null); }}
-                  className="w-full py-1 rounded text-[9px] font-bold border transition-all"
-                  style={{ background: "rgba(74,222,128,0.12)", borderColor: "rgba(74,222,128,0.3)", color: "#4ade80" }}>
-                  Apply to this display
-                </button>
-              </div>
-            )}
-
-            {/* Save as template */}
-            <div className="flex gap-1.5">
-              <input value={newTplName} onChange={e => setNewTplName(e.target.value)}
-                placeholder="Template name…"
-                className="flex-1 h-7 px-2 rounded-lg border text-[10px] bg-transparent outline-none"
-                style={{ borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }} />
-              <button
-                disabled={!newTplName.trim() || tplSaving}
-                onClick={async () => {
-                  setTplSaving(true);
-                  try {
-                    await fetch("/api/kds/templates", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ name: newTplName.trim(), config: cfg }),
-                    });
-                    const tpls = await fetch("/api/kds/templates").then(r => r.json());
-                    setTemplates(tpls as typeof templates);
-                    setNewTplName("");
-                  } finally { setTplSaving(false); }
-                }}
-                className="h-7 px-2.5 rounded-lg text-[9px] font-bold border transition-all disabled:opacity-40"
-                style={{ background: "rgba(245,158,11,0.1)", borderColor: "rgba(245,158,11,0.3)", color: "#f59e0b" }}>
-                {tplSaving ? "…" : "Save"}
-              </button>
-            </div>
-
-            {/* Template list */}
-            {templates.length > 0 && (
-              <div className="flex flex-col gap-1">
-                {templates.map(t => (
-                  <div key={t.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border"
-                    style={{ background: "rgba(255,255,255,0.02)", borderColor: t.isActive ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.07)" }}>
-                    <span className="flex-1 text-[10px] truncate" style={{ color: "rgba(255,255,255,0.55)" }}>{t.name}</span>
-                    {t.isActive && <span className="text-[8px] font-black" style={{ color: "#4ade80" }}>LIVE</span>}
-                    <button onClick={() => setCfg(c => ({ ...c, ...(t.config as Partial<KdsConfig>) }))}
-                      className="h-5 px-1.5 rounded text-[8px] font-bold border transition-all"
-                      style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}>
-                      Apply
-                    </button>
-                    <button onClick={async () => {
-                      await fetch(`/api/kds/templates/${t.id}`, { method: "DELETE" });
-                      setTemplates(prev => prev.filter(x => x.id !== t.id));
-                    }}
-                      className="h-5 px-1.5 rounded text-[8px] font-bold border transition-all"
-                      style={{ background: "rgba(239,68,68,0.06)", borderColor: "rgba(239,68,68,0.15)", color: "rgba(239,68,68,0.5)" }}>
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
           </div>
 
         </div>
