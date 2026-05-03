@@ -2,11 +2,22 @@
 
 This guide explains how to connect each supported POS system to LineOps KDS so that orders fired from the POS appear on your kitchen screens instantly.
 
-> **Volante Systems VE POS** has its own dedicated guide: [VOLANTE.md](VOLANTE.md)
+> **⚡ Volante Systems VE POS** is the primary customer integration and has its own dedicated guide: **[VOLANTE.md](VOLANTE.md)**
+> Start here if you are a Volante VE customer.
 >
 > **Adding a brand-new POS system** (for developers): [DEVELOPER.md](DEVELOPER.md)
 
 ---
+
+## Volante VE (Recommended)
+
+Volante VE is the primary supported POS for LineOps KDS. It uses a native RPC push protocol — no webhooks, no polling. Orders appear on kitchen screens in under a second from the moment a cashier fires them.
+
+**See the full setup guide: [VOLANTE.md](VOLANTE.md)**
+
+---
+
+## Other POS systems
 
 ## How it works
 
