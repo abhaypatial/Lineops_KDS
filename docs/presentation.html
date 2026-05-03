@@ -1,83 +1,1071 @@
-*** Begin Patch
-*** Update File: docs/presentation.html
-@@
-   <div class="slide" id="slide-4">
-     <div class="eyebrow">Architecture</div>
-     <h2 style="margin-bottom:28px;">Contract-first · Type-safe · Self-hosted</h2>
-     <div style="display:flex;gap:32px;align-items:stretch;flex-wrap:wrap;justify-content:center;">
-       <div class="arch-col">
-         <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:4px;">POS Systems</div>
--        <div class="arch-box" style="background:rgba(59,130,246,0.10);border-color:rgba(59,130,246,0.25);color:#93c5fd;">Volante VE<br><span style="opacity:0.6;font-size:10px;">RPC Push</span></div>
--        <div class="arch-box" style="background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.25);color:#fde68a;margin-top:6px;">Volante VE<br><span style="opacity:0.6;font-size:10px;">RPC Push</span></div>
-+        <div class="arch-box" style="background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.25);color:#fde68a;">Volante VE<br><span style="opacity:0.6;font-size:10px;">RPC Push</span></div>
-+        <div class="arch-box" style="background:rgba(59,130,246,0.10);border-color:rgba(59,130,246,0.25);color:#93c5fd;margin-top:6px;">Square / Toast<br><span style="opacity:0.6;font-size:10px;">Clover · Lightspeed</span></div>
-@@
-   <div class="slide" id="slide-5">
-     <div class="eyebrow">POS Integrations</div>
--    <h2 style="margin-bottom:8px;">Connect any POS in minutes — Volante VE is the primary customer integration</h2>
-+    <h2 style="margin-bottom:8px;">Connect any POS in minutes — Volante VE is the primary customer integration</h2>
-@@
-         <div style="display:flex;gap:12px;margin-bottom:8px;">
-           <div style="background:rgba(59,130,246,0.09);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:700;color:#60a5fa;display:flex;align-items:center;gap:7px;">
--            <span style="font-size:16px;">🖥</span> Volante VE POS
-+            <span style="font-size:16px;">⚡</span> Volante VE POS
-           </div>
-@@
-   <div class="slide" id="slide-7">
--    <div class="logo-glow" style="animation:none;box-shadow:0 0 56px rgba(245,158,11,0.32), 0 0 110px rgba(245,158,11,0.12);">
--      <svg width="56" height="56" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
--        <defs>
--          <linearGradient id="pe-stem" x1="36" y1="28" x2="70" y2="134" gradientUnits="userSpaceOnUse">
--            <stop offset="0%" stop-color="#FDE68A"/>
--            <stop offset="45%" stop-color="#F97316"/>
--            <stop offset="100%" stop-color="#EA580C"/>
--          </linearGradient>
--          <linearGradient id="pe-base" x1="36" y1="118" x2="144" y2="154" gradientUnits="userSpaceOnUse">
--            <stop offset="0%" stop-color="#F97316"/>
--            <stop offset="100%" stop-color="#9A3412"/>
--          </linearGradient>
--        </defs>
--        <circle cx="114" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
--        <circle cx="132" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
--        <circle cx="150" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
--        <circle cx="114" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
--        <circle cx="132" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
--        <circle cx="150" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
--        <rect x="36" y="28" width="34" height="106" rx="8" fill="url(#pe-stem)"/>
--        <rect x="36" y="118" width="108" height="36" rx="8" fill="url(#pe-base)"/>
--        <rect x="36" y="28" width="13" height="106" rx="8" fill="rgba(255,255,255,0.22)"/>
--        <rect x="36" y="28" width="34" height="13" rx="6" fill="rgba(255,220,150,0.24)"/>
--        <circle cx="150" cy="36" r="14" fill="#0A0A12"/>
--        <circle cx="150" cy="36" r="9" fill="#22C55E"/>
--        <circle cx="147" cy="33" r="3.5" fill="rgba(255,255,255,0.42)"/>
--      </svg>
--    </div>
-+    <div class="logo-glow" style="animation:none;box-shadow:0 0 56px rgba(245,158,11,0.32), 0 0 110px rgba(245,158,11,0.12);">
-+      <svg width="56" height="56" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-+        <defs>
-+          <linearGradient id="pe-stem" x1="36" y1="28" x2="70" y2="134" gradientUnits="userSpaceOnUse">
-+            <stop offset="0%" stop-color="#FDE68A"/>
-+            <stop offset="45%" stop-color="#F97316"/>
-+            <stop offset="100%" stop-color="#EA580C"/>
-+          </linearGradient>
-+          <linearGradient id="pe-base" x1="36" y1="118" x2="144" y2="154" gradientUnits="userSpaceOnUse">
-+            <stop offset="0%" stop-color="#F97316"/>
-+            <stop offset="100%" stop-color="#9A3412"/>
-+          </linearGradient>
-+        </defs>
-+        <circle cx="114" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
-+        <circle cx="132" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
-+        <circle cx="150" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
-+        <circle cx="114" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
-+        <circle cx="132" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
-+        <circle cx="150" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
-+        <rect x="36" y="28" width="34" height="106" rx="8" fill="url(#pe-stem)"/>
-+        <rect x="36" y="118" width="108" height="36" rx="8" fill="url(#pe-base)"/>
-+        <rect x="36" y="28" width="13" height="106" rx="8" fill="rgba(255,255,255,0.22)"/>
-+        <rect x="36" y="28" width="34" height="13" rx="6" fill="rgba(255,220,150,0.24)"/>
-+        <circle cx="150" cy="36" r="14" fill="#0A0A12"/>
-+        <circle cx="150" cy="36" r="9" fill="#22C55E"/>
-+        <circle cx="147" cy="33" r="3.5" fill="rgba(255,255,255,0.42)"/>
-+      </svg>
-+    </div>
-*** End Patch
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LineOps KDS — Product Presentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --amber: #f59e0b;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --bg: #0a0a0b;
+    --card: #13131a;
+    --card2: #1a1a24;
+    --border: rgba(255,255,255,0.08);
+    --subtle: rgba(255,255,255,0.45);
+  }
+  html, body { height: 100%; background: var(--bg); color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; }
+
+  /* ── Slide container ── */
+  .deck { width: 100vw; height: 100dvh; position: relative; overflow: hidden; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 48px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateX(60px);
+  }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+  .slide.prev   { opacity: 0; transform: translateX(-60px); }
+
+  /* ── Nav ── */
+  .nav {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 100; align-items: center;
+  }
+  .nav-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.18); cursor: pointer;
+    transition: all 0.25s;
+  }
+  .nav-dot.active { background: var(--amber); width: 22px; border-radius: 4px; }
+  .nav-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 8px;
+    cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.10); color: #fff; }
+
+  /* ── Typography ── */
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 14px;
+  }
+  h1 { font-size: 64px; font-weight: 900; line-height: 1.05; letter-spacing: -0.03em; }
+  h2 { font-size: 42px; font-weight: 800; line-height: 1.1; letter-spacing: -0.025em; }
+  h3 { font-size: 22px; font-weight: 700; }
+  .sub { font-size: 18px; color: rgba(255,255,255,0.58); line-height: 1.6; max-width: 620px; text-align: center; margin-top: 16px; }
+  .sub-left { text-align: left; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 100px; font-size: 10px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .badge-rush  { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.35);  color: #fca5a5; }
+  .badge-vip   { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.35); color: #fde68a; }
+  .badge-new   { background: rgba(34,197,94,0.12);  border: 1px solid rgba(34,197,94,0.30);  color: #86efac; }
+  .badge-amber { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.28); color: var(--amber); }
+
+  /* ── Gradient accents ── */
+  .grad-text {
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 60%, #ef4444 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  /* ── KDS mock display ── */
+  .kds-mock {
+    background: #0d0d12; border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px; overflow: hidden; width: 100%;
+  }
+  .kds-header {
+    height: 44px; background: #0d0d12; border-bottom: 1px solid rgba(255,255,255,0.07);
+    display: flex; align-items: center; padding: 0 14px; gap: 8px;
+  }
+  .station-tab {
+    padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 600;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .tab-active  { background: #fff; color: #000; }
+  .tab-inactive {
+    background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.78);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .tab-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .tab-badge {
+    font-size: 9px; font-weight: 900; padding: 1px 5px; border-radius: 100px;
+    background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.85);
+  }
+  .kds-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; padding: 10px;
+  }
+  .order-card {
+    background: #1a1a24; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; overflow: hidden;
+  }
+  .order-card.rush  { border-color: rgba(239,68,68,0.40); }
+  .order-card.vip   { border-color: rgba(245,158,11,0.35); }
+  .order-card.alert { animation: alertFlash 0.7s ease-in-out infinite; }
+  @keyframes alertFlash {
+    0%,100% { border-color: rgba(239,68,68,0.40); }
+    50%      { border-color: rgba(239,68,68,0.85); box-shadow: 0 0 16px rgba(239,68,68,0.3); }
+  }
+  .card-accent { height: 2px; }
+  .card-inner  { padding: 10px; }
+  .card-meta   { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .card-customer { font-size: 9px; font-weight: 700; color: #6ee7b7; letter-spacing: 0.05em; }
+  .card-number { font-size: 22px; font-weight: 900; color: #fbbf24; line-height: 1; }
+  .card-timer  { font-size: 10px; font-family: monospace; font-weight: 700; }
+  .timer-ok    { color: #4ade80; }
+  .timer-warn  { color: #f59e0b; }
+  .timer-alert { color: #f87171; animation: timerBlink 1s ease-in-out infinite; }
+  @keyframes timerBlink { 0%,100% { opacity:1; } 50% { opacity: 0.5; } }
+  .card-items  { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .card-item   { display: flex; align-items: flex-start; gap: 6px; }
+  .item-qty    { font-size: 9px; font-weight: 800; width: 14px; height: 14px; border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .item-name   { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.88); }
+  .item-station { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-left: 3px; }
+  .item-mod   { font-size: 9px; color: rgba(255,255,255,0.50); padding-left: 4px; }
+  .item-mod::before { content: "• "; color: rgba(34,197,94,0.7); }
+  .bump-btn {
+    margin-top: 8px; width: 100%; padding: 4px 0; border-radius: 6px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.65); cursor: pointer; text-align: center;
+  }
+  .bump-btn.vip  { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); color: #f59e0b; }
+  .bump-btn.rush { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.3);  color: #f87171; }
+
+  /* ── Animated order arrival ── */
+  @keyframes cardArrive {
+    0%   { opacity: 0; transform: scale(0.92) translateY(-12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .card-arrive { animation: cardArrive 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+  .card-arrive-2 { animation: cardArrive 0.45s 0.15s cubic-bezier(0.34,1.56,0.64,1) both; }
+  .card-arrive-3 { animation: cardArrive 0.45s 0.30s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+  /* ── Feature grid ── */
+  .feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; width: 100%; max-width: 900px; }
+  .feat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px;
+    transition: border-color 0.25s;
+  }
+  .feat-card:hover { border-color: rgba(245,158,11,0.35); }
+  .feat-icon { font-size: 24px; }
+  .feat-title { font-size: 13px; font-weight: 700; color: #fff; }
+  .feat-desc  { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.6; }
+
+  /* ── Architecture diagram ── */
+  .arch-box {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 20px;
+    font-size: 12px; font-weight: 700; text-align: center;
+    min-width: 120px;
+  }
+  .arch-arrow { color: var(--amber); font-size: 18px; font-weight: 900; }
+  .arch-row   { display: flex; align-items: center; gap: 12px; }
+  .arch-col   { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+  /* ── POS logos ── */
+  .pos-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; width: 100%; max-width: 700px; }
+  .pos-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+  }
+  .pos-icon { font-size: 20px; }
+  .pos-name { font-size: 12px; font-weight: 700; }
+  .pos-mode { font-size: 10px; color: var(--subtle); }
+  .pos-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-left: auto; flex-shrink: 0; }
+
+  /* ── Stats strip ── */
+  .stats-strip {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px; padding: 8px 14px; display: flex; gap: 20px; align-items: center;
+  }
+  .stat-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .stat-val  { font-size: 18px; font-weight: 900; color: var(--amber); font-variant-numeric: tabular-nums; }
+  .stat-lbl  { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--subtle); }
+
+  /* ── Quick Actions mock ── */
+  .qa-panel {
+    background: #13131a; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px; width: 220px; overflow: hidden;
+  }
+  .qa-header {
+    padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.10);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .qa-title { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.90); }
+  .qa-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .qa-btn {
+    padding: 8px 10px; border-radius: 10px; font-size: 11px; font-weight: 700;
+    border: 1px solid; display: flex; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .qa-btn-gray { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.65); }
+  .qa-btn-amber{ background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.45); color: #f59e0b; }
+  .qa-btn-green{ background: rgba(74,222,128,0.09);  border-color: rgba(74,222,128,0.28);  color: rgba(74,222,128,0.95); }
+  .qa-toggle-row { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.10); }
+  .qa-toggle-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.85); }
+  .qa-switch { width: 28px; height: 14px; border-radius: 100px; display: flex; align-items: center; padding: 1px 2px; }
+  .qa-switch.on  { background: var(--amber); justify-content: flex-end; }
+  .qa-switch.off { background: rgba(255,255,255,0.18); justify-content: flex-start; }
+  .qa-thumb { width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+
+  /* ── Heatmap ── */
+  .heatmap-strip { display: flex; gap: 4px; align-items: center; }
+  .hm-tick {
+    width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; font-size: 9px; font-weight: 800; cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .hm-tick:hover { transform: scale(1.15); }
+  .hm-ok   { background: rgba(34,197,94,0.20);  color: #4ade80; border: 1px solid rgba(34,197,94,0.30); }
+  .hm-warn { background: rgba(245,158,11,0.22); color: #fbbf24; border: 1px solid rgba(245,158,11,0.40); }
+  .hm-alert{ background: rgba(239,68,68,0.22);  color: #f87171; border: 1px solid rgba(239,68,68,0.40); animation: alertFlash 0.7s ease-in-out infinite; }
+
+  /* ── Terminal ── */
+  .terminal {
+    background: #0d1117; border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 10px; padding: 16px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 11px; line-height: 1.8; min-width: 360px;
+  }
+  .t-prompt { color: #4ade80; }
+  .t-cmd    { color: #e2e8f0; }
+  .t-out    { color: rgba(255,255,255,0.50); }
+  .t-val    { color: #f59e0b; }
+  .t-ok     { color: #4ade80; }
+
+  /* ── Blinking cursor ── */
+  .cursor { display: inline-block; width: 7px; height: 12px; background: #4ade80; vertical-align: middle; animation: blink 1.1s step-end infinite; }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+  /* ── Slide-specific ── */
+  #slide-0 { background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(245,158,11,0.07) 0%, transparent 70%), var(--bg); }
+  #slide-1 { background: radial-gradient(ellipse 70% 50% at 20% 50%, rgba(59,130,246,0.06) 0%, transparent 60%), var(--bg); }
+  #slide-2 { background: var(--bg); }
+  #slide-3 { background: radial-gradient(ellipse 80% 50% at 80% 50%, rgba(34,197,94,0.05) 0%, transparent 60%), var(--bg); }
+  #slide-4 { background: var(--bg); }
+  #slide-5 { background: radial-gradient(ellipse 70% 60% at 50% 30%, rgba(245,158,11,0.06) 0%, transparent 60%), var(--bg); }
+  #slide-6 { background: var(--bg); }
+  #slide-7 { background: radial-gradient(ellipse 80% 50% at 50% 60%, rgba(34,197,94,0.06) 0%, transparent 60%), var(--bg); }
+
+  .two-col  { display: flex; gap: 56px; align-items: center; width: 100%; max-width: 1020px; }
+  .col-left, .col-right { flex: 1; }
+
+  /* ── Glow logo ── */
+  .logo-glow {
+    width: 88px; height: 88px; border-radius: 22px;
+    background: linear-gradient(145deg, #16161F 0%, #0A0A12 100%);
+    border: 1.5px solid rgba(249,115,22,0.28);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 48px rgba(245,158,11,0.22), 0 0 96px rgba(245,158,11,0.09), inset 0 1px 0 rgba(255,255,255,0.06);
+    margin-bottom: 24px;
+  }
+  @keyframes logoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .logo-float { animation: logoFloat 3.5s ease-in-out infinite; }
+
+  /* ── Checklist ── */
+  .checklist { display: flex; flex-direction: column; gap: 12px; }
+  .check-item { display: flex; align-items: flex-start; gap: 12px; }
+  .check-icon { width: 20px; height: 20px; border-radius: 50%; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.35); display: flex; align-items: center; justify-content: center; font-size: 10px; color: #4ade80; flex-shrink: 0; margin-top: 1px; }
+  .check-text { font-size: 13px; color: rgba(255,255,255,0.80); line-height: 1.5; }
+  .check-text strong { color: #fff; }
+
+  /* ── Separator ── */
+  hr.sep { border: none; border-top: 1px solid rgba(255,255,255,0.07); width: 100%; margin: 4px 0; }
+
+  /* ── Bump demo animations ── */
+  @keyframes cardBump {
+    0%   { opacity: 1; transform: scale(1); }
+    20%  { opacity: 1; transform: scale(1.04); border-color: rgba(34,197,94,0.6) !important; }
+    100% { opacity: 0; transform: scale(0.86) translateY(-18px); }
+  }
+  @keyframes bumpPulse {
+    0%,100% { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.30); color: #f59e0b; }
+    50%     { background: rgba(245,158,11,0.30); border-color: rgba(245,158,11,0.80); box-shadow: 0 0 14px rgba(245,158,11,0.45); }
+  }
+  .card-bump  { animation: cardBump  0.55s cubic-bezier(0.4,0,1,1) forwards; }
+  .bump-pulse { animation: bumpPulse 0.45s ease-in-out 2; }
+
+  /* ── Bump demo layout ── */
+  .bd-side { width: 188px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+  .bd-info {
+    background: #13131a; border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px; padding: 14px;
+  }
+  .bd-info-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.38); margin-bottom: 10px; }
+  .bd-info-val { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.70); line-height: 1.6; }
+  .bd-stat { border-radius: 10px; padding: 12px; }
+  .bd-stat-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .bd-stat-num { font-size: 22px; font-weight: 900; }
+  .bd-stat-sub { font-size: 9px; color: rgba(255,255,255,0.35); }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ── SLIDE 0: Hero ── -->
+  <div class="slide active" id="slide-0">
+    <div class="logo-glow logo-float">
+      <svg width="56" height="56" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="ps-stem" x1="36" y1="28" x2="70" y2="134" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FDE68A"/>
+            <stop offset="45%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#EA580C"/>
+          </linearGradient>
+          <linearGradient id="ps-base" x1="36" y1="118" x2="144" y2="154" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#9A3412"/>
+          </linearGradient>
+        </defs>
+        <circle cx="114" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="132" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="150" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="114" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="132" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="150" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <rect x="36" y="28" width="34" height="106" rx="8" fill="url(#ps-stem)"/>
+        <rect x="36" y="118" width="108" height="36" rx="8" fill="url(#ps-base)"/>
+        <rect x="36" y="28" width="13" height="106" rx="8" fill="rgba(255,255,255,0.22)"/>
+        <rect x="36" y="28" width="34" height="13" rx="6" fill="rgba(255,220,150,0.24)"/>
+        <circle cx="150" cy="36" r="14" fill="#0A0A12"/>
+        <circle cx="150" cy="36" r="9" fill="#22C55E"/>
+        <circle cx="147" cy="33" r="3.5" fill="rgba(255,255,255,0.42)"/>
+      </svg>
+    </div>
+    <div class="eyebrow">LineOps</div>
+    <h1 class="grad-text">Kitchen Display<br>System</h1>
+    <p class="sub">Production-ready real-time KDS for commercial kitchens.<br>Multi-tenant · Self-hosted · Sub-100 ms order delivery.</p>
+    <div style="display:flex;gap:10px;margin-top:28px;">
+      <span class="badge badge-new">v1.3.0</span>
+      <span class="badge badge-amber">Open Source</span>
+      <span class="badge badge-new">Live</span>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 1: Live KDS Display ── -->
+  <div class="slide" id="slide-1">
+    <div class="eyebrow">Real-Time Display</div>
+    <h2 style="margin-bottom:20px;">Orders appear in <span class="grad-text">&lt; 1 second</span></h2>
+    <div class="kds-mock" style="max-width:740px;">
+      <div class="kds-header">
+        <button class="station-tab tab-active">All <span style="background:rgba(0,0,0,0.22);color:rgba(0,0,0,0.85);font-size:9px;font-weight:900;padding:1px 5px;border-radius:100px;">28</span></button>
+        <button class="station-tab tab-inactive"><span class="tab-dot" style="background:#ef4444;"></span>Grill <span class="tab-badge">9</span></button>
+        <button class="station-tab tab-inactive"><span class="tab-dot" style="background:#3b82f6;"></span>Cold Prep <span class="tab-badge">8</span></button>
+        <button class="station-tab tab-inactive"><span class="tab-dot" style="background:#f97316;"></span>Fryer <span class="tab-badge">6</span></button>
+        <button class="station-tab tab-inactive"><span class="tab-dot" style="background:#a855f7;"></span>Dessert <span class="tab-badge">5</span></button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.55);">12:39:20 AM</span>
+          <span style="font-size:10px;color:rgba(255,255,255,0.45);">28 orders</span>
+        </div>
+      </div>
+      <div class="kds-grid">
+        <!-- Card 1 RUSH -->
+        <div class="order-card rush card-arrive">
+          <div class="card-accent" style="background:#ef4444;"></div>
+          <div class="card-inner">
+            <div class="card-meta">
+              <div>
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <span class="badge badge-rush" style="font-size:8px;padding:2px 6px;">RUSH</span>
+                  <span style="font-size:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.55);padding:2px 6px;border-radius:100px;">DINE IN</span>
+                </div>
+                <div class="card-customer">Jones</div>
+                <div class="card-number">#669</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="card-timer timer-warn">⏱ 10:12</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:2px;">0/2</div>
+                <div class="bump-btn rush" style="margin-top:5px;">BUMP ↵</div>
+              </div>
+            </div>
+            <div class="card-items">
+              <div class="card-item">
+                <div class="item-qty" style="background:rgba(249,115,22,0.25);color:#fb923c;">1</div>
+                <div><div class="item-name">Calamari <span class="item-station" style="color:#f97316;">FRYER</span></div><div class="item-mod">Extra lemon</div></div>
+              </div>
+              <div class="card-item">
+                <div class="item-qty" style="background:rgba(59,130,246,0.25);color:#60a5fa;">1</div>
+                <div><div class="item-name">Coleslaw <span class="item-station" style="color:#3b82f6;">COLD</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Card 2 VIP -->
+        <div class="order-card vip card-arrive-2">
+          <div class="card-accent" style="background:#f59e0b;"></div>
+          <div class="card-inner">
+            <div class="card-meta">
+              <div>
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <span class="badge badge-vip" style="font-size:8px;padding:2px 6px;">VIP</span>
+                  <span style="font-size:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.55);padding:2px 6px;border-radius:100px;">DINE IN</span>
+                </div>
+                <div class="card-customer">Taylor</div>
+                <div class="card-number">#117</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="card-timer timer-ok">⏱ 10:12</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:2px;">0/4</div>
+                <div class="bump-btn vip" style="margin-top:5px;">BUMP ↵</div>
+              </div>
+            </div>
+            <div class="card-items">
+              <div style="font-size:9px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);color:#fde68a;padding:5px 8px;border-radius:5px;margin-bottom:4px;">📋 VIP guest</div>
+              <div class="card-item">
+                <div class="item-qty" style="background:rgba(239,68,68,0.25);color:#f87171;">1</div>
+                <div><div class="item-name">Ribeye Steak <span class="item-station" style="color:#ef4444;">GRILL</span></div><div class="item-mod">Medium rare</div></div>
+              </div>
+              <div class="card-item">
+                <div class="item-qty" style="background:rgba(59,130,246,0.25);color:#60a5fa;">1</div>
+                <div><div class="item-name">Prawn Cocktail <span class="item-station" style="color:#3b82f6;">COLD</span></div><div class="item-mod">Extra sauce</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Card 3 ALERT -->
+        <div class="order-card alert card-arrive-3">
+          <div class="card-accent" style="background:#ef4444;animation:alertFlash 0.7s ease-in-out infinite;"></div>
+          <div class="card-inner">
+            <div class="card-meta">
+              <div>
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <span class="badge badge-rush" style="font-size:8px;padding:2px 6px;">RUSH</span>
+                </div>
+                <div class="card-customer">Brown</div>
+                <div class="card-number">#163</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="card-timer timer-alert">⏱ 17:45</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:2px;">0/3</div>
+                <div class="bump-btn rush" style="margin-top:5px;">BUMP ↵</div>
+              </div>
+            </div>
+            <div class="card-items">
+              <div style="font-size:9px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;padding:5px 8px;border-radius:5px;margin-bottom:4px;">⚠ Allergy: nuts</div>
+              <div class="card-item">
+                <div class="item-qty" style="background:rgba(168,85,247,0.25);color:#c084fc;">1</div>
+                <div><div class="item-name">Ice Cream <span class="item-station" style="color:#a855f7;">DESSERT</span></div><div class="item-mod">Chocolate sauce</div></div>
+              </div>
+              <div class="card-item">
+                <div class="item-qty" style="background:rgba(168,85,247,0.25);color:#c084fc;">1</div>
+                <div><div class="item-name">Sticky Pudding <span class="item-station" style="color:#a855f7;">DESSERT</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:14px;font-size:14px;">WebSocket push · Sub-100ms delivery · Per-station colour coding · Animated urgency timers</p>
+  </div>
+
+  <!-- ── SLIDE: Bump Demo ── -->
+  <div class="slide" id="slide-bump">
+    <div class="eyebrow">Kitchen Workflow</div>
+    <h2 style="margin-bottom:20px;">Order in. <span class="grad-text">Bumped.</span> Done.</h2>
+    <div style="display:flex;gap:28px;align-items:flex-start;max-width:840px;width:100%;">
+      <div class="kds-mock" style="flex:1;">
+        <div class="kds-header">
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:rgba(255,255,255,0.55);">GRILL STATION</span>
+          <span style="margin-left:auto;" id="bd-count" class="tab-badge">1</span>
+        </div>
+        <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:200px;align-items:start;">
+          <div class="order-card">
+            <div class="card-accent" style="background:#ef4444;"></div>
+            <div class="card-inner">
+              <div class="card-meta">
+                <div><div class="card-customer">Davis</div><div class="card-number">#304</div></div>
+                <div><div class="card-timer timer-ok">⏱ 3:22</div></div>
+              </div>
+              <div class="card-items">
+                <div class="card-item">
+                  <div class="item-qty" style="background:rgba(239,68,68,0.25);color:#f87171;">2</div>
+                  <div><div class="item-name">Smash Burger</div></div>
+                </div>
+              </div>
+              <div class="bump-btn" style="margin-top:6px;">BUMP ↵</div>
+            </div>
+          </div>
+          <div id="bd-slot" style="min-height:160px;"></div>
+        </div>
+      </div>
+      <div class="bd-side">
+        <div class="bd-info">
+          <div class="bd-info-lbl">Status</div>
+          <div class="bd-info-val" id="bd-msg">Idle — waiting for order...</div>
+        </div>
+        <div class="bd-stat" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);">
+          <div class="bd-stat-lbl" style="color:rgba(245,158,11,0.65);">WebSocket Push</div>
+          <div class="bd-stat-num" style="color:#f59e0b;">&lt;100ms</div>
+          <div class="bd-stat-sub">POS → Kitchen display</div>
+        </div>
+        <div class="bd-stat" style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.18);">
+          <div class="bd-stat-lbl" style="color:rgba(34,197,94,0.65);">Bump Recall</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.60);line-height:1.5;margin-top:4px;">Accidentally bumped? One key restores the ticket. Last 10 orders persist across page reloads.</div>
+        </div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:16px;font-size:13px;">Space / bump bar key / touchscreen tap — all methods work simultaneously</p>
+  </div>
+
+  <!-- ── SLIDE 2: Feature Grid ── -->
+  <div class="slide" id="slide-2">
+    <div class="eyebrow">Platform Features</div>
+    <h2 style="margin-bottom:24px;">Everything a kitchen needs</h2>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">⌨️</div>
+        <div class="feat-title">Physical Bump Bar</div>
+        <div class="feat-desc">Logic Controls, POS-X, MMF presets or custom key recording. Gamepad/HID support built in.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🎯</div>
+        <div class="feat-title">Per-Station Modes</div>
+        <div class="feat-desc">Multi, Single, or Expo mode. Each screen shows only its station's items.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-title">Quick Actions FAB</div>
+        <div class="feat-desc">Bump, recall, heatmap toggle, footer toggle — all in one tap without opening settings.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔔</div>
+        <div class="feat-title">Sound Alerts</div>
+        <div class="feat-desc">Per-station chimes (ding, bell, blip, off). Age escalation sounds at 9 and 15 minutes.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📋</div>
+        <div class="feat-title">Config Templates</div>
+        <div class="feat-desc">Save, push-to-all, export/import JSON. Full station config management with one-click sync.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Manager Dashboard</div>
+        <div class="feat-desc">Active orders, avg ticket time, rush count, station load bars, live activity feed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3: Quick Actions + Heatmap ── -->
+  <div class="slide" id="slide-3">
+    <div class="two-col">
+      <div class="col-left">
+        <div class="eyebrow">Quick Actions Panel</div>
+        <h2 style="margin-bottom:16px;">One tap.<br>No menus.</h2>
+        <div class="checklist">
+          <div class="check-item">
+            <div class="check-icon">✓</div>
+            <div class="check-text"><strong>Bump focused order</strong> — completes the highlighted ticket instantly</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">↩</div>
+            <div class="check-text"><strong>Recall last / Recall list</strong> — pull back any recently bumped order; also accessible from footer bar and mapped to bump-bar key</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">⏱</div>
+            <div class="check-text"><strong>Age Heatmap</strong> — compact colour-coded row of all active tickets sorted by oldest</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">⚡</div>
+            <div class="check-text"><strong>Footer toggle</strong> — show/hide the footer bar without opening full settings</div>
+          </div>
+        </div>
+        <div class="heatmap-strip" style="margin-top:24px;">
+          <span style="font-size:10px;color:var(--subtle);margin-right:4px;">AGE:</span>
+          <div class="hm-tick hm-ok">163</div>
+          <div class="hm-tick hm-ok">351</div>
+          <div class="hm-tick hm-warn">485</div>
+          <div class="hm-tick hm-warn">650</div>
+          <div class="hm-tick hm-alert">117</div>
+          <div class="hm-tick hm-alert">382</div>
+        </div>
+      </div>
+      <div class="col-right" style="display:flex;justify-content:center;">
+        <div class="qa-panel">
+          <div class="qa-header">
+            <span style="color:#f59e0b;font-size:11px;">⚡</span>
+            <span class="qa-title">Quick Actions</span>
+            <span style="margin-left:auto;color:rgba(255,255,255,0.70);font-size:13px;cursor:pointer;">×</span>
+          </div>
+          <div class="qa-body">
+            <div class="qa-btn qa-btn-amber">✓ Bump #669</div>
+            <div class="qa-btn qa-btn-green">↩ Recall #117</div>
+            <div class="qa-btn qa-btn-gray" style="justify-content:space-between;padding:8px 12px;">
+              <span>↩↩ Recall list</span><span style="opacity:0.8;font-size:10px;">4</span>
+            </div>
+            <div class="qa-toggle-row">
+              <span class="qa-toggle-lbl">Age Heatmap</span>
+              <div class="qa-switch off"><div class="qa-thumb"></div></div>
+            </div>
+            <div class="qa-toggle-row">
+              <span class="qa-toggle-lbl">Footer Bar</span>
+              <div class="qa-switch on"><div class="qa-thumb"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4: Architecture ── -->
+  <div class="slide" id="slide-4">
+    <div class="eyebrow">Architecture</div>
+    <h2 style="margin-bottom:28px;">Contract-first · Type-safe · Self-hosted</h2>
+    <div style="display:flex;gap:32px;align-items:stretch;flex-wrap:wrap;justify-content:center;">
+      <div class="arch-col">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:4px;">POS Systems</div>
+        <div class="arch-box" style="background:rgba(59,130,246,0.10);border-color:rgba(59,130,246,0.25);color:#93c5fd;">Square / Toast<br><span style="opacity:0.6;font-size:10px;">Clover · Lightspeed</span></div>
+        <div class="arch-box" style="background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.25);color:#fde68a;margin-top:6px;">Volante VE<br><span style="opacity:0.6;font-size:10px;">RPC Push</span></div>
+      </div>
+      <div style="display:flex;align-items:center;"><span class="arch-arrow">→</span></div>
+      <div class="arch-col">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:4px;">API Server</div>
+        <div class="arch-box" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.20);min-width:150px;">
+          Express 5 + WebSocket<br>
+          <span style="opacity:0.6;font-size:10px;">Rate limited · Transactional</span>
+        </div>
+        <div style="text-align:center;margin-top:8px;"><span class="arch-arrow" style="transform:rotate(90deg);display:inline-block;">↓</span></div>
+        <div class="arch-box" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.20);min-width:150px;">
+          PostgreSQL<br><span style="opacity:0.6;font-size:10px;">Drizzle ORM · Pool: 20</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;"><span class="arch-arrow">→</span></div>
+      <div class="arch-col">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:4px;">KDS Frontend</div>
+        <div class="arch-box" style="background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.25);color:#d8b4fe;min-width:140px;">
+          React 19 + Vite<br><span style="opacity:0.6;font-size:10px;">TailwindCSS · TanStack Query</span>
+        </div>
+        <div style="text-align:center;margin-top:8px;font-size:10px;color:var(--subtle);">↑ WS push &lt;100ms</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;justify-content:center;">
+      <div class="arch-box" style="font-size:10px;min-width:auto;padding:8px 14px;">🐳 Docker Compose</div>
+      <div class="arch-box" style="font-size:10px;min-width:auto;padding:8px 14px;">🔒 OpenAPI Contract</div>
+      <div class="arch-box" style="font-size:10px;min-width:auto;padding:8px 14px;">⚡ Orval Codegen</div>
+      <div class="arch-box" style="font-size:10px;min-width:auto;padding:8px 14px;">🔷 TypeScript 5.9</div>
+      <div class="arch-box" style="font-size:10px;min-width:auto;padding:8px 14px;">🗄️ pnpm Monorepo</div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: POS Integrations ── -->
+  <div class="slide" id="slide-5">
+    <div class="eyebrow">POS Integrations</div>
+    <h2 style="margin-bottom:8px;">Connect any POS in minutes</h2>
+    <p class="sub" style="margin-bottom:24px;font-size:14px;">Webhook signature verification, HMAC-SHA256, bearer tokens. Add a new adapter in one file.</p>
+    <div class="pos-grid">
+      <div class="pos-card">
+        <div class="pos-icon">◼</div>
+        <div><div class="pos-name">Square</div><div class="pos-mode">Webhook · HMAC-SHA256</div></div>
+        <div class="pos-dot"></div>
+      </div>
+      <div class="pos-card">
+        <div class="pos-icon">🍞</div>
+        <div><div class="pos-name">Toast POS</div><div class="pos-mode">Webhook · Bearer token</div></div>
+        <div class="pos-dot"></div>
+      </div>
+      <div class="pos-card">
+        <div class="pos-icon">🍀</div>
+        <div><div class="pos-name">Clover</div><div class="pos-mode">Webhook · HMAC-SHA256</div></div>
+        <div class="pos-dot"></div>
+      </div>
+      <div class="pos-card">
+        <div class="pos-icon">💡</div>
+        <div><div class="pos-name">Lightspeed K</div><div class="pos-mode">Webhook · API key</div></div>
+        <div class="pos-dot"></div>
+      </div>
+      <div class="pos-card">
+        <div class="pos-icon">⚡</div>
+        <div><div class="pos-name">Volante VE</div><div class="pos-mode">RPC Push · Native mode</div></div>
+        <div class="pos-dot"></div>
+      </div>
+      <div class="pos-card">
+        <div class="pos-icon">🔌</div>
+        <div><div class="pos-name">Generic / Custom</div><div class="pos-mode">REST Push · API key auth</div></div>
+        <div class="pos-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: CLI + Deploy ── -->
+  <div class="slide" id="slide-6">
+    <div class="two-col">
+      <div class="col-left">
+        <div class="eyebrow">Deployment & CLI</div>
+        <h2 style="margin-bottom:16px;">One command<br>to production</h2>
+        <div class="checklist">
+          <div class="check-item">
+            <div class="check-icon">🐳</div>
+            <div class="check-text"><strong>Docker Compose</strong> — postgres + api + web + nginx in one command</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">⚙</div>
+            <div class="check-text"><strong>systemd auto-start</strong> — backend + Chromium kiosk start on boot</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">🖥</div>
+            <div class="check-text"><strong>Windows PowerShell</strong> installer — same one-liner as Linux</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">📶</div>
+            <div class="check-text"><strong>Wi-Fi · LAN · Ethernet</strong> — screens connect over any network type; mix wired and wireless freely</div>
+          </div>
+          <div class="check-item">
+            <div class="check-icon">🔒</div>
+            <div class="check-text"><strong>LAN-only</strong> — all traffic stays on your local network; no internet required after install</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="terminal">
+          <div><span class="t-prompt">$</span> <span class="t-cmd">sudo bash lineops-kds-setup.sh</span></div>
+          <div class="t-out">→ Checking Docker... <span class="t-ok">✓</span></div>
+          <div class="t-out">→ Generating secrets... <span class="t-ok">✓</span></div>
+          <div class="t-out">→ Starting services... <span class="t-ok">✓</span></div>
+          <div class="t-out">→ Installing kds CLI... <span class="t-ok">✓</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-ok">✓ LineOps KDS is live at http://192.168.1.10</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">kds status</span></div>
+          <div class="t-out">Version: <span class="t-val">1.3.0</span></div>
+          <div class="t-out">DB: <span class="t-ok">connected</span></div>
+          <div class="t-out">Active orders: <span class="t-val">12</span></div>
+          <div class="t-out">Devices online: <span class="t-val">3</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">kds orders add</span></div>
+          <div class="t-out">Test order <span class="t-val">#941</span> fired → all displays <span class="t-ok">✓</span></div>
+          <div><span class="cursor"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── SLIDE: Network Topology ── -->
+  <div class="slide" id="slide-net">
+    <div class="eyebrow">Deployment Topology</div>
+    <h2 style="margin-bottom:22px;">One server. <span class="grad-text">Any network.</span></h2>
+    <div style="display:flex;gap:32px;align-items:flex-start;max-width:920px;width:100%;">
+
+      <!-- Diagram -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:0;align-items:center;">
+
+        <!-- POS Row -->
+        <div style="display:flex;gap:12px;margin-bottom:8px;">
+          <div style="background:rgba(59,130,246,0.09);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:700;color:#60a5fa;display:flex;align-items:center;gap:7px;">
+            <span style="font-size:16px;">🖥</span> Square POS
+          </div>
+          <div style="background:rgba(59,130,246,0.09);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:700;color:#60a5fa;display:flex;align-items:center;gap:7px;">
+            <span style="font-size:16px;">🖥</span> Toast POS
+          </div>
+          <div style="background:rgba(59,130,246,0.09);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:700;color:#60a5fa;display:flex;align-items:center;gap:7px;">
+            <span style="font-size:16px;">🖥</span> Custom Webhook
+          </div>
+        </div>
+
+        <!-- Arrow down -->
+        <div style="font-size:18px;color:rgba(245,158,11,0.60);margin:2px 0;">↓</div>
+
+        <!-- LineOps Server -->
+        <div style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(249,115,22,0.08));border:1.5px solid rgba(245,158,11,0.40);border-radius:14px;padding:14px 28px;display:flex;align-items:center;gap:12px;margin:4px 0;">
+          <svg width="28" height="28" viewBox="0 0 180 180" fill="none"><defs><linearGradient id="nt-s" x1="36" y1="28" x2="70" y2="134" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FDE68A"/><stop offset="55%" stop-color="#F97316"/><stop offset="100%" stop-color="#EA580C"/></linearGradient><linearGradient id="nt-b" x1="36" y1="118" x2="144" y2="154" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#F97316"/><stop offset="100%" stop-color="#9A3412"/></linearGradient></defs><rect x="36" y="28" width="34" height="106" rx="8" fill="url(#nt-s)"/><rect x="36" y="118" width="108" height="36" rx="8" fill="url(#nt-b)"/><rect x="36" y="28" width="13" height="106" rx="8" fill="rgba(255,255,255,0.22)"/><circle cx="150" cy="36" r="9" fill="#22C55E"/></svg>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#fff;">LineOps KDS Server</div>
+            <div style="font-size:10px;color:rgba(245,158,11,0.80);margin-top:2px;">nginx :80 · REST + WebSocket · PostgreSQL</div>
+          </div>
+          <div style="margin-left:16px;display:flex;gap:8px;">
+            <span style="font-size:9px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.30);color:#4ade80;padding:3px 8px;border-radius:100px;font-weight:700;">0.0.0.0:80</span>
+            <span style="font-size:9px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55);padding:3px 8px;border-radius:100px;font-weight:700;">all interfaces</span>
+          </div>
+        </div>
+
+        <!-- Three-way split arrows -->
+        <div style="display:flex;gap:0;width:100%;max-width:560px;position:relative;margin:2px 0 4px;">
+          <div style="flex:1;text-align:center;font-size:13px;color:rgba(34,197,94,0.70);">↙</div>
+          <div style="flex:1;text-align:center;font-size:18px;color:rgba(245,158,11,0.60);">↓</div>
+          <div style="flex:1;text-align:center;font-size:13px;color:rgba(96,165,250,0.70);">↘</div>
+        </div>
+
+        <!-- Three network paths -->
+        <div style="display:flex;gap:12px;width:100%;max-width:560px;">
+          <!-- Ethernet -->
+          <div style="flex:1;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.22);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center;">
+            <div style="font-size:20px;">🔌</div>
+            <div style="font-size:11px;font-weight:800;color:#4ade80;text-align:center;">Wired Ethernet</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.45);text-align:center;line-height:1.5;">Cat5e/6 · Gigabit switch<br>Fixed KDS screens<br>Lowest latency</div>
+            <div style="margin-top:4px;display:flex;flex-direction:column;gap:5px;width:100%;">
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.10);border-radius:7px;padding:6px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.70);display:flex;align-items:center;gap:6px;"><span style="font-size:12px;">📺</span> Grill Screen</div>
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.10);border-radius:7px;padding:6px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.70);display:flex;align-items:center;gap:6px;"><span style="font-size:12px;">📺</span> Cold Prep Screen</div>
+            </div>
+          </div>
+          <!-- Wi-Fi -->
+          <div style="flex:1;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.22);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center;">
+            <div style="font-size:20px;">📶</div>
+            <div style="font-size:11px;font-weight:800;color:#fbbf24;text-align:center;">Wi-Fi</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.45);text-align:center;line-height:1.5;">802.11n/ac/ax<br>Tablets &amp; portables<br>Auto-reconnect</div>
+            <div style="margin-top:4px;display:flex;flex-direction:column;gap:5px;width:100%;">
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.10);border-radius:7px;padding:6px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.70);display:flex;align-items:center;gap:6px;"><span style="font-size:12px;">📱</span> Manager Tablet</div>
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.10);border-radius:7px;padding:6px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.70);display:flex;align-items:center;gap:6px;"><span style="font-size:12px;">📱</span> Expo Station iPad</div>
+            </div>
+          </div>
+          <!-- Mixed -->
+          <div style="flex:1;background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.22);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center;">
+            <div style="font-size:20px;">🔀</div>
+            <div style="font-size:11px;font-weight:800;color:#60a5fa;text-align:center;">Mixed</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.45);text-align:center;line-height:1.5;">Wired + wireless<br>Any combination<br>All on port :80</div>
+            <div style="margin-top:4px;display:flex;flex-direction:column;gap:5px;width:100%;">
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.10);border-radius:7px;padding:6px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.70);display:flex;align-items:center;gap:6px;"><span style="font-size:12px;">🍓</span> Raspberry Pi KDS</div>
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.10);border-radius:7px;padding:6px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.70);display:flex;align-items:center;gap:6px;"><span style="font-size:12px;">💻</span> Any Browser</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right panel: facts -->
+      <div style="width:196px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
+        <div style="background:#13131a;border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:10px;">Key Facts</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span style="color:#4ade80;font-size:11px;margin-top:1px;">✓</span>
+              <span style="font-size:11px;color:rgba(255,255,255,0.70);line-height:1.4;">Server binds <strong style="color:#fff;">0.0.0.0</strong> — all interfaces active</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span style="color:#4ade80;font-size:11px;margin-top:1px;">✓</span>
+              <span style="font-size:11px;color:rgba(255,255,255,0.70);line-height:1.4;">WebSocket auto-reconnects on Wi-Fi drop</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span style="color:#4ade80;font-size:11px;margin-top:1px;">✓</span>
+              <span style="font-size:11px;color:rgba(255,255,255,0.70);line-height:1.4;">No internet after setup — pure LAN</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <span style="color:#4ade80;font-size:11px;margin-top:1px;">✓</span>
+              <span style="font-size:11px;color:rgba(255,255,255,0.70);line-height:1.4;">Unlimited display screens</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.20);border-radius:10px;padding:12px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(34,197,94,0.65);margin-bottom:4px;">Latency</div>
+          <div style="font-size:22px;font-weight:900;color:#4ade80;">&lt;100ms</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.38);">POS fire → all screens</div>
+        </div>
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.20);border-radius:10px;padding:12px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(245,158,11,0.65);margin-bottom:4px;">Find your IP</div>
+          <div style="font-family:monospace;font-size:11px;color:#f59e0b;margin-top:2px;">kds ip</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.38);margin-top:4px;">Prints all LAN addresses</div>
+        </div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:14px;font-size:13px;">No cloud relay · No SaaS dependency · Mix Ethernet &amp; Wi-Fi freely</p>
+  </div>
+
+  <!-- ── SLIDE 7: Summary ── -->
+  <div class="slide" id="slide-7">
+    <div class="logo-glow" style="animation:none;box-shadow:0 0 56px rgba(245,158,11,0.32), 0 0 110px rgba(245,158,11,0.12);">
+      <svg width="56" height="56" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pe-stem" x1="36" y1="28" x2="70" y2="134" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FDE68A"/>
+            <stop offset="45%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#EA580C"/>
+          </linearGradient>
+          <linearGradient id="pe-base" x1="36" y1="118" x2="144" y2="154" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#F97316"/>
+            <stop offset="100%" stop-color="#9A3412"/>
+          </linearGradient>
+        </defs>
+        <circle cx="114" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="132" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="150" cy="50" r="2.5" fill="rgba(255,255,255,0.11)"/>
+        <circle cx="114" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="132" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <circle cx="150" cy="68" r="2.5" fill="rgba(255,255,255,0.08)"/>
+        <rect x="36" y="28" width="34" height="106" rx="8" fill="url(#pe-stem)"/>
+        <rect x="36" y="118" width="108" height="36" rx="8" fill="url(#pe-base)"/>
+        <rect x="36" y="28" width="13" height="106" rx="8" fill="rgba(255,255,255,0.22)"/>
+        <rect x="36" y="28" width="34" height="13" rx="6" fill="rgba(255,220,150,0.24)"/>
+        <circle cx="150" cy="36" r="14" fill="#0A0A12"/>
+        <circle cx="150" cy="36" r="9" fill="#22C55E"/>
+        <circle cx="147" cy="33" r="3.5" fill="rgba(255,255,255,0.42)"/>
+      </svg>
+    </div>
+    <div class="eyebrow">LineOps KDS v1.3.0</div>
+    <h2 class="grad-text" style="margin-bottom:16px;">Ready for production</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:720px;margin-top:8px;">
+      <div class="feat-card" style="text-align:center;gap:6px;">
+        <div style="font-size:28px;font-weight:900;color:var(--amber);">6</div>
+        <div class="feat-desc">POS integrations</div>
+      </div>
+      <div class="feat-card" style="text-align:center;gap:6px;">
+        <div style="font-size:28px;font-weight:900;color:#4ade80;">&lt;100ms</div>
+        <div class="feat-desc">WS push latency</div>
+      </div>
+      <div class="feat-card" style="text-align:center;gap:6px;">
+        <div style="font-size:28px;font-weight:900;color:#60a5fa;">500</div>
+        <div class="feat-desc">concurrent orders</div>
+      </div>
+      <div class="feat-card" style="text-align:center;gap:6px;">
+        <div style="font-size:28px;font-weight:900;color:#c084fc;">∞</div>
+        <div class="feat-desc">items per card</div>
+      </div>
+    </div>
+    <div class="stats-strip" style="margin-top:20px;">
+      <div class="stat-item"><div class="stat-val">1</div><div class="stat-lbl">cmd install</div></div>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,0.08);"></div>
+      <div class="stat-item"><div class="stat-val">0</div><div class="stat-lbl">scrollbars</div></div>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,0.08);"></div>
+      <div class="stat-item"><div class="stat-val">100%</div><div class="stat-lbl">items visible</div></div>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,0.08);"></div>
+      <div class="stat-item"><div class="stat-val">WiFi+LAN</div><div class="stat-lbl">any network type</div></div>
+    </div>
+    <p class="sub" style="margin-top:16px;font-size:13px;">
+      github.com/abhaypatial/Lineops_KDS
+    </p>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav" id="nav"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const nav = document.getElementById('nav');
+  let current = 0;
+
+  function buildNav() {
+    nav.innerHTML = '';
+    const prev = document.createElement('button');
+    prev.className = 'nav-btn'; prev.textContent = '←';
+    prev.onclick = () => go(current - 1);
+    nav.appendChild(prev);
+
+    slides.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => go(i);
+      nav.appendChild(d);
+    });
+
+    const next = document.createElement('button');
+    next.className = 'nav-btn'; next.textContent = '→';
+    next.onclick = () => go(current + 1);
+    nav.appendChild(next);
+  }
+
+  function go(n) {
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    slides[current].classList.remove('active');
+    slides[current].classList.add('prev');
+    setTimeout(() => slides[current > n ? current : current].classList.remove('prev'), 500);
+    current = n;
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'prev');
+      if (i < n) s.classList.add('prev');
+    });
+    slides[n].classList.add('active');
+    nav.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === n));
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(current - 1); }
+  });
+
+  // Auto-advance on slide 0 after 4s if no interaction
+  let autoAdvanced = false;
+  function autoStart() {
+    if (!autoAdvanced && current === 0) { autoAdvanced = true; }
+  }
+  document.addEventListener('click', autoStart);
+  document.addEventListener('keydown', autoStart);
+
+  buildNav();
+  go(0);
+
+  // ── Bump demo loop ──────────────────────────────────────────────────────────
+  let bdPhase = 0, bdTick = 0;
+  const BD_DUR = [2000, 2500, 1400, 1800, 1500];
+
+  function bdRender() {
+    const slot = document.getElementById('bd-slot');
+    const msg  = document.getElementById('bd-msg');
+    const cnt  = document.getElementById('bd-count');
+    if (!slot || !msg || !cnt) return;
+
+    if (bdPhase === 0) {
+      slot.innerHTML = '';
+      cnt.textContent = '1';
+      msg.style.color = 'rgba(255,255,255,0.40)';
+      msg.textContent = 'Idle — waiting for next order...';
+    } else if (bdPhase === 1) {
+      cnt.textContent = '2';
+      slot.innerHTML = `<div class="order-card card-arrive" id="bd-card" style="border-color:rgba(245,158,11,0.35);">
+        <div class="card-accent" style="background:#f59e0b;"></div>
+        <div class="card-inner">
+          <div class="card-meta">
+            <div>
+              <div style="display:flex;gap:4px;margin-bottom:4px;">
+                <span class="badge badge-vip" style="font-size:8px;padding:2px 6px;">VIP</span>
+              </div>
+              <div class="card-customer">Taylor</div>
+              <div class="card-number">#472</div>
+            </div>
+            <div><div class="card-timer timer-ok">&#9201; 0:01</div></div>
+          </div>
+          <div class="card-items">
+            <div class="card-item">
+              <div class="item-qty" style="background:rgba(239,68,68,0.25);color:#f87171;">1</div>
+              <div><div class="item-name">Ribeye Steak <span class="item-station" style="color:#ef4444;">GRILL</span></div></div>
+            </div>
+            <div class="card-item">
+              <div class="item-qty" style="background:rgba(239,68,68,0.25);color:#f87171;">1</div>
+              <div><div class="item-name">Garlic Fries <span class="item-station" style="color:#ef4444;">GRILL</span></div></div>
+            </div>
+          </div>
+          <div class="bump-btn vip" id="bd-bumpbtn" style="margin-top:6px;">BUMP &#9166;</div>
+        </div>
+      </div>`;
+      msg.style.color = '#fde68a';
+      msg.innerHTML = '&#9889; Order #472 arrived<br><span style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.45);">VIP &middot; 2 items &middot; Grill</span>';
+    } else if (bdPhase === 2) {
+      const btn = document.getElementById('bd-bumpbtn');
+      if (btn) btn.classList.add('bump-pulse');
+      msg.style.color = '#fbbf24';
+      msg.innerHTML = '&#9000; Chef presses BUMP<br><span style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.45);">Keyboard &middot; Bump bar &middot; Touch</span>';
+    } else if (bdPhase === 3) {
+      const card = document.getElementById('bd-card');
+      if (card) card.classList.add('card-bump');
+      cnt.textContent = '1';
+      msg.style.color = '#4ade80';
+      msg.innerHTML = '&#10003; Order #472 complete<br><span style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.45);">Ticket cleared &middot; Logged</span>';
+    } else {
+      slot.innerHTML = '';
+      cnt.textContent = '1';
+      msg.style.color = 'rgba(255,255,255,0.40)';
+      msg.textContent = 'Idle — waiting for next order...';
+    }
+  }
+
+  setInterval(() => {
+    const bs = document.getElementById('slide-bump');
+    if (!bs || !bs.classList.contains('active')) { bdPhase = 0; bdTick = 0; return; }
+    bdTick += 100;
+    if (bdTick >= BD_DUR[bdPhase]) {
+      bdTick = 0;
+      bdPhase = (bdPhase + 1) % BD_DUR.length;
+      bdRender();
+    }
+  }, 100);
+</script>
+</body>
+</html>
