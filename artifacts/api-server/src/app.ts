@@ -7,6 +7,7 @@ import { adminAuth } from "./middleware/admin-auth";
 import { apiLimiter, posWebhookLimiter } from "./middleware/rate-limit";
 
 const app: Express = express();
+app.set("trust proxy", 1);
 
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response, next: NextFunction) => {
